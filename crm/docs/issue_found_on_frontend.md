@@ -1,7 +1,7 @@
 # Frontend Issues Report — Ficcado CRM
 
 > **Document Type**: Deep Frontend Analysis & Defect Inventory  
-> **Scope**: `ficcado-inventory-sales-management-app` (CRM Frontend)  
+> **Scope**: `ficcado_crm_app` (CRM Frontend)  
 > **Audience**: Principal Engineers, Software Architects, Security Engineers, DevOps Engineers  
 > **Total Issues Documented**: 15  
 
@@ -182,7 +182,7 @@ When an unauthenticated user opens any dashboard link (`/dashboard/sales`, `/das
 - **Maintainability Risk**: Client-side auth checks must be maintained across layouts.
 
 **Recommended Fix**:
-Create `middleware.ts` at the root of `ficcado-inventory-sales-management-app`:
+Create `middleware.ts` at the root of `ficcado_crm_app`:
 ```ts
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
@@ -425,7 +425,7 @@ The system presents a deceptive UI indicating that an email was dispatched to ad
 - **Maintainability Risk**: Misleads testing and operational procedures.
 
 **Recommended Fix**:
-Connect `app/api/email/send-report/route.ts` to forward the request to the Spring Boot backend's email service (`JavaMailSender` in `ficcado-inventory-sales-management-app`), or disable the UI buttons with a "Feature Coming Soon" badge until backend mail dispatch is activated.
+Connect `app/api/email/send-report/route.ts` to forward the request to the Spring Boot backend's email service (`JavaMailSender` in `ficcado_crm_backend`), or disable the UI buttons with a "Feature Coming Soon" badge until backend mail dispatch is activated.
 
 **Priority**: **P1**
 
@@ -630,7 +630,7 @@ Having conflicting schema definitions across the repository confuses developers,
 - **Maintainability Risk**: Developers build features against non-existent tables or deprecated columns.
 
 **Recommended Fix**:
-Delete `ficcado-inventory-sales-management-app/schema.sql` or move it to an archived legacy documentation directory with a clear deprecation header.
+Delete `ficcado_crm_app/schema.sql` or move it to an archived legacy documentation directory with a clear deprecation header.
 
 **Priority**: **P3**
 

@@ -1,7 +1,7 @@
 # Executive Production Readiness Report — Ficcado CRM
 
 > **Document Type**: Executive Production Readiness & Architectural Assessment  
-> **Scope**: Ficcado CRM (Backend: `backend/ficcado-inventory-sales-management-app` & Frontend: `ficcado-inventory-sales-management-app`)  
+> **Scope**: Ficcado CRM (Backend: `backend/ficcado_crm_backend` & Frontend: `ficcado_crm_app`)  
 > **Author Role**: Principal / Senior Software Engineer, Architect, Security Engineer, DevOps & SRE Reviewer  
 > **Target Audience**: Engineering Leadership, Product Stakeholders, Production Reviewers  
 

@@ -1,7 +1,7 @@
 # Project Architecture and Overall Context Report — Ficcado CRM
 
 > **Document Type**: Architecture & Overall System Context Report  
-> **Target Scope**: CRM Frontend (`ficcado-inventory-sales-management-app`) & CRM Backend (`backend/ficcado-inventory-sales-management-app`)  
+> **Target Scope**: CRM Frontend (`ficcado_crm_app`) & CRM Backend (`backend/ficcado_crm_backend`)  
 > **Status**: Comprehensive Analysis Completed  
 > **Audience**: Principal Engineers, Software Architects, Security Engineers, DevOps Engineers, and Reviewers  
 
@@ -133,15 +133,15 @@ The database schema consists of **27 relational tables** defined in a clean fres
 
 ### 4.1 Backend Project Structure
 ```
-backend/ficcado-inventory-sales-management-app/
+backend/ficcado_crm_backend/
 ├── pom.xml                                  → Maven build dependencies & plugins
 ├── src/main/resources/
 │   ├── application.yaml                     → Datasource, Flyway, Hikari, JWT, R2, & Mail configuration
 │   └── db/migration/
 │       ├── V1__create_schema.sql            → 27 PostgreSQL DDL table definitions, indexes & constraints
 │       └── V2__seed_admin.sql               → Default Superadmin initialization seed
-└── src/main/java/com/aps/ficcado_inventory_sales_management_app/
-    ├── FiccadoInventorySalesManagementAppApplication.java → Spring Boot application entry point
+└── src/main/java/com/aps/ficcado_crm_backend/
+    ├── FiccadoCrmBackendApplication.java    → Spring Boot application entry point
     ├── config/
     │   ├── JacksonConfig.java               → JavaTimeModule & serialization settings
     │   └── PasswordEncoderConfig.java       → BCryptPasswordEncoder bean definition
@@ -193,7 +193,7 @@ backend/ficcado-inventory-sales-management-app/
 
 ### 4.2 Frontend Project Structure
 ```
-ficcado-inventory-sales-management-app/
+ficcado_crm_app/
 ├── package.json                             → Next.js dependencies & scripts
 ├── next.config.ts                           → Next.js configuration (serverExternalPackages: ['pdfkit'])
 ├── tsconfig.json                            → TypeScript path aliases (@/*)

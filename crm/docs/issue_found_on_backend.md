@@ -1,7 +1,7 @@
 # Backend Issues Report — Ficcado CRM
 
 > **Document Type**: Deep Backend Analysis & Defect Inventory  
-> **Scope**: `backend/ficcado-inventory-sales-management-app`  
+> **Scope**: `backend/ficcado_crm_backend`  
 > **Audience**: Principal Engineers, Software Architects, Security Engineers, DevOps Engineers  
 > **Total Issues Documented**: 16  
 
@@ -98,7 +98,7 @@ Add a `@PostConstruct` validation bean in Spring Boot that halts application sta
 |---|---|
 | **Severity** | **HIGH** |
 | **Category** | Performance / Scalability / Architecture |
-| **File** | `src/main/java/com/aps/ficcado_inventory_sales_management_app/security/JwtAuthenticationFilter.java` |
+| **File** | `src/main/java/com/aps/ficcado_crm_backend/security/JwtAuthenticationFilter.java` |
 | **Class** | `JwtAuthenticationFilter` |
 | **Method** | `doFilterInternal()` |
 | **Line Number / Range** | L49–L70 |
@@ -174,7 +174,7 @@ Total application lockup requiring backend restart
 |---|---|
 | **Severity** | **CRITICAL** |
 | **Category** | Security / Authorization |
-| **File** | `src/main/java/com/aps/ficcado_inventory_sales_management_app/security/SecurityConfig.java` & all Controllers |
+| **File** | `src/main/java/com/aps/ficcado_crm_backend/security/SecurityConfig.java` & all Controllers |
 | **Class** | `SecurityConfig`, `SaleController`, `ExpenseController`, `VendorController`, `InventoryController` |
 | **Method** | `filterChain()`, controller request handlers |
 | **Line Number / Range** | `SecurityConfig.java` L60–L68 |
@@ -255,7 +255,7 @@ Attacker views total company revenue, cost of goods sold, vendor payouts, and ne
 |---|---|
 | **Severity** | **HIGH** |
 | **Category** | Security / API Security |
-| **File** | `src/main/java/com/aps/ficcado_inventory_sales_management_app/controller/SaleController.java` |
+| **File** | `src/main/java/com/aps/ficcado_crm_backend/controller/SaleController.java` |
 | **Class** | `SaleController` |
 | **Method** | `getById()`, `update()`, `requestReplacement()`, `requestRefund()` |
 | **Line Number / Range** | L40–L46, L72–L96 |
@@ -304,7 +304,7 @@ Sequential integer primary keys (`BIGSERIAL`) are predictable. Without object-le
 |---|---|
 | **Severity** | **HIGH** |
 | **Category** | Database / Performance / Scalability |
-| **File** | `src/main/java/com/aps/ficcado_inventory_sales_management_app/controller/SaleController.java` & `SaleService.java` |
+| **File** | `src/main/java/com/aps/ficcado_crm_backend/controller/SaleController.java` & `SaleService.java` |
 | **Class** | `SaleController`, `SaleService`, `ItemController` |
 | **Method** | `getAll()` |
 | **Line Number / Range** | `SaleController.java` L35–L37, `SaleService.java` L167–L170 |
@@ -390,7 +390,7 @@ public ResponseEntity<List<SaleResponse>> getPage(
 |---|---|
 | **Severity** | **HIGH** |
 | **Category** | Production Reliability / ORM / Data Access |
-| **File** | `src/main/java/com/aps/ficcado_inventory_sales_management_app/controller/ReviewSubmissionController.java` |
+| **File** | `src/main/java/com/aps/ficcado_crm_backend/controller/ReviewSubmissionController.java` |
 | **Class** | `ReviewSubmissionController` |
 | **Method** | `validateToken()` |
 | **Line Number / Range** | L45–L59 |
@@ -456,7 +456,7 @@ Update `ReviewService.validateToken` to call this fetch query.
 |---|---|
 | **Severity** | **MEDIUM** |
 | **Category** | Observability / Error Handling |
-| **File** | `src/main/java/com/aps/ficcado_inventory_sales_management_app/exception/GlobalExceptionHandler.java` |
+| **File** | `src/main/java/com/aps/ficcado_crm_backend/exception/GlobalExceptionHandler.java` |
 | **Class** | `GlobalExceptionHandler` |
 | **Method** | `handleGeneral()` |
 | **Line Number / Range** | L69–L77 |
@@ -523,7 +523,7 @@ public class GlobalExceptionHandler {
 |---|---|
 | **Severity** | **MEDIUM** |
 | **Category** | Security / Abuse Protection |
-| **File** | `src/main/java/com/aps/ficcado_inventory_sales_management_app/controller/AuthController.java` & `ReviewSubmissionController.java` |
+| **File** | `src/main/java/com/aps/ficcado_crm_backend/controller/AuthController.java` & `ReviewSubmissionController.java` |
 | **Class** | `AuthController`, `ReviewSubmissionController` |
 | **Method** | `login()`, `submitReview()` |
 | **Line Number / Range** | `AuthController.java` L45–L68, `ReviewSubmissionController.java` L65–L85 |
@@ -560,8 +560,8 @@ Integrate Bucket4j (or Spring Cloud Gateway / Redis rate limiting) to enforce an
 |---|---|
 | **Severity** | **HIGH** |
 | **Category** | Code Quality / Production Readiness / DevOps |
-| **File** | `src/test/java/com/aps/ficcado_inventory_sales_management_app/FiccadoInventorySalesManagementAppApplicationTests.java` |
-| **Class** | `FiccadoInventorySalesManagementAppApplicationTests` |
+| **File** | `src/test/java/com/aps/ficcado_crm_backend/FiccadoCrmBackendApplicationTests.java` |
+| **Class** | `FiccadoCrmBackendApplicationTests` |
 | **Method** | `testPassword()` |
 | **Line Number / Range** | L8–L16 |
 
@@ -610,7 +610,7 @@ In an enterprise CRM handling physical stock and monetary balances, automated te
 |---|---|
 | **Severity** | **MEDIUM** |
 | **Category** | Security / Configuration |
-| **File** | `src/main/java/com/aps/ficcado_inventory_sales_management_app/security/SecurityConfig.java` & `application.yaml` |
+| **File** | `src/main/java/com/aps/ficcado_crm_backend/security/SecurityConfig.java` & `application.yaml` |
 | **Class** | `SecurityConfig` |
 | **Method** | `corsConfigurationSource()`, Actuator config |
 | **Line Number / Range** | `SecurityConfig.java` L88–L91, `application.yaml` L98–L112 |
@@ -701,7 +701,7 @@ Introduce `ItemService`, `ExpenseService`, `VendorService`, and `KeepNoteService
 |---|---|
 | **Severity** | **MEDIUM** |
 | **Category** | SOLID (Single Responsibility Principle) / Code Quality |
-| **File** | `src/main/java/com/aps/ficcado_inventory_sales_management_app/service/SaleService.java` |
+| **File** | `src/main/java/com/aps/ficcado_crm_backend/service/SaleService.java` |
 | **Class** | `SaleService` |
 | **Method** | `createSale()`, `updateSale()` |
 | **Line Number / Range** | L41–L96 |
@@ -738,7 +738,7 @@ Adopt Spring Application Events (`ApplicationEventPublisher`). Have `SaleService
 |---|---|
 | **Severity** | **MEDIUM** |
 | **Category** | Database / Performance |
-| **File** | `src/main/java/com/aps/ficcado_inventory_sales_management_app/repository/SaleRepository.java` |
+| **File** | `src/main/java/com/aps/ficcado_crm_backend/repository/SaleRepository.java` |
 | **Class** | `SaleRepository` |
 | **Method** | `searchSales()` |
 | **Line Number / Range** | L36–L43 |
@@ -880,7 +880,7 @@ Normalize `pom.xml` to use the official stable Spring Boot release:
 |---|---|
 | **Severity** | **MEDIUM** |
 | **Category** | Data Integrity / Concurrency |
-| **File** | `src/main/java/com/aps/ficcado_inventory_sales_management_app/service/ReviewService.java` |
+| **File** | `src/main/java/com/aps/ficcado_crm_backend/service/ReviewService.java` |
 | **Class** | `ReviewService` |
 | **Method** | `generateReviewToken()` |
 | **Line Number / Range** | L58–L75 |

@@ -5,8 +5,6 @@
 // =============================================================================
 
 import {
-  generateOfflineReferenceId,
-  isValidReferenceId,
   formatReferenceId,
   getNextLetterSequence,
 } from './referenceId';

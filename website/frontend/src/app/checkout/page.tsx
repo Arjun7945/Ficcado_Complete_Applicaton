@@ -19,7 +19,6 @@ import {
   Loader2,
   AlertCircle,
   CreditCard,
-  Lock,
   ShieldCheck,
 } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
@@ -27,7 +26,19 @@ import { useToast } from '@/context/ToastContext';
 import { useCustomerAuth } from '@/context/CustomerAuthContext';
 import { getColorName } from '@/lib/colors';
 import { createPaymentOrder, verifyPayment, CreatePaymentOrderPayload } from '@/lib/api/payments';
-import type { CourierOption } from '@/types';
+import type { CourierOption, RazorpayOptions, RazorpaySuccessResponse } from '@/types';
+
+function createSimulatedPaymentId(): string {
+  return 'pay_sim_' + Date.now();
+}
+
+function createSimulatedSignature(): string {
+  return 'sim_sig_' + Date.now();
+}
+
+function createSimulatedInvoiceNumber(): string {
+  return 'FIC-INV-' + Date.now();
+}
 
 const INDIAN_STATES = [
   'Andhra Pradesh',
@@ -148,7 +159,7 @@ export default function CheckoutPage() {
         setAddressLine1(customer.addresses[0].address);
       }
     }
-  }, [customer]);
+  }, [customer, fullName, email, mobile, addressLine1]);
 
   // Restore saved form draft after client mount
   useEffect(() => {
@@ -527,7 +538,7 @@ export default function CheckoutPage() {
       // 2. Load Razorpay Checkout Script if not already present
       const loadRazorpayScript = () => {
         return new Promise<boolean>((resolve) => {
-          if (typeof window !== 'undefined' && (window as any).Razorpay) {
+          if (typeof window !== 'undefined' && window.Razorpay) {
             resolve(true);
             return;
           }
@@ -541,19 +552,21 @@ export default function CheckoutPage() {
 
       const scriptLoaded = await loadRazorpayScript();
 
-      if (!scriptLoaded || typeof window === 'undefined' || !(window as any).Razorpay) {
+      if (!scriptLoaded || typeof window === 'undefined' || !window.Razorpay) {
         // Fallback verification in demo/dev mode or if script is blocked by browser extensions
         console.warn('[Checkout] Razorpay script blocked or offline. Falling back to simulated verification.');
+        const fallbackPaymentId = createSimulatedPaymentId();
+        const fallbackSignature = createSimulatedSignature();
         const simRes = await verifyPayment({
           razorpayOrderId: orderRes.orderId,
-          razorpayPaymentId: 'pay_sim_' + Date.now(),
-          razorpaySignature: 'sim_sig_' + Date.now(),
+          razorpayPaymentId: fallbackPaymentId,
+          razorpaySignature: fallbackSignature,
         });
 
         clearCart();
         try { localStorage.removeItem(FORM_STORAGE_KEY); } catch {}
         sessionStorage.setItem('ficcado-last-confirmed-order', JSON.stringify({
-          invoiceNumber: simRes.invoiceNumber || 'FIC-INV-' + Date.now(),
+          invoiceNumber: simRes.invoiceNumber || createSimulatedInvoiceNumber(),
           transactionId: simRes.transactionId || orderRes.transactionId,
           total: grandTotal,
           subtotal: subtotalAmount,
@@ -568,7 +581,7 @@ export default function CheckoutPage() {
       }
 
       // 3. Open Razorpay Checkout Modal
-      const options = {
+      const options: RazorpayOptions = {
         key: orderRes.keyId,
         amount: orderRes.amountInPaise,
         currency: orderRes.currency,
@@ -584,7 +597,7 @@ export default function CheckoutPage() {
         theme: {
           color: '#2B62C6',
         },
-        handler: async function (response: any) {
+        handler: async function (response: RazorpaySuccessResponse) {
           try {
             const verifyRes = await verifyPayment({
               razorpayOrderId: response.razorpay_order_id,
@@ -596,7 +609,7 @@ export default function CheckoutPage() {
               clearCart();
               try { localStorage.removeItem(FORM_STORAGE_KEY); } catch {}
               sessionStorage.setItem('ficcado-last-confirmed-order', JSON.stringify({
-                invoiceNumber: verifyRes.invoiceNumber || 'FIC-INV-' + Date.now(),
+                invoiceNumber: verifyRes.invoiceNumber || createSimulatedInvoiceNumber(),
                 transactionId: verifyRes.transactionId || response.razorpay_payment_id,
                 total: grandTotal,
                 subtotal: subtotalAmount,
@@ -627,7 +640,7 @@ export default function CheckoutPage() {
         },
       };
 
-      const rzp = new (window as any).Razorpay(options);
+      const rzp = new window.Razorpay(options);
       rzp.open();
 
     } catch (err) {

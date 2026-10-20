@@ -4,7 +4,7 @@
 // Supports Razorpay order creation, payment signature verification, and status tracking.
 // =============================================================================
 
-import { apiClient, ApiResponse } from './client';
+import { apiClient } from './client';
 import { API_CONFIG } from './config';
 
 export interface PaymentOrderItem {

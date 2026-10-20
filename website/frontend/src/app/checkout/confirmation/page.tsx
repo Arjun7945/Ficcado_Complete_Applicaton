@@ -7,8 +7,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { CheckCircle2, Package, ArrowRight, Home, User, ShieldCheck, Truck, ShoppingBag } from 'lucide-react';
+import { CheckCircle2, ArrowRight, Home, User, Truck } from 'lucide-react';
 
 interface OrderConfirmationData {
   invoiceNumber: string;
@@ -23,7 +22,6 @@ interface OrderConfirmationData {
 }
 
 export default function OrderConfirmationPage() {
-  const router = useRouter();
   const [orderData, setOrderData] = useState<OrderConfirmationData | null>(null);
 
   useEffect(() => {
@@ -60,7 +58,7 @@ export default function OrderConfirmationPage() {
               Invoice Number
             </span>
             <p className="text-base font-mono font-900 text-[var(--primary)] mt-0.5">
-              {orderData?.invoiceNumber || 'FIC-INV-' + Date.now()}
+              {orderData?.invoiceNumber || 'FIC-INV-PROCESSED'}
             </p>
           </div>
           <div className="flex items-center gap-2">

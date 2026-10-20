@@ -14,15 +14,11 @@ import {
   Package,
   MapPin,
   CheckCircle2,
-  AlertCircle,
   LogOut,
   ShoppingBag,
-  Clock,
   Truck,
-  ExternalLink,
   Plus,
   Loader2,
-  ShieldCheck,
   ChevronRight,
 } from 'lucide-react';
 import { useCustomerAuth } from '@/context/CustomerAuthContext';

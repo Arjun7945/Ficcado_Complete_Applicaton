@@ -18,6 +18,7 @@ export const API_CONFIG = {
     // Ficcado-Data (Port 8081 via Gateway)
     products: '/api/public/products',
     items: '/api/public/items',
+    categories: '/api/public/categories',
     customerAuth: '/api/public/auth',
     customerOrders: '/api/customer/orders',
 

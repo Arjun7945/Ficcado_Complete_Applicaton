@@ -63,8 +63,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
-                        // Public review endpoints — no auth required (tokenized link)
-                        .requestMatchers("/api/public/reviews/**").permitAll()
+                        // Public storefront & review endpoints — no auth required
+                        .requestMatchers("/api/public/**").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**",
                                 "/swagger-ui.html", "/actuator/health").permitAll()
                         .anyRequest().authenticated()

@@ -1,5 +1,5 @@
-package com.aps.ficcado_crm_backend.service;
 
+package com.aps.ficcado_crm_backend.service;
 import com.aps.ficcado_crm_backend.entity.Admin;
 import com.aps.ficcado_crm_backend.entity.Item;
 import com.aps.ficcado_crm_backend.entity.ItemSize;
@@ -7,6 +7,7 @@ import com.aps.ficcado_crm_backend.entity.enums.ItemStatus;
 import com.aps.ficcado_crm_backend.repository.ItemRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,6 +43,7 @@ public class ItemService {
     }
 
     @Transactional
+    @CacheEvict(value = {"public-products", "public-product-id", "public-product-slug", "public-categories"}, allEntries = true)
     public Item createItem(String itemName, String itemType, BigDecimal priceOfItem,
                            BigDecimal costPrice, List<String> sizes, ItemStatus currentStatus, Admin admin) {
         Item item = Item.builder()
@@ -78,6 +80,7 @@ public class ItemService {
     }
 
     @Transactional
+    @CacheEvict(value = {"public-products", "public-product-id", "public-product-slug", "public-categories"}, allEntries = true)
     public Optional<Item> updateItem(Long id, String itemName, String itemType,
                                      BigDecimal priceOfItem, BigDecimal costPrice,
                                      List<String> sizes, ItemStatus currentStatus, Admin admin) {
@@ -128,6 +131,7 @@ public class ItemService {
     }
 
     @Transactional
+    @CacheEvict(value = {"public-products", "public-product-id", "public-product-slug", "public-categories"}, allEntries = true)
     public Optional<Item> toggleStatus(Long id, ItemStatus newStatus, Admin admin) {
         return itemRepository.findById(id).map(item -> {
             item.setCurrentStatus(newStatus);
@@ -141,6 +145,7 @@ public class ItemService {
     }
 
     @Transactional
+    @CacheEvict(value = {"public-products", "public-product-id", "public-product-slug", "public-categories"}, allEntries = true)
     public boolean deleteItem(Long id, Admin admin) {
         Item item = itemRepository.findById(id).orElse(null);
         if (item == null) {

@@ -2278,6 +2278,150 @@
         }
       }
     },
+    "/api/public/products" : {
+      "get" : {
+        "tags" : [ "Public Catalog (Storefront)" ],
+        "summary" : "List public storefront products with optional category, stock, and search filtering",
+        "operationId" : "getProducts",
+        "parameters" : [ {
+          "name" : "category",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "includeOutOfStock",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "default" : false
+          }
+        }, {
+          "name" : "search",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListPublicProductResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/public/products/{id}" : {
+      "get" : {
+        "tags" : [ "Public Catalog (Storefront)" ],
+        "summary" : "Get single product by ID for storefront display",
+        "operationId" : "getProductById",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePublicProductResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/public/products/{id}/reviews" : {
+      "get" : {
+        "tags" : [ "Public Catalog (Storefront)" ],
+        "summary" : "Get public verified reviews for a product",
+        "operationId" : "getProductReviews",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListPublicReviewResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/public/products/by-slug/{slug}" : {
+      "get" : {
+        "tags" : [ "Public Catalog (Storefront)" ],
+        "summary" : "Get single product by URL slug for storefront product detail page",
+        "operationId" : "getProductBySlug",
+        "parameters" : [ {
+          "name" : "slug",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePublicProductResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/public/categories" : {
+      "get" : {
+        "tags" : [ "Public Catalog (Storefront)" ],
+        "summary" : "List public storefront categories with live item counts",
+        "operationId" : "getCategories",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListPublicCategoryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/logs/sales" : {
       "get" : {
         "tags" : [ "Audit Logs" ],
@@ -4271,6 +4415,216 @@
           },
           "totalRefunded" : {
             "type" : "number"
+          }
+        }
+      },
+      "ApiResponseListPublicProductResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PublicProductResponse"
+            }
+          },
+          "message" : {
+            "type" : "string"
+          }
+        }
+      },
+      "PublicProductResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "slug" : {
+            "type" : "string"
+          },
+          "type" : {
+            "type" : "string"
+          },
+          "category" : {
+            "type" : "string"
+          },
+          "price" : {
+            "type" : "number"
+          },
+          "rating" : {
+            "type" : "number"
+          },
+          "reviews" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "sizes" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "sizeStock" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "boolean"
+            }
+          },
+          "colors" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "desc" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "img" : {
+            "type" : "string"
+          },
+          "flatImg" : {
+            "type" : "string"
+          },
+          "images" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "inStock" : {
+            "type" : "boolean"
+          },
+          "featured" : {
+            "type" : "boolean"
+          },
+          "active" : {
+            "type" : "boolean"
+          },
+          "sortOrder" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "ApiResponsePublicProductResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "$ref" : "#/components/schemas/PublicProductResponse"
+          },
+          "message" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ApiResponseListPublicReviewResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PublicReviewResponse"
+            }
+          },
+          "message" : {
+            "type" : "string"
+          }
+        }
+      },
+      "PublicReviewResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "productId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "author" : {
+            "type" : "string"
+          },
+          "rating" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "date" : {
+            "type" : "string"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "comment" : {
+            "type" : "string"
+          },
+          "verified" : {
+            "type" : "boolean"
+          },
+          "sizeBought" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ApiResponseListPublicCategoryResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "data" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PublicCategoryResponse"
+            }
+          },
+          "message" : {
+            "type" : "string"
+          }
+        }
+      },
+      "PublicCategoryResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "slug" : {
+            "type" : "string"
+          },
+          "img" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "sortOrder" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "productCount" : {
+            "type" : "integer",
+            "format" : "int64"
           }
         }
       },

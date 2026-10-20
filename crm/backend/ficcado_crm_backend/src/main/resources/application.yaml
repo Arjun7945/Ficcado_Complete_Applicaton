@@ -69,6 +69,20 @@ spring:
     user:
       name: disabled   # Prevents Spring Security's auto-generated user warning
 
+  # ── Cache & Redis (Phase 4: Storefront Catalog Caching) ─────────────────────
+  cache:
+    type: ${CACHE_TYPE:redis}
+    redis:
+      time-to-live: 600000        # 10 minutes in ms
+      cache-null-values: false
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2000ms
+      repositories:
+        enabled: false
+
 # ── Application-level config ─────────────────────────────────────────────────
 app:
   jwt:

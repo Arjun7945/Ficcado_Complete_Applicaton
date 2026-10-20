@@ -13,8 +13,8 @@ Progress and phase summaries for the Ficcado Complete Application rebuild as spe
 | **Phase 1** | Remove spreadsheet logic from website & build typed API client | **COMPLETED** | Sheets removed, typed API client created, 51 tests passing, typecheck passing, build passing |
 | **Phase 2** | Build Ficcado-Website-Data backend (port 8082, PostgreSQL) | **COMPLETED** | Service created on port 8082, 19 tests passing, Flyway V1 schema, OTP service, Actuator/Prometheus |
 | **Phase 3** | NGINX Reverse Proxy Gateway (port 8000) & local setup | **COMPLETED** | Gateway config created on port 8000, routing rules, rate limits, health checks, docs/LOCAL_SETUP.md written |
-| **Phase 4** | Connect website to Ficcado-Data (products, Redis caching) | *Pending User Confirmation* | Ready to start |
-| **Phase 5** | Authentication (sign-up, login, OTP, JWT) | *Pending* | - |
+| **Phase 4** | Connect website to Ficcado-Data (products, Redis caching) | **COMPLETED** | Sanitized PublicProductDto, PublicProductService with 10m Redis cache & graceful degradation, PublicProductController, 49 tests passing |
+| **Phase 5** | Authentication (sign-up, login, OTP, JWT) | *Pending User Confirmation* | Ready to start |
 | **Phase 6** | Payment Gateway (Razorpay) & stock/sale synchronization | *Pending* | - |
 | **Phase 7** | CI/CD Pipeline (`ci-cd.yaml`) & Quality Gates | *Pending* | - |
 | **Phase 8** | Monitoring & Observability (Actuator, Prometheus, Grafana) | *Pending* | - |
@@ -174,7 +174,39 @@ Progress and phase summaries for the Ficcado Complete Application rebuild as spe
    - Native startup commands for each microservice, the gateway, and both frontends.
    - Graceful degradation policies documented for Redis (caching bypass), RabbitMQ (synchronous processing), and SMTP (database simulation log in `support_emails`).
 
-
-
-
+### Phase 4: Connect website to Ficcado-Data (Completed)
+1. **Additive Storefront Read-Only Layer in Ficcado-Data (`crm/backend/ficcado_crm_backend`):**
+   - **Data Transfer Objects (`dto/PublicProductDto.java`):**
+     - Completely sanitized: cost prices, profit margins, supplier metadata, and internal vendor links are never exposed.
+     - Stock quantities are protected: surfaced only as boolean availability per size (`sizeStock: Map<String, Boolean>`) and overall (`inStock: boolean`), derived dynamically from `Inventory.totalQuantity > 0`.
+     - Returns `PublicProductResponse`, `PublicCategoryResponse`, `PublicReviewResponse`, and generic `ApiResponse<T>`.
+   - **Service Layer (`service/PublicProductService.java`):**
+     - Exposes only active items (`status == ACTIVE || status == IN_STOCK`).
+     - Normalizes category slugs (`t-shirts`, `combos`, `shirts`, `hoodies`, `pants`, `sneakers`).
+     - Converts item names to SEO-compliant URL slugs (`chosen`, `grounded`, `echoes-of-the-empire`, etc.).
+     - Handles image resolution (prefers Cloudflare R2 images from CRM; falls back to static high-res assets).
+     - Provides anonymized review mapping for public customer feedback.
+   - **Controller Endpoints (`controller/PublicProductController.java`):**
+     - `GET /api/public/products`: Lists products with optional filtering (`category`, `includeOutOfStock`, `search`).
+     - `GET /api/public/products/{id}`: Single product lookup by numerical ID.
+     - `GET /api/public/products/by-slug/{slug}`: Single product lookup by URL slug for product detail pages.
+     - `GET /api/public/products/{id}/reviews`: Verified customer reviews for a given product.
+     - `GET /api/public/categories`: 6 official storefront categories with live item counts.
+2. **Resilient Redis Caching & Invalidation (`config/CacheConfig.java`):**
+   - Added `spring-boot-starter-cache` and `spring-boot-starter-data-redis` to `pom.xml`.
+   - Configured `RedisCacheConfiguration` with a 10-minute TTL (600,000ms) and disabled null value caching.
+   - Implemented custom `CacheErrorHandler` providing complete graceful degradation: if Redis is stopped or unreachable, cache errors are caught and logged as warnings, falling back to direct PostgreSQL queries with zero request failure.
+   - Wired cache invalidation via `@CacheEvict(value = {"public-products", "public-product-id", "public-product-slug", "public-categories"}, allEntries = true)` on `ItemService` mutating methods (`createItem`, `updateItem`, `toggleStatus`, `deleteItem`).
+3. **Security Configuration (`security/SecurityConfig.java`):**
+   - Updated `.requestMatchers("/api/public/**").permitAll()` to allow public storefront access to products, reviews, and categories without requiring admin authentication.
+4. **Website Frontend Integration (`website/frontend`):**
+   - Updated `src/lib/api/config.ts` to include `/api/public/categories`.
+   - Updated `src/lib/api/products.ts` with `getCategories()`, enhanced `getItems({ includeOutOfStock, category, search })`, and robust fallback handling.
+   - Preserved full SSR/SSG resilience: if gateway is unreachable during offline development or Next.js build, static catalog snapshot seamlessly activates.
+5. **Verification & Testing:**
+   - `crm/backend/ficcado_crm_backend`: Added 5 unit tests (`PublicProductServiceTest`) and 6 WebMvc tests (`PublicProductControllerTest`). **49 tests run, 0 failures, 0 errors**.
+   - `website/backend/ficcado_website_data`: **19 tests run, 0 failures, 0 errors**.
+   - `website/frontend`: **51 unit tests passed**, `tsc --noEmit` passed, `check:brand` passed (0 forbidden spellings), `next build` passed (33 static/SSG/dynamic pages generated).
+   - `crm/ficcado_crm_app`: 100% byte-identical to `origin/fic/crm` (zero modifications).
+   - Logged all changes in `docs/FICCADO_DATA_CHANGELOG.md`.
 

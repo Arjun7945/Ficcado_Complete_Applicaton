@@ -11,8 +11,8 @@ Progress and phase summaries for the Ficcado Complete Application rebuild as spe
 | **Step 0.0** | Import Code (`crm/` from `fic/crm`, `website/` from `fic/website`) | **COMPLETED** | `crm/` byte-identical to `origin/fic/crm` (`diff` is empty); `website/` imported |
 | **Phase 0** | Discovery (no code changes) | **COMPLETED** | Workspace mapped, `docs/FICCADO_DATA_MAP.md` created, website audit done, gaps in `AGENT_QUESTIONS.md` |
 | **Phase 1** | Remove spreadsheet logic from website & build typed API client | **COMPLETED** | Sheets removed, typed API client created, 51 tests passing, typecheck passing, build passing |
-| **Phase 2** | Build Ficcado-Website-Data backend (port 8082, PostgreSQL) | *Pending User Confirmation* | Ready to start |
-| **Phase 3** | NGINX Reverse Proxy Gateway (port 8000) & local setup | *Pending* | - |
+| **Phase 2** | Build Ficcado-Website-Data backend (port 8082, PostgreSQL) | **COMPLETED** | Service created on port 8082, 19 tests passing, Flyway V1 schema, OTP service, Actuator/Prometheus |
+| **Phase 3** | NGINX Reverse Proxy Gateway (port 8000) & local setup | *Pending User Confirmation* | Ready to start |
 | **Phase 4** | Connect website to Ficcado-Data (products, Redis caching) | *Pending* | - |
 | **Phase 5** | Authentication (sign-up, login, OTP, JWT) | *Pending* | - |
 | **Phase 6** | Payment Gateway (Razorpay) & stock/sale synchronization | *Pending* | - |
@@ -103,6 +103,44 @@ Progress and phase summaries for the Ficcado Complete Application rebuild as spe
    - **Typecheck (`npm run typecheck`):** PASSED with 0 errors.
    - **Production Build (`npm run build`):** PASSED with all 33 routes rendered successfully.
    - **CRM Read-Only Integrity:** `git diff origin/fic/crm -- crm` verified 100% empty / byte-identical.
+
+### Phase 2: Build Ficcado-Website-Data backend (Completed)
+1. **Microservice Foundation:**
+   - Spring Boot 3.4.3, Java 21 LTS microservice under `ficcado_website_data/`.
+   - Dedicated PostgreSQL database `ficcado_website_data`.
+   - Configured port **8082** via `${PORT:8082}` in `application.yaml`.
+   - Maven wrapper configured with identical Maven 3.9.16 distribution.
+   - No Dockerfile / Docker Compose (plain local execution).
+2. **Schema & Flyway Migration (`V1__init_website_data_schema.sql`):**
+   - `customer_enquiries`: ticket_id (`FIC-INQ-...`), full_name, email, phone, order_id, category, subject, message, status, timestamps.
+   - `customer_complaints`: complaint_id (`FIC-CMP-...`), customer_email, customer_phone, order_id, complaint_type, description, status, resolution_notes, timestamps.
+   - `support_emails`: recipient_email, sender_email, subject, body_text, body_html, email_type, status, error_message, sent_at, created_at.
+   - `drop_notifications`: email, phone, capsule_name, interest_category, status, created_at.
+   - `otp_records`: email, otp_hash (SHA-256), purpose, attempt_count, max_attempts, verified, verified_at, expires_at, created_at.
+3. **Domain Layer & Security:**
+   - Zero customer credential storage in this service (credentials strictly remain in `ficcado_data`).
+   - Cryptographic 6-digit OTP generation using `java.security.SecureRandom`.
+   - Salted SHA-256 OTP hashing with constant-time byte comparison (`MessageDigest.isEqual`).
+   - Cooldown enforcement (60s), expiration window (10 mins), and max attempt limit (5 attempts).
+4. **Service & Controller APIs:**
+   - `POST /api/v1/enquiries`: creates enquiry, returns ticket ID (`FIC-INQ-...`), dispatches confirmation email.
+   - `GET /api/v1/enquiries/{ticketId}`: queries enquiry status.
+   - `GET /api/v1/enquiries?email=...`: queries customer inquiries.
+   - `POST /api/v1/complaints`: creates complaint, returns complaint ID (`FIC-CMP-...`), dispatches confirmation email.
+   - `GET /api/v1/complaints/{complaintId}`: queries complaint status.
+   - `POST /api/v1/notifications/drop`: subscribe to capsule drop and restock notifications.
+   - `POST /api/v1/notifications/unsubscribe`: unsubscribe from notifications.
+   - `POST /api/v1/otp/generate`: generates and emails OTP.
+   - `POST /api/v1/otp/verify`: verifies OTP, returns one-time verification token.
+5. **Observability & Error Handling:**
+   - Spring Boot Actuator & Micrometer Prometheus enabled: `/actuator/health`, `/actuator/prometheus`, `/actuator/info`.
+   - Global exception handling returning unified `ApiResponse<T>` with RFC-compliant HTTP status codes.
+6. **Testing & Verification:**
+   - **Ficcado-Website-Data Tests:** 19 tests run, **0 failures, 0 errors, 0 skipped** (`BUILD SUCCESS`).
+   - **Ficcado-Data Baseline Tests:** 38 tests run, **0 failures, 0 errors, 0 skipped** (`BUILD SUCCESS`).
+   - **Brand Audit (`check-brand.mjs`):** PASSED (0 violations).
+   - **CRM Read-Only Integrity:** `crm/` remains 100% untouched and byte-identical.
+
 
 
 

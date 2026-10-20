@@ -12,8 +12,8 @@ Progress and phase summaries for the Ficcado Complete Application rebuild as spe
 | **Phase 0** | Discovery (no code changes) | **COMPLETED** | Workspace mapped, `docs/FICCADO_DATA_MAP.md` created, website audit done, gaps in `AGENT_QUESTIONS.md` |
 | **Phase 1** | Remove spreadsheet logic from website & build typed API client | **COMPLETED** | Sheets removed, typed API client created, 51 tests passing, typecheck passing, build passing |
 | **Phase 2** | Build Ficcado-Website-Data backend (port 8082, PostgreSQL) | **COMPLETED** | Service created on port 8082, 19 tests passing, Flyway V1 schema, OTP service, Actuator/Prometheus |
-| **Phase 3** | NGINX Reverse Proxy Gateway (port 8000) & local setup | *Pending User Confirmation* | Ready to start |
-| **Phase 4** | Connect website to Ficcado-Data (products, Redis caching) | *Pending* | - |
+| **Phase 3** | NGINX Reverse Proxy Gateway (port 8000) & local setup | **COMPLETED** | Gateway config created on port 8000, routing rules, rate limits, health checks, docs/LOCAL_SETUP.md written |
+| **Phase 4** | Connect website to Ficcado-Data (products, Redis caching) | *Pending User Confirmation* | Ready to start |
 | **Phase 5** | Authentication (sign-up, login, OTP, JWT) | *Pending* | - |
 | **Phase 6** | Payment Gateway (Razorpay) & stock/sale synchronization | *Pending* | - |
 | **Phase 7** | CI/CD Pipeline (`ci-cd.yaml`) & Quality Gates | *Pending* | - |
@@ -106,7 +106,7 @@ Progress and phase summaries for the Ficcado Complete Application rebuild as spe
 
 ### Phase 2: Build Ficcado-Website-Data backend (Completed)
 1. **Microservice Foundation:**
-   - Spring Boot 3.4.3, Java 21 LTS microservice under `ficcado_website_data/`.
+   - Spring Boot 3.4.3, Java 21 LTS microservice under `website/backend/ficcado_website_data/`.
    - Dedicated PostgreSQL database `ficcado_website_data`.
    - Configured port **8082** via `${PORT:8082}` in `application.yaml`.
    - Maven wrapper configured with identical Maven 3.9.16 distribution.
@@ -140,6 +140,40 @@ Progress and phase summaries for the Ficcado Complete Application rebuild as spe
    - **Ficcado-Data Baseline Tests:** 38 tests run, **0 failures, 0 errors, 0 skipped** (`BUILD SUCCESS`).
    - **Brand Audit (`check-brand.mjs`):** PASSED (0 violations).
    - **CRM Read-Only Integrity:** `crm/` remains 100% untouched and byte-identical.
+7. **Workspace Layout Refactoring:**
+   - Restructured website modules to symmetrical layout per user recommendation:
+     - Website Frontend: `website/frontend/`
+     - Website Backend: `website/backend/ficcado_website_data/`
+
+### Phase 3: NGINX Reverse Proxy Gateway & Local Setup (Completed)
+1. **Local NGINX Reverse Proxy (`gateway/nginx.conf`):**
+   - Single port **8000** ingress gateway without Docker requirement.
+   - Upstream pools defined with keepalive and connection pooling:
+     - `ficcado_data_upstream`: `127.0.0.1:8081`
+     - `ficcado_website_data_upstream`: `127.0.0.1:8082`
+     - `ficcado_payment_gateway_data_upstream`: `127.0.0.1:8083`
+   - Path-based intelligent routing:
+     - `/api/v1/enquiries/**`, `/api/v1/complaints/**`, `/api/v1/notifications/**`, `/api/v1/otp/**` -> Port `8082`
+     - `/api/v1/payments/**`, `/api/v1/webhooks/razorpay/**` -> Port `8083`
+     - `/api/v1/auth/**`, `/api/v1/products/**`, `/api/v1/categories/**`, `/api/**` -> Port `8081`
+   - Hard security boundary: external access to `/api/internal/**` returns `403 Forbidden`.
+   - Rate limiting:
+     - General APIs: 30 requests/second with burst 20.
+     - Auth login routes: 5 requests/minute with burst 3.
+     - OTP routes: 3 requests/minute with burst 2.
+   - Gzip compression, client body limit (10MB), and security headers (`X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`).
+   - Preflight CORS handler for `http://localhost:3000`, `http://localhost:3001`, and `https://*.ficcado.in`.
+2. **Unified Health Check Architecture:**
+   - `/health`: Gateway self-check (`status: UP`, port `8000`).
+   - `/health/ficcado-data`: Proxied health check for Ficcado-Data (`8081`).
+   - `/health/website-data`: Proxied health check for Ficcado-Website-Data (`8082`).
+   - `/health/payment-gateway`: Proxied health check for Ficcado-Payment-Gateway-Data (`8083`).
+3. **Local Machine Setup Guide (`docs/LOCAL_SETUP.md`):**
+   - Port allocations, prerequisite checks (Java 21, Node.js 20+, PostgreSQL).
+   - Database creation SQL commands for all three databases.
+   - Native startup commands for each microservice, the gateway, and both frontends.
+   - Graceful degradation policies documented for Redis (caching bypass), RabbitMQ (synchronous processing), and SMTP (database simulation log in `support_emails`).
+
 
 
 

@@ -1787,6 +1787,43 @@
         }
       }
     },
+    "/api/internal/orders/create-paid-sale" : {
+      "post" : {
+        "tags" : [ "Internal Order Handshakes" ],
+        "summary" : "Create an official Sale and deduct inventory for a verified online payment",
+        "operationId" : "createPaidSale",
+        "parameters" : [ {
+          "name" : "X-Internal-Secret",
+          "in" : "header",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreatePaidSaleRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/internal/customer/otp-login" : {
       "post" : {
         "tags" : [ "Internal Service Handshakes" ],
@@ -4539,6 +4576,76 @@
             "format" : "int32"
           }
         }
+      },
+      "CreatePaidSaleRequest" : {
+        "type" : "object",
+        "properties" : {
+          "transactionId" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "razorpayOrderId" : {
+            "type" : "string"
+          },
+          "amount" : {
+            "type" : "number"
+          },
+          "customerName" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "customerEmail" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "customerPhone" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "customerAddress" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "deliveryChargeAmount" : {
+            "type" : "number"
+          },
+          "courierPartner" : {
+            "type" : "string"
+          },
+          "lineItems" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/InternalOrderLineItem"
+            },
+            "minItems" : 1
+          }
+        },
+        "required" : [ "amount", "customerAddress", "customerEmail", "customerName", "customerPhone", "lineItems", "transactionId" ]
+      },
+      "InternalOrderLineItem" : {
+        "type" : "object",
+        "properties" : {
+          "itemId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "itemName" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "size" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "quantity" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "priceEach" : {
+            "type" : "number"
+          }
+        },
+        "required" : [ "itemName", "priceEach", "quantity", "size" ]
       },
       "CustomerRegistrationRequest" : {
         "type" : "object",

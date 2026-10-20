@@ -254,4 +254,53 @@ Progress and phase summaries for the Ficcado Complete Application rebuild as spe
    - `website/frontend`: **All 51 tests passed**, TypeScript typecheck passed with zero errors, brand check passed with zero violations, production build compiled cleanly (34 routes generated).
    - `crm/ficcado_crm_app`: 100% byte-identical to `origin/fic/crm` (`git diff origin/fic/crm -- crm/ficcado_crm_app` completely empty).
 
+### Phase 6: Payment Gateway - Razorpay & Stock/Sale Synchronization (Completed)
+1. **Ficcado-Payment-Gateway-Data Microservice (`payment/backend/ficcado_payment_gateway_data` on Port 8083):**
+   - Independent Spring Boot 3.4.3 microservice with Maven wrapper, Flyway migrations, and PostgreSQL.
+   - **Database Schema (`V1__init_payment_gateway_schema.sql`):**
+     - `payment_transactions`: Tracks transaction references, Razorpay order IDs, payment IDs, amounts, currencies, customer info, payment status (`PENDING`, `AUTHORIZED`, `CAPTURED`, `FAILED`, `REFUNDED`), and Ficcado-Data synchronization status.
+     - `webhook_logs`: Event-level idempotency log storing webhook event IDs, event types, payloads, and signatures.
+   - **Core Services:**
+     - `RazorpayService`: Creates Razorpay order references and verifies HMAC-SHA256 signatures for checkout payments and server-to-server webhooks using constant-time `MessageDigest.isEqual`.
+     - `FiccadoDataSyncService`: Synchronizes captured payments to Ficcado-Data (`POST /api/internal/orders/create-paid-sale`) via `X-Internal-Secret`. Gracefully handles out-of-stock scenarios (flags for refund without crashing).
+   - **Controller Endpoints:**
+     - `POST /api/v1/payments/create-order`: Initializes a payment session.
+     - `POST /api/v1/payments/verify`: Verifies Razorpay payment signature, marks transaction captured, and triggers stock-sale synchronization.
+     - `GET /api/v1/payments/status/{id}`: Retrieves payment and synchronization state.
+     - `POST /api/v1/webhooks/razorpay`: Webhook listener with signature check and idempotent processing for `payment.captured`, `payment.failed`, and `refund.processed`.
+   - **Test Suite:** 10 unit and WebMvc tests in `RazorpayServiceTest`, `PaymentControllerTest`, `RazorpayWebhookControllerTest`, and `FiccadoPaymentGatewayDataApplicationTests`.
+
+2. **Ficcado-Data Internal Stock-Sale Synchronization (`crm/backend/ficcado_crm_backend` on Port 8081):**
+   - Strictly zero DDL/schema modifications.
+   - Added query method `findByTransactionId(String transactionId)` to `SaleRepository`.
+   - Created `InternalOrderController` (`POST /api/internal/orders/create-paid-sale`):
+     - Guarded by constant-time `X-Internal-Secret` matching.
+     - Idempotency guard: checks `saleRepository.findByTransactionId(transactionId)`; returns existing sale if already processed.
+     - Inventory stock check: iterates requested items and verifies `inventoryRepository.findByItemIdAndSize`; rejects with HTTP 409 Conflict if stock is insufficient.
+     - Sale & Invoice creation: creates `Sale` record with payment status `PAID`, payment mode `ONLINE`, delivery status `PENDING`, unique invoice number `FIC-INV-[timestamp]`, and triggers `saleService.createSale` to deduct stock and record sale line items.
+   - **Test Suite:** 4 tests in `InternalOrderControllerTest` verifying authorization rejection, idempotency, successful sale creation & inventory deduction, and out-of-stock 409 handling. 62/62 tests passing.
+
+3. **NGINX Gateway Integration (`gateway/nginx.conf` on Port 8000):**
+   - Routes `/api/v1/payments/**` and `/api/v1/webhooks/razorpay/**` to upstream `ficcado_payment_gateway_data_upstream` (`127.0.0.1:8083`).
+   - Unified health check `/health/payment-gateway` mapped to port 8083 `/actuator/health`.
+   - `/api/internal/**` remains protected with HTTP 403 Forbidden against public access.
+
+4. **Website Frontend Checkout Flow (`website/frontend`):**
+   - `src/lib/api/payments.ts`: Typed API client methods (`createPaymentOrder`, `verifyPayment`, `getPaymentStatus`).
+   - `src/app/checkout/page.tsx`:
+     - Added profile pre-fill from `CustomerAuthContext`.
+     - Rendered primary "Pay Online with Razorpay" button (`#place-order-razorpay-btn`).
+     - Rendered security banner: "Online Payment Only (Razorpay). No Cash on Delivery (COD) permitted."
+     - Retained secondary `#place-order-whatsapp-btn` for direct WhatsApp communication and backward-compatibility with tests.
+     - Dynamically loads Razorpay checkout script with fallback simulation for offline/test environments.
+   - `src/app/checkout/confirmation/page.tsx`: Order confirmation page displaying verified online payment, invoice number, items summary, and delivery details.
+
+5. **Verification & Testing Results:**
+   - `payment/backend/ficcado_payment_gateway_data`: **10/10 tests passed (`BUILD SUCCESS`)**.
+   - `crm/backend/ficcado_crm_backend`: **62/62 tests passed (`BUILD SUCCESS`)**.
+   - `website/backend/ficcado_website_data`: **19/19 tests passed (`BUILD SUCCESS`)**.
+   - `website/frontend`: **51/51 tests passed**, `npm run typecheck` passed, `npm run check:brand` passed, `npm run build` compiled 35 routes cleanly.
+   - `crm/ficcado_crm_app`: 100% byte-identical to `origin/fic/crm` (`git diff origin/fic/crm -- crm/ficcado_crm_app` completely empty).
+   - Logged all changes in `docs/FICCADO_DATA_CHANGELOG.md`.
+
 

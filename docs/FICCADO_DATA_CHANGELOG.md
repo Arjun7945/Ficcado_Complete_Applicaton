@@ -19,6 +19,7 @@ Log of all edits to existing files in `crm/backend/ficcado_crm_backend` (Ficcado
 | 2026-10-20 | `src/main/java/com/aps/ficcado_crm_backend/repository/SaleRepository.java` | Interface methods | Add `findByCustomerIdOrderByCreatedAtDesc(Long customerId)` | Query method required for customer order history retrieval | Yes (All 58 tests pass) |
 | 2026-10-20 | `src/main/java/com/aps/ficcado_crm_backend/security/SecurityConfig.java` | `filterChain` & beans | Register `CustomerJwtAuthenticationFilter` before `JwtAuthenticationFilter`, permit `/api/customer/auth/**` & `/api/internal/**`, require `ROLE_CUSTOMER` for `/api/customer/**` | Security filter chain configuration must define route authorization rules | Yes (MockMvc customer and admin tests pass) |
 | 2026-10-20 | `src/main/java/com/aps/ficcado_crm_backend/service/AuthService.java` | `getAdminFromToken` | Add explicit check: if token role is `ROLE_CUSTOMER`, reject with `Invalid admin credentials` | Enforces strict mutual role isolation so customer tokens cannot access admin/CRM endpoints | Yes (Verified with test suite) |
+| 2026-10-20 | `src/main/java/com/aps/ficcado_crm_backend/repository/SaleRepository.java` | Interface methods | Add `findByTransactionId(String transactionId)` | Query method required for idempotent payment transaction lookup in Ficcado-Data | Yes (InternalOrderControllerTest & 62 tests pass) |
 | 2026-10-20 | `src/test/java/com/aps/ficcado_crm_backend/OpenApiExporterTest.java` | `exportOpenApiSpec` | Only write OpenAPI spec to `crm/docs/openapi.json` | Keeps `crm/ficcado_crm_app` strictly read-only and bit-identical to `origin/fic/crm` | Yes (Test passes and crm_app git diff is empty) |
 
 ---
@@ -43,4 +44,8 @@ Log of all edits to existing files in `crm/backend/ficcado_crm_backend` (Ficcado
 | 2026-10-20 | `CustomerAuthServiceTest.java` | Unit tests for customer registration, duplicate handling, takeover protection, and password authentication | Passed in `.\mvnw.cmd test` |
 | 2026-10-20 | `CustomerAuthControllerTest.java` | MockMvc integration tests for customer registration, login, and `/me` | Passed in `.\mvnw.cmd test` |
 | 2026-10-20 | `InternalCustomerControllerTest.java` | MockMvc integration tests for internal service handshake security | Passed in `.\mvnw.cmd test` |
+| 2026-10-20 | `dto/InternalOrderDto.java` | Internal service-to-service DTOs (`CreatePaidSaleRequest`, `InternalOrderLineItem`, `InternalSaleResponse`) for verified online orders | Tested in `InternalOrderControllerTest` |
+| 2026-10-20 | `controller/InternalOrderController.java` | Internal service-to-service REST endpoint `POST /api/internal/orders/create-paid-sale` guarded by constant-time `X-Internal-Secret` comparison, transaction idempotency, item & inventory stock validation (`inventoryRepository.findByItemIdAndSize`), unique invoice generation (`FIC-INV-[timestamp]`), and automatic stock deduction | 4 tests in `InternalOrderControllerTest` (100% pass) |
+| 2026-10-20 | `InternalOrderControllerTest.java` | WebMvc integration tests for internal order creation, stock deduction, unauthorized secret rejection, and out-of-stock 409 conflict handling | Passed in `.\mvnw.cmd test` (62/62 pass) |
+
 

@@ -1,0 +1,24 @@
+server:
+  port: 0
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:ficcado_payment_test;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+  flyway:
+    enabled: false
+
+app:
+  razorpay:
+    key-id: rzp_test_mock_key
+    key-secret: rzp_test_mock_secret
+    webhook-secret: rzp_test_webhook_secret
+  ficcado-data:
+    url: http://localhost:8081
+    internal-secret: ficcado-internal-service-secret-key-change-in-prod

@@ -31,6 +31,10 @@ export const API_CONFIG = {
     otp: '/api/v1/otp',
 
     // Ficcado-Payment-Gateway-Data (Port 8083 via Gateway)
+    payments: '/api/v1/payments',
+    createPaymentOrder: '/api/v1/payments/create-order',
+    verifyPayment: '/api/v1/payments/verify',
+    paymentStatus: '/api/v1/payments/status',
     checkout: '/api/checkout',
     razorpay: '/api/payments',
   },

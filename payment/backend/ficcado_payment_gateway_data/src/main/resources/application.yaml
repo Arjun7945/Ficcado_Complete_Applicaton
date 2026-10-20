@@ -1,0 +1,58 @@
+server:
+  port: ${PORT:8083}
+
+spring:
+  application:
+    name: ficcado_payment_gateway_data
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:ficcado_payment_gateway_data}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 15
+      minimum-idle: 5
+      idle-timeout: 300000
+      max-lifetime: 1800000
+      connection-timeout: 20000
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        jdbc:
+          batch_size: 25
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+app:
+  razorpay:
+    key-id: ${RAZORPAY_KEY_ID:rzp_test_ficcado_demo_key}
+    key-secret: ${RAZORPAY_KEY_SECRET:rzp_test_ficcado_secret_12345}
+    webhook-secret: ${RAZORPAY_WEBHOOK_SECRET:rzp_webhook_secret_12345}
+  ficcado-data:
+    url: ${FICCADO_DATA_URL:http://localhost:8081}
+    internal-secret: ${INTERNAL_API_KEY:ficcado-internal-service-secret-key-change-in-prod}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      show-details: when_authorized
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
+logging:
+  level:
+    root: INFO
+    com.aps.ficcado_payment_gateway_data: INFO

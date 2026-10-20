@@ -20,6 +20,8 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
 
     boolean existsByInvoiceNumber(String invoiceNumber);
 
+    Optional<Sale> findByTransactionId(String transactionId);
+
     List<Sale> findByCustomerId(Long customerId);
 
     List<Sale> findByCustomerIdOrderByCreatedAtDesc(Long customerId);

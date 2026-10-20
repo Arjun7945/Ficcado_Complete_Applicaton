@@ -26,6 +26,7 @@ export type ModalId =
   | 'filterModal'
   | 'aboutModal'
   | 'mobileMenuDrawer'
+  | 'authModal'
   | null;
 
 export type ToastType = 'success' | 'error' | 'info';

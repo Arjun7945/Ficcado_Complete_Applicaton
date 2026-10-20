@@ -8,6 +8,7 @@ import { ToastProvider } from '@/context/ToastContext';
 import { ModalProvider } from '@/context/ModalContext';
 import { ViewportProvider } from '@/context/ViewportContext';
 import { ConsentProvider } from '@/context/ConsentContext';
+import { CustomerAuthProvider } from '@/context/CustomerAuthContext';
 import { CookieConsentBanner } from '@/components/ui/CookieConsentBanner';
 import { CacheInvalidator } from '@/components/providers/CacheInvalidator';
 
@@ -232,12 +233,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <CacheInvalidator />
           <ToastProvider>
             <ConsentProvider>
-              <CartProvider>
-                <ModalProvider>
-                  <AppShell>{children}</AppShell>
-                  <CookieConsentBanner />
-                </ModalProvider>
-              </CartProvider>
+              <CustomerAuthProvider>
+                <CartProvider>
+                  <ModalProvider>
+                    <AppShell>{children}</AppShell>
+                    <CookieConsentBanner />
+                  </ModalProvider>
+                </CartProvider>
+              </CustomerAuthProvider>
             </ConsentProvider>
           </ToastProvider>
         </ViewportProvider>

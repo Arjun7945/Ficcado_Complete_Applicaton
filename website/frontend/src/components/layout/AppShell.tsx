@@ -21,6 +21,7 @@ import { CartDrawer } from '@/components/modals/CartDrawer';
 import { FilterModal } from '@/components/modals/FilterModal';
 import { AboutModal } from '@/components/modals/AboutModal';
 import { MobileNavDrawer } from '@/components/modals/MobileNavDrawer';
+import { AuthModal } from '@/components/modals/AuthModal';
 
 // ---------------------------------------------------------------------------
 // ModalLayer — transparent container for modal sheets & dialogs
@@ -51,6 +52,7 @@ function ModalLayer() {
       {/* ── Informational & Navigation ─────────────────── */}
       <AboutModal />
       <MobileNavDrawer />
+      <AuthModal />
     </div>
   );
 }

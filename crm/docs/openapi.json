@@ -833,6 +833,52 @@
         }
       }
     },
+    "/api/customer/profile" : {
+      "get" : {
+        "tags" : [ "Customer Profile" ],
+        "summary" : "Get current customer profile",
+        "operationId" : "getProfile",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CustomerProfileResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put" : {
+        "tags" : [ "Customer Profile" ],
+        "summary" : "Update customer name or phone",
+        "operationId" : "updateProfile",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateProfileRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admins/{id}" : {
       "get" : {
         "tags" : [ "Admins" ],
@@ -1741,6 +1787,46 @@
         }
       }
     },
+    "/api/internal/customer/otp-login" : {
+      "post" : {
+        "tags" : [ "Internal Service Handshakes" ],
+        "summary" : "Complete OTP verification handshake and issue Customer JWT",
+        "operationId" : "otpLogin",
+        "parameters" : [ {
+          "name" : "X-Internal-Secret",
+          "in" : "header",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "object",
+                "additionalProperties" : {
+                  "type" : "string"
+                }
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/expenses" : {
       "get" : {
         "tags" : [ "Expenses" ],
@@ -1839,11 +1925,118 @@
         }
       }
     },
+    "/api/customer/profile/addresses" : {
+      "post" : {
+        "tags" : [ "Customer Profile" ],
+        "summary" : "Add a new saved address",
+        "operationId" : "addAddress",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "object",
+                "additionalProperties" : { }
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/customer/auth/register" : {
+      "post" : {
+        "tags" : [ "Customer Authentication" ],
+        "summary" : "Customer registration — creates customer account and issues session",
+        "operationId" : "register",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CustomerRegistrationRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CustomerAuthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/customer/auth/logout" : {
+      "post" : {
+        "tags" : [ "Customer Authentication" ],
+        "summary" : "Customer logout — revokes current customer session and clears cookie",
+        "operationId" : "logout",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/customer/auth/login" : {
+      "post" : {
+        "tags" : [ "Customer Authentication" ],
+        "summary" : "Customer login — email & password — sets httpOnly ficcado_customer_session cookie",
+        "operationId" : "login",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CustomerLoginRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CustomerAuthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/auth/logout" : {
       "post" : {
         "tags" : [ "Authentication" ],
         "summary" : "Admin logout — per-device: revokes this session's JWT only, clears cookie",
-        "operationId" : "logout",
+        "operationId" : "logout_1",
         "responses" : {
           "200" : {
             "description" : "OK",
@@ -1862,7 +2055,7 @@
       "post" : {
         "tags" : [ "Authentication" ],
         "summary" : "Admin login — email only — sets httpOnly JWT cookie",
-        "operationId" : "login",
+        "operationId" : "login_1",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -2763,11 +2956,49 @@
         }
       }
     },
+    "/api/customer/orders" : {
+      "get" : {
+        "tags" : [ "Customer Orders" ],
+        "summary" : "Get list of past orders for the authenticated customer",
+        "operationId" : "getCustomerOrders",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/customer/auth/me" : {
+      "get" : {
+        "tags" : [ "Customer Authentication" ],
+        "summary" : "Get current authenticated customer profile",
+        "operationId" : "me",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/auth/me" : {
       "get" : {
         "tags" : [ "Authentication" ],
         "summary" : "Return current authenticated admin",
-        "operationId" : "me",
+        "operationId" : "me_1",
         "responses" : {
           "200" : {
             "description" : "OK",
@@ -3949,6 +4180,20 @@
           }
         }
       },
+      "UpdateProfileRequest" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string"
+          },
+          "phone" : {
+            "type" : "string"
+          },
+          "address" : {
+            "type" : "string"
+          }
+        }
+      },
       "AdminUpdateRequest" : {
         "type" : "object",
         "properties" : {
@@ -4294,6 +4539,113 @@
             "format" : "int32"
           }
         }
+      },
+      "CustomerRegistrationRequest" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "email" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "phone" : {
+            "type" : "string",
+            "minLength" : 1,
+            "pattern" : "^(\\+91)?[6-9]\\d{9}$"
+          },
+          "password" : {
+            "type" : "string",
+            "maxLength" : 2147483647,
+            "minLength" : 6
+          },
+          "address" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "email", "name", "password", "phone" ]
+      },
+      "CustomerAddressDto" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "address" : {
+            "type" : "string"
+          },
+          "isDefault" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "CustomerAuthResponse" : {
+        "type" : "object",
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "token" : {
+            "type" : "string"
+          },
+          "customer" : {
+            "$ref" : "#/components/schemas/CustomerProfileResponse"
+          }
+        }
+      },
+      "CustomerProfileResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "email" : {
+            "type" : "string"
+          },
+          "phone" : {
+            "type" : "string"
+          },
+          "emailVerified" : {
+            "type" : "boolean"
+          },
+          "phoneVerified" : {
+            "type" : "boolean"
+          },
+          "totalOrders" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "addresses" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/CustomerAddressDto"
+            }
+          }
+        }
+      },
+      "CustomerLoginRequest" : {
+        "type" : "object",
+        "properties" : {
+          "email" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "password" : {
+            "type" : "string",
+            "minLength" : 1
+          }
+        },
+        "required" : [ "email", "password" ]
       },
       "LoginRequest" : {
         "type" : "object",

@@ -19,15 +19,16 @@ export const API_CONFIG = {
     products: '/api/public/products',
     items: '/api/public/items',
     categories: '/api/public/categories',
-    customerAuth: '/api/public/auth',
+    customerAuth: '/api/customer/auth',
+    customerProfile: '/api/customer/profile',
     customerOrders: '/api/customer/orders',
 
     // Ficcado-Website-Data (Port 8082 via Gateway)
-    inquiries: '/api/inquiries',
-    complaints: '/api/complaints',
-    supportEmails: '/api/support-emails',
-    notifications: '/api/notifications',
-    otp: '/api/otp',
+    inquiries: '/api/v1/enquiries',
+    complaints: '/api/v1/complaints',
+    supportEmails: '/api/v1/support-emails',
+    notifications: '/api/v1/notifications',
+    otp: '/api/v1/otp',
 
     // Ficcado-Payment-Gateway-Data (Port 8083 via Gateway)
     checkout: '/api/checkout',

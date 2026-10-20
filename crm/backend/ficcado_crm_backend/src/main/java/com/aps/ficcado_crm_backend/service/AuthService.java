@@ -142,6 +142,10 @@ public class AuthService {
     public Optional<Admin> getAdminFromToken(String token) {
         try {
             Claims claims = validateToken(token);
+            String role = claims.get("role", String.class);
+            if ("ROLE_CUSTOMER".equals(role)) {
+                return Optional.empty();
+            }
             Long adminId = Long.parseLong(claims.getSubject());
             long now = System.currentTimeMillis();
             CachedAdmin cached = adminCache.get(adminId);

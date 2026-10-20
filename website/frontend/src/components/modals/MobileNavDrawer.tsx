@@ -27,10 +27,13 @@ import {
   HelpCircle,
   Feather,
   Cookie,
+  User,
+  LogOut,
 } from 'lucide-react';
 import { useModal } from '@/context/ModalContext';
 import { useCart } from '@/context/CartContext';
 import { useConsent } from '@/context/ConsentContext';
+import { useCustomerAuth } from '@/context/CustomerAuthContext';
 import { BRAND } from '@/config/site';
 
 export function MobileNavDrawer() {
@@ -38,6 +41,7 @@ export function MobileNavDrawer() {
   const { openSettings: openConsentSettings } = useConsent();
   const pathname = usePathname();
   const { totalItemsCount, subtotalAmount } = useCart();
+  const { customer, isAuthenticated, logout } = useCustomerAuth();
   const [isClosing, setIsClosing] = useState(false);
 
   const isOpen = activeModal === 'mobileMenuDrawer';
@@ -116,7 +120,69 @@ export function MobileNavDrawer() {
         </div>
 
         {/* Scrollable Navigation Sections */}
-        <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-6">
+        <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-5">
+          {/* Account Profile Card */}
+          {isAuthenticated ? (
+            <div className="p-3 rounded-2xl bg-[var(--bg-surface-alt)] border border-[var(--border-light)] space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[var(--primary)] text-white font-bold text-xs">
+                    {customer?.name?.charAt(0) || 'C'}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-[var(--text-main)] truncate">
+                      {customer?.name}
+                    </p>
+                    <p className="text-[10px] text-[var(--text-muted)] truncate">
+                      {customer?.email}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await logout();
+                    handleClose();
+                  }}
+                  className="p-1.5 shrink-0 rounded-lg text-[var(--text-muted)] hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer"
+                  title="Sign Out"
+                >
+                  <LogOut size={15} />
+                </button>
+              </div>
+              <Link
+                href="/account"
+                onClick={navigateTo}
+                className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-bold text-[var(--primary)] bg-[var(--primary-light)] hover:opacity-90 transition-opacity"
+              >
+                <span>My Profile & Orders</span>
+                <ChevronRight size={14} />
+              </Link>
+            </div>
+          ) : (
+            <div className="p-3 rounded-2xl bg-[var(--bg-surface-alt)] border border-[var(--border-light)] flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gray-200 dark:bg-neutral-800 text-[var(--text-muted)]">
+                  <User size={16} />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-[var(--text-main)]">Customer Account</p>
+                  <p className="text-[10px] text-[var(--text-muted)]">Sign in for order tracking</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  handleClose();
+                  setTimeout(() => openModal('authModal'), 310);
+                }}
+                className="px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-[var(--primary)] hover:bg-[var(--primary-hover)] transition-colors cursor-pointer shadow-btn"
+              >
+                Sign In
+              </button>
+            </div>
+          )}
+
           {/* Main Collections & Pages */}
           <div className="space-y-1">
             <p className="text-[10px] font-800 uppercase tracking-widest text-[var(--text-muted)] px-3 mb-2">

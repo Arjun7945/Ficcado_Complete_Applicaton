@@ -46,13 +46,6 @@ class OpenApiExporterTest {
         Files.writeString(crmDocsPath, prettyJson);
         System.out.println("Exported OpenAPI spec to: " + crmDocsPath);
 
-        // Target 2: crm/ficcado_crm_app/docs/openapi.json
-        Path frontendDocsPath = Paths.get("../../ficcado_crm_app/docs/openapi.json").toAbsolutePath().normalize();
-        Files.createDirectories(frontendDocsPath.getParent());
-        Files.writeString(frontendDocsPath, prettyJson);
-        System.out.println("Exported OpenAPI spec to: " + frontendDocsPath);
-
         assertThat(Files.exists(crmDocsPath)).isTrue();
-        assertThat(Files.exists(frontendDocsPath)).isTrue();
     }
 }

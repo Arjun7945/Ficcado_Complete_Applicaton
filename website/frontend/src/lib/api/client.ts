@@ -56,6 +56,7 @@ export async function apiClient<T>(
 
   try {
     const res = await fetch(url, {
+      credentials: fetchOptions.credentials || 'include',
       ...fetchOptions,
       headers: {
         'Content-Type': 'application/json',

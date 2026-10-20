@@ -41,6 +41,7 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final CustomerJwtAuthenticationFilter customerJwtAuthenticationFilter;
     private final RateLimitingFilter rateLimitingFilter;
 
     @Value("${app.cors.allowed-origins}")
@@ -65,6 +66,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                         // Public storefront & review endpoints — no auth required
                         .requestMatchers("/api/public/**").permitAll()
+                        // Customer unauthenticated auth routes & internal service routes
+                        .requestMatchers("/api/customer/auth/**").permitAll()
+                        .requestMatchers("/api/internal/**").permitAll()
+                        // Customer authenticated profile & orders
+                        .requestMatchers("/api/customer/**").hasAuthority("ROLE_CUSTOMER")
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**",
                                 "/swagger-ui.html", "/actuator/health").permitAll()
                         .anyRequest().authenticated()
@@ -72,9 +78,10 @@ public class SecurityConfig {
 
                 // Rate limiting filter first to drop excessive traffic early
                 .addFilterBefore(rateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
-                // JWT filter before Spring's UsernamePasswordAuthenticationFilter
-                .addFilterBefore(jwtAuthenticationFilter,
-                        UsernamePasswordAuthenticationFilter.class);
+                // Admin JWT filter before Spring's UsernamePasswordAuthenticationFilter
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                // Customer JWT filter before Spring's UsernamePasswordAuthenticationFilter
+                .addFilterBefore(customerJwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

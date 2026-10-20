@@ -14,8 +14,8 @@ Progress and phase summaries for the Ficcado Complete Application rebuild as spe
 | **Phase 2** | Build Ficcado-Website-Data backend (port 8082, PostgreSQL) | **COMPLETED** | Service created on port 8082, 19 tests passing, Flyway V1 schema, OTP service, Actuator/Prometheus |
 | **Phase 3** | NGINX Reverse Proxy Gateway (port 8000) & local setup | **COMPLETED** | Gateway config created on port 8000, routing rules, rate limits, health checks, docs/LOCAL_SETUP.md written |
 | **Phase 4** | Connect website to Ficcado-Data (products, Redis caching) | **COMPLETED** | Sanitized PublicProductDto, PublicProductService with 10m Redis cache & graceful degradation, PublicProductController, 49 tests passing |
-| **Phase 5** | Authentication (sign-up, login, OTP, JWT) | *Pending User Confirmation* | Ready to start |
-| **Phase 6** | Payment Gateway (Razorpay) & stock/sale synchronization | *Pending* | - |
+| **Phase 5** | Authentication (sign-up, login, OTP, JWT) | **COMPLETED** | Password + OTP auth, mutual JWT isolation, customer orders, AuthModal, /account page, 58+19+51 tests pass |
+| **Phase 6** | Payment Gateway (Razorpay) & stock/sale synchronization | *Pending User Confirmation* | Ready to start |
 | **Phase 7** | CI/CD Pipeline (`ci-cd.yaml`) & Quality Gates | *Pending* | - |
 | **Phase 8** | Monitoring & Observability (Actuator, Prometheus, Grafana) | *Pending* | - |
 
@@ -209,4 +209,49 @@ Progress and phase summaries for the Ficcado Complete Application rebuild as spe
    - `website/frontend`: **51 unit tests passed**, `tsc --noEmit` passed, `check:brand` passed (0 forbidden spellings), `next build` passed (33 static/SSG/dynamic pages generated).
    - `crm/ficcado_crm_app`: 100% byte-identical to `origin/fic/crm` (zero modifications).
    - Logged all changes in `docs/FICCADO_DATA_CHANGELOG.md`.
+
+### Phase 5: Authentication (Completed)
+1. **Ficcado-Data Customer Security Architecture (`crm/backend/ficcado_crm_backend`):**
+   - **Entity Schema Protection:** Zero DDL schema changes; utilized existing `Customer` entity fields (`passwordHash`, `emailVerifiedAt`, `phoneVerifiedAt`, and `CustomerAddress` relationship).
+   - **Mutual Role & Session Isolation:**
+     - Customer tokens issued with claim `role: "ROLE_CUSTOMER"`, audience `"ficcado-customer"`, and cookie `ficcado_customer_session`.
+     - Admin tokens remain on cookie `ficcado_session` with role `ROLE_ADMIN` / `ROLE_SUPER_ADMIN`.
+     - `AuthService.getAdminFromToken` explicitly checks and rejects customer tokens with HTTP 401.
+     - `CustomerAuthService.getCustomerFromToken` requires `ROLE_CUSTOMER`.
+     - Customers cannot access CRM/admin endpoints, and CRM tokens cannot access customer account APIs.
+   - **Takeover Prevention (Q-005 item 3):**
+     - Customers created through offline CRM sales (where `passwordHash == null`) cannot set a password during public registration without first proving identity via email OTP verification.
+   - **Token Revocation on Logout:**
+     - Leveraged existing `RevokedToken` table in Ficcado-Data. On `/api/customer/auth/logout`, the token JTI is recorded as revoked, and the HTTP-only cookie is cleared.
+   - **Customer API Endpoints:**
+     - `POST /api/customer/auth/register`: New customer sign-up with BCrypt password hashing.
+     - `POST /api/customer/auth/login`: Password-based authentication.
+     - `POST /api/customer/auth/logout`: Invalidation and cookie clearance.
+     - `GET /api/customer/auth/me`: Current session profile retrieval.
+     - `GET /api/customer/profile` & `PUT /api/customer/profile`: View and update profile details.
+     - `POST /api/customer/addresses` & `DELETE /api/customer/addresses/{id}`: Saved delivery address management.
+     - `GET /api/customer/orders`: Order history filtered strictly by authenticated customer ID.
+     - `POST /api/internal/customer/otp-login`: Service-to-service handshake for OTP logins, guarded by constant-time `X-Internal-Secret` validation.
+2. **Ficcado-Website-Data OTP Service Handshake (`website/backend/ficcado_website_data`):**
+   - Built `FiccadoDataClient` to execute the internal service-to-service handshake with Ficcado-Data (port 8081).
+   - Updated `OtpService.verifyOtp`: On verification of purposes `CUSTOMER_LOGIN`, `CUSTOMER_SIGNUP`, and `EMAIL_VERIFICATION`, issues an internal HTTP call carrying the customer email and `X-Internal-Secret`.
+   - Included graceful degradation fallback: If Ficcado-Data is temporarily unreachable, the OTP verification still succeeds and issues a verification token for later redemption.
+3. **Gateway Gateway Security (`gateway/nginx.conf`):**
+   - Strict rate-limiting on customer authentication endpoints: `/api/customer/auth/(login|register)` mapped to `auth_limit` zone (5 requests/min with burst 3).
+   - Hard internal security barrier: External requests to `/api/internal/**` are unconditionally blocked with `403 Forbidden`.
+4. **Website Storefront Experience (`website/frontend`):**
+   - **`CustomerAuthContext` (`src/context/CustomerAuthContext.tsx`):** Universal React context providing `customer`, `isAuthenticated`, `isLoading`, `loginWithPassword`, `loginWithOtp`, `requestOtp`, `register`, `logout`, and `refreshProfile`. Wrapped in root `layout.tsx`.
+   - **`AuthModal` (`src/components/modals/AuthModal.tsx`):** Glassmorphic modal with tabbed Sign In & Register interface, supporting Email OTP verification with 60-second cooldown timer, Password login, and full account creation with Indian phone number validation.
+   - **Desktop Header Integration:** Added customer account status button in `DesktopHeader.tsx`. Displays customer initial/name when logged in, or opens `AuthModal` / redirects to `/account`.
+   - **Mobile Drawer Integration:** Added customer account card in `MobileNavDrawer.tsx` with one-tap order history and logout actions.
+   - **Dedicated Account Hub (`src/app/account/page.tsx`):** Full-featured customer portal supporting:
+     - Live order history with invoice numbers, status pills (sale, payment, delivery), item summaries, and courier tracking details.
+     - Saved delivery addresses management with "Add New Address" form.
+     - Personal information management with editable name and phone.
+5. **Verification & Testing Results:**
+   - `crm/backend/ficcado_crm_backend`: Added 4 unit tests (`CustomerAuthServiceTest`), 3 WebMvc tests (`CustomerAuthControllerTest`), and 2 WebMvc tests (`InternalCustomerControllerTest`). **All 58 tests passed (0 failures, 0 errors)**.
+   - `website/backend/ficcado_website_data`: Added mock handshake tests to `OtpServiceTest`. **All 19 tests passed (0 failures, 0 errors)**.
+   - `website/frontend`: **All 51 tests passed**, TypeScript typecheck passed with zero errors, brand check passed with zero violations, production build compiled cleanly (34 routes generated).
+   - `crm/ficcado_crm_app`: 100% byte-identical to `origin/fic/crm` (`git diff origin/fic/crm -- crm/ficcado_crm_app` completely empty).
+
 

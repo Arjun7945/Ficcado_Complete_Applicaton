@@ -14,5 +14,6 @@ public class OtpVerifyResponse {
     private String email;
     private OtpPurpose purpose;
     private String verificationToken;
+    private String customerToken;
     private String message;
 }

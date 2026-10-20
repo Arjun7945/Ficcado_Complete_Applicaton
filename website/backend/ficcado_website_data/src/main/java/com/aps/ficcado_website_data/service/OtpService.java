@@ -27,6 +27,7 @@ import java.time.Instant;
 import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
+import com.aps.ficcado_website_data.client.FiccadoDataClient;
 import java.util.UUID;
 
 @Service
@@ -38,6 +39,7 @@ public class OtpService {
 
     private final OtpRecordRepository otpRecordRepository;
     private final EmailService emailService;
+    private final FiccadoDataClient ficcadoDataClient;
 
     @Value("${ficcado.otp.expiry-minutes:10}")
     private int expiryMinutes;
@@ -141,6 +143,12 @@ public class OtpService {
 
         // Generate one-time secure verification token for subsequent auth workflows
         String verificationToken = UUID.randomUUID().toString();
+        String customerToken = null;
+
+        // Perform internal service-to-service handshake with Ficcado-Data for Customer JWT
+        if (purpose == OtpPurpose.CUSTOMER_LOGIN || purpose == OtpPurpose.CUSTOMER_SIGNUP || purpose == OtpPurpose.EMAIL_VERIFICATION) {
+            customerToken = ficcadoDataClient.completeCustomerOtpLogin(email, null, null).orElse(null);
+        }
 
         log.info("[OtpService] OTP successfully verified for email='{}', purpose={}", email, purpose);
 
@@ -149,6 +157,7 @@ public class OtpService {
                 .email(email)
                 .purpose(purpose)
                 .verificationToken(verificationToken)
+                .customerToken(customerToken)
                 .message("Verification successful.")
                 .build();
     }

@@ -9,9 +9,10 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { Search, ShoppingBag, Menu, Settings } from 'lucide-react';
+import { Search, ShoppingBag, Menu, Settings, User } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useModal } from '@/context/ModalContext';
+import { useCustomerAuth } from '@/context/CustomerAuthContext';
 
 const NAV_LINKS = [
   { href: '/', label: 'Drops' },
@@ -27,6 +28,7 @@ export function DesktopHeader() {
   const router = useRouter();
   const { totalItemsCount, subtotalAmount } = useCart();
   const { openModal } = useModal();
+  const { customer, isAuthenticated } = useCustomerAuth();
 
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -116,8 +118,40 @@ export function DesktopHeader() {
           </button>
         </form>
 
-        {/* Right: Actions (Settings icon only, Bag, Slide Menu icon only) */}
+        {/* Right: Actions (Account, Settings, Bag, Slide Menu) */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          {/* Customer Account Button */}
+          {isAuthenticated ? (
+            <Link
+              href="/account"
+              id="desktop-header-account-btn"
+              className={`flex items-center gap-1.5 h-9 px-3 rounded-full border transition-all active:scale-90 cursor-pointer ${
+                pathname.startsWith('/account')
+                  ? 'bg-[var(--primary-light)] text-[var(--primary)] border-[var(--primary)]/40 shadow-xs'
+                  : 'bg-[var(--bg-surface-alt)] hover:bg-[var(--border-light)] text-[var(--text-main)] hover:text-[var(--primary)] border-[var(--border-light)]'
+              }`}
+              title={`Account (${customer?.name || 'Customer'})`}
+              aria-label="Customer Account"
+            >
+              <User size={16} />
+              <span className="text-xs font-bold hidden lg:inline max-w-[100px] truncate">
+                {customer?.name?.split(' ')[0] || 'Account'}
+              </span>
+            </Link>
+          ) : (
+            <button
+              type="button"
+              id="desktop-header-auth-btn"
+              onClick={() => openModal('authModal')}
+              className="flex items-center gap-1.5 h-9 px-3 rounded-full border border-[var(--border-light)] bg-[var(--bg-surface-alt)] hover:bg-[var(--border-light)] text-[var(--text-main)] hover:text-[var(--primary)] text-xs font-bold transition-all active:scale-90 cursor-pointer shadow-2xs"
+              title="Sign In or Register"
+              aria-label="Sign In or Register"
+            >
+              <User size={15} />
+              <span className="hidden lg:inline">Sign In</span>
+            </button>
+          )}
+
           {/* Settings Icon Only */}
           <Link
             href="/settings"

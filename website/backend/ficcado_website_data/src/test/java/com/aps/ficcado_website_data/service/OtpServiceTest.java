@@ -42,6 +42,9 @@ class OtpServiceTest {
     @Mock
     private EmailService emailService;
 
+    @Mock
+    private com.aps.ficcado_website_data.client.FiccadoDataClient ficcadoDataClient;
+
     @InjectMocks
     private OtpService otpService;
 

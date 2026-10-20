@@ -15,4 +15,8 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
     List<Customer> findByPhoneNumberEndingWith(String suffix);
 
     boolean existsByPhoneNumber(String phoneNumber);
+
+    Optional<Customer> findByEmailIdIgnoreCase(String emailId);
+
+    boolean existsByEmailIdIgnoreCase(String emailId);
 }

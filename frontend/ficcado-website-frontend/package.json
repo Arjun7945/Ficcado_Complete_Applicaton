@@ -1,0 +1,47 @@
+{
+  "name": "ficcado-website-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "author": "Arjun PS",
+  "scripts": {
+    "clean": "node scripts/clean-cache.mjs",
+    "generate": "node scripts/clean-cache.mjs && node scripts/build-item-image-manifest.mjs",
+    "predev": "node scripts/clean-cache.mjs",
+    "dev": "next dev",
+    "prebuild": "node scripts/clean-cache.mjs && npm run sheets:bootstrap && node scripts/build-item-image-manifest.mjs && node scripts/build-products-snapshot.mjs",
+    "build": "next build",
+    "prestart": "node scripts/clean-cache.mjs",
+    "start": "next start",
+    "prelint": "npm run generate",
+    "lint": "eslint",
+    "pretypecheck": "npm run generate",
+    "typecheck": "tsc --noEmit",
+    "pretest": "npm run generate",
+    "test": "tsx --test scripts/tests/*.test.mjs",
+    "sheets:bootstrap": "node scripts/bootstrap-sheets.mjs",
+    "check:brand": "node scripts/check-brand.mjs",
+    "check:devices": "node scripts/device-checker.mjs"
+  },
+  "dependencies": {
+    "lucide-react": "^1.45.0",
+    "next": "16.3.8",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.8",
+    "tailwindcss": "^4",
+    "tsx": "^4.23.15",
+    "typescript": "^5"
+  },
+  "overrides": {
+    "source-map-js": "^1.2.2"
+  }
+}

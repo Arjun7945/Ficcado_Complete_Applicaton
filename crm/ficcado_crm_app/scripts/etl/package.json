@@ -1,0 +1,15 @@
+{
+  "name": "ficcado-etl-migration",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dry-run": "node migrate.js --dry-run",
+    "migrate": "node migrate.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "googleapis": "^174.0.0",
+    "pg": "^8.11.5"
+  }
+}

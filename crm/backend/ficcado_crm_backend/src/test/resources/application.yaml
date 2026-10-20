@@ -1,0 +1,24 @@
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/ficcado_data}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:arjun7945}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+
+  flyway:
+    enabled: false
+
+  security:
+    user:
+      name: disabled
+
+app:
+  jwt:
+    secret: ficcado-jwt-secret-key-32-bytes-minimum-length-for-hs256!
+  cors:
+    allowed-origins: http://localhost:3000

@@ -1,0 +1,15 @@
+# Operating System Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE and Editor Files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Node / Logs (if created at root)
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

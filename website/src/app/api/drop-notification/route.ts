@@ -1,16 +1,15 @@
 // =============================================================================
 // Drop Notification & Early Access API Route Handler — /api/drop-notification
-// Records customer email and subscriber ID into Google Sheets 'Drop Notification List' tab
-// with rate limiting, anti-injection formula defense, and honest feedback.
+// Records subscriber notifications through the microservices API client layer.
+// Google Sheets integration completely removed.
 // =============================================================================
 
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import crypto from 'node:crypto';
-import { appendSheetValues, sanitizeCell } from '@/lib/sheets/client';
-import { formatISTDate } from '@/lib/whatsapp';
 import { apiSuccess, apiError } from '@/lib/apiResponse';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
+import { submitDropNotification } from '@/lib/api/inquiries';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,7 +30,6 @@ function checkOrigin(req: NextRequest): boolean {
 const SubscribeInputSchema = z.object({
   email: z.string().trim().email('Please enter a valid email address').max(120),
   source: z.string().trim().max(100).optional().default('The Drop Notification List'),
-  // Honeypot field for bot mitigation
   botHp: z.string().optional(),
 });
 
@@ -81,32 +79,24 @@ export async function POST(req: NextRequest) {
 
     const { email, source } = parsed.data;
 
-    // 5. Generate unique subscriber ID & timestamp
+    // 5. Generate subscriber ID
     const randomSuffix = crypto.randomInt(100, 999);
     const subscriberId = `FIC-DROP-${Date.now().toString(36).toUpperCase()}-${randomSuffix}`;
-    const timestampIST = formatISTDate(new Date());
 
-    const sheetId = process.env.GOOGLE_SHEET_ID || '1U1bdFZH68Seg3OcV3Wtucmsqg8JL5i3MIGECglu_hfs';
-
-    // 6. Format row: subscriber_id, created_at, email, status, source
-    const rowValues = [
-      sanitizeCell(subscriberId),
-      sanitizeCell(timestampIST),
-      sanitizeCell(email),
-      'Active',
-      sanitizeCell(source),
-    ];
-
-    await appendSheetValues(sheetId, "'Drop Notification List'!A:E", [rowValues]);
+    // 6. Submit via microservices API client layer (Ficcado-Website-Data)
+    const result = await submitDropNotification({
+      email,
+      category: source,
+    });
 
     return apiSuccess({
       subscriberId,
-      message: 'You have been added to The Drop Notification List! Ficcado will email you early access invites.',
+      message: result.message || 'You have been added to The Drop Notification List! Ficcado will email you early access invites.',
     });
   } catch (err: unknown) {
     console.error('[Drop Notification API] Error recording subscriber:', err);
     return apiError(
-      'SHEET_ERROR',
+      'NOTIFICATION_ERROR',
       'Unable to register notification request right now. Please try again shortly.',
       { status: 500 }
     );

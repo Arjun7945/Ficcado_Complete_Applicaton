@@ -33,16 +33,7 @@ describe('Production Build Guards per Item 10, D1, D2, D15', () => {
     );
   });
 
-  test('enforces Order ID Gateway or explicit sheet-row mode per D1', () => {
-    assert.ok(
-      nextConfigContent.includes('ORDER_GATEWAY_URL and ORDER_GATEWAY_SECRET'),
-      'Must check gateway credentials or explicit sheet-row mode'
-    );
-    assert.ok(
-      nextConfigContent.includes("orderMode === 'sheet-row'") && nextConfigContent.includes('ORDER_ID_MODE'),
-      'Must recognize explicit sheet-row fallback mode'
-    );
-  });
+
 
   test('enforces RATE_LIMIT_STORE in production per D2', () => {
     assert.ok(

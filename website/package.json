@@ -8,7 +8,7 @@
     "generate": "node scripts/clean-cache.mjs && node scripts/build-item-image-manifest.mjs",
     "predev": "node scripts/clean-cache.mjs",
     "dev": "next dev",
-    "prebuild": "node scripts/clean-cache.mjs && npm run sheets:bootstrap && node scripts/build-item-image-manifest.mjs && node scripts/build-products-snapshot.mjs",
+    "prebuild": "node scripts/clean-cache.mjs && node scripts/build-item-image-manifest.mjs",
     "build": "next build",
     "prestart": "node scripts/clean-cache.mjs",
     "start": "next start",
@@ -18,7 +18,6 @@
     "typecheck": "tsc --noEmit",
     "pretest": "npm run generate",
     "test": "tsx --test scripts/tests/*.test.mjs",
-    "sheets:bootstrap": "node scripts/bootstrap-sheets.mjs",
     "check:brand": "node scripts/check-brand.mjs",
     "check:devices": "node scripts/device-checker.mjs"
   },

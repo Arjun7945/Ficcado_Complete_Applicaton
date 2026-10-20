@@ -1,6 +1,6 @@
 // =============================================================================
 // Home Storefront — /
-// Server Component: fetches live catalog from Google Sheets 'Item Management' in real-time
+// Server Component: fetches live catalog from product service API in real-time
 // Wrapped in Suspense boundary for useSearchParams reactivity
 // =============================================================================
 

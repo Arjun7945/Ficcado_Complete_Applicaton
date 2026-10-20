@@ -108,7 +108,7 @@ export function normalizeOrderId(input: string): string {
 }
 
 /**
- * Generates an offline reference ID when Google Sheets is temporarily unreachable.
+ * Generates an offline reference ID when the backend gateway is temporarily unreachable.
  * Uses cryptographically secure random bytes per CODE-02.
  */
 export function generateOfflineReferenceId(): string {

@@ -17,14 +17,14 @@ public/
 
 ## How to Add an Item
 
-1. **Add the row in Google Sheets**: Add the item details into the **Item Management** sheet tab (`id`, `item_name`, `type`, `price`, `sizes`, etc.).
+1. **Add the item in Ficcado-Data / CRM**: Add the item details into the catalog (`id`, `item_name`, `type`, `price`, `sizes`, etc.).
 2. **Create the folder**: Create a new folder inside `public/images/items/` named with the exact slug of `item_name` (e.g. `Colorado Heavyweight Tee` → `colorado-heavyweight-tee`).
 3. **Add image files**: Name the files `image-1`, `image-2`, `image-3`, etc.
    - Allowed extensions: `.webp`, `.jpg`, `.jpeg`, `.png`, `.avif`.
    - Numbering must start at 1 and be continuous (no gaps).
    - `image-1` is always the primary display image.
 4. **Commit and redeploy**: Images are committed into the repository and deployed with the site build.
-5. **Renaming**: Renaming an item in the sheet requires renaming its folder here to match the new slug.
+5. **Renaming**: Renaming an item in the catalog requires renaming its folder here to match the new slug.
 
 ## File Specifications & Recommendations
 

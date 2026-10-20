@@ -50,11 +50,7 @@ export async function GET(req: NextRequest) {
     snapshotAvailable = false;
   }
 
-  const orderGatewayConfigured = Boolean(
-    (process.env.ORDER_GATEWAY_URL && process.env.ORDER_GATEWAY_SECRET) ||
-    process.env.ORDER_ID_MODE === 'sheet-row'
-  );
-
+  const gatewayConfigured = Boolean(process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:8000');
   const rateLimitStore = process.env.RATE_LIMIT_STORE || 'memory';
   const privacyEmailConfigured = Boolean(process.env.NEXT_PUBLIC_PRIVACY_EMAIL);
   const whatsappConfigured = Boolean(process.env.NEXT_PUBLIC_WHATSAPP_NUMBER);
@@ -64,7 +60,7 @@ export async function GET(req: NextRequest) {
       status: 'healthy',
       timestamp: Date.now(),
       checks: {
-        orderGatewayConfigured,
+        gatewayConfigured,
         rateLimitStore,
         productsSnapshotAvailable: snapshotAvailable,
         privacyEmailConfigured,

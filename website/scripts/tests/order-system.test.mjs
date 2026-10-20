@@ -19,7 +19,6 @@ import {
 
 import { getColorName } from '../../src/lib/colors.ts';
 
-import { sanitizeCell } from '../../src/lib/sheets/client.ts';
 
 describe('Reference ID Sequence & Generator', () => {
   test('generates initial reference ID if null/empty', () => {
@@ -248,20 +247,6 @@ describe('WhatsApp Message Builder & Security', () => {
   });
 });
 
-describe('Spreadsheet Formula Injection Defense', () => {
-  test('escapes malicious formula prefixes with single quote', () => {
-    assert.equal(sanitizeCell('=SUM(A1:A10)'), "'=SUM(A1:A10)");
-    assert.equal(sanitizeCell('+916282000729'), "'+916282000729");
-    assert.equal(sanitizeCell('-100'), "'-100");
-    assert.equal(sanitizeCell('@malicious'), "'@malicious");
-  });
-
-  test('preserves normal clean strings', () => {
-    assert.equal(sanitizeCell('Customer Name'), 'Customer Name');
-    assert.equal(sanitizeCell('FIC-A0001'), 'FIC-A0001');
-    assert.equal(sanitizeCell(''), '');
-  });
-});
 
 describe('Mobile & Pincode Resilient Normalization', () => {
   function cleanIndianMobile(val) {

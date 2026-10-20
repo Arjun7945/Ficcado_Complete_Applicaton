@@ -263,7 +263,7 @@ export async function POST(req: NextRequest) {
       status: 'NEW',
     };
 
-    // 8. Dispatch order via Apps Script Gateway or sheet-row mode with 8s guard
+    // 8. Dispatch order via order dispatch gateway with 8s guard
     const orderResult = await dispatchOrder(submission_id, rowData);
 
     const whatsappMessage = buildOrderMessage({

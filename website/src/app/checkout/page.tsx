@@ -145,7 +145,7 @@ export default function CheckoutPage() {
     }
   }, []);
 
-  // Courier Options State (Dynamic from Google Sheets)
+  // Courier Options State (Dynamic from Courier Partners API)
   const [courierOptions, setCourierOptions] = useState<CourierOption[]>([]);
   const [selectedCourierId, setSelectedCourierId] = useState<string>('');
   const [isLoadingDelivery, setIsLoadingDelivery] = useState<boolean>(true);

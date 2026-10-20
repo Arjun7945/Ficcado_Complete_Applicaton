@@ -117,11 +117,13 @@ The project is in the **development stage and runs locally**. These are decided:
 | Build tool | **Maven only** (no Gradle, ever) |
 | Website frontend | **Next.js** only (no other frameworks) |
 | Database | **PostgreSQL only**, for all three backends (no H2, MySQL or others, not even for tests, unless an existing Ficcado-Data test setup already uses something else) |
-| Ficcado-Data port | **8080** |
+| Ficcado-Data port | **8081** (unchanged, existing default in application.yaml; do not change it) |
 | Ficcado-Website-Data port | **8082** |
 | Ficcado-Payment-Gateway-Data port | **8083** |
 | Databases | Each service has its **own separate PostgreSQL database** (`ficcado_data` is the existing one, plus `ficcado_website_data` and `ficcado_payment_gateway_data`) |
 | Running | Directly on the local machine (`mvn spring-boot:run`, `npm run dev`). **No Docker.** |
+
+Payment mode: online (Razorpay) only. No cash on delivery.
 
 Defaults to use without asking: Next.js on `3000`, NGINX gateway on `8000`, PostgreSQL on `5432`, Redis on `6379`, RabbitMQ on `5672`. Put every port, URL and credential in environment variables or `application.properties`, never hard-coded, so they can change later. Read Ficcado-Data's existing DB settings from its own config rather than asking.
 
@@ -188,7 +190,7 @@ Scope (keep it minimal):
 - Do **not** store customer credentials here. Credentials live in Ficcado-Data.
 
 ### Phase 3: NGINX reverse proxy / gateway
-1. Create the NGINX config in a new `gateway/` folder, written so it works with a plain local NGINX install (no Docker). Upstreams: Ficcado-Data `localhost:8080`, Ficcado-Website-Data `localhost:8082`, Ficcado-Payment-Gateway-Data `localhost:8083`.
+1. Create the NGINX config in a new `gateway/` folder, written so it works with a plain local NGINX install (no Docker). Upstreams: Ficcado-Data `localhost:8081`, Ficcado-Website-Data `localhost:8082`, Ficcado-Payment-Gateway-Data `localhost:8083`.
 2. Route by path prefix to Ficcado-Data, Ficcado-Website-Data and (later) Ficcado-Payment-Gateway-Data.
 3. Handle CORS, request size limits, gzip, security headers and rate limiting (especially for OTP and login routes).
 4. Do **not** create Docker Compose. Instead write `docs/LOCAL_SETUP.md` explaining how to run each service, the gateway, Redis and RabbitMQ locally, with the ports above. If Redis or RabbitMQ is not running locally, make the code degrade gracefully (for example, cache disabled) and note it in `AGENT_QUESTIONS.md` rather than blocking.

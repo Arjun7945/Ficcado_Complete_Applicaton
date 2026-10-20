@@ -1,17 +1,16 @@
 // =============================================================================
 // Inquiries & Order Support API Route Handler — /api/inquiry
-// Appends inquiries, contact tickets, and order support requests to Google Sheets
-// 'Support Requests' tab with rate limiting, bot mitigation, and anti-injection sanitization.
+// Dispatches support requests through the microservices API client layer.
+// Google Sheets integration completely removed.
 // =============================================================================
 
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import crypto from 'node:crypto';
 import { isValidAnyOrderId, normalizeOrderId } from '@/lib/referenceId';
-import { appendSheetValues, sanitizeCell } from '@/lib/sheets/client';
-import { formatISTDate } from '@/lib/whatsapp';
 import { apiSuccess, apiError } from '@/lib/apiResponse';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
+import { submitInquiry } from '@/lib/api/inquiries';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,7 +38,6 @@ const InquiryInputSchema = z.object({
   category: z.string().trim().max(50).optional().default('general'),
   message: z.string().trim().min(5, 'Message must be at least 5 characters').max(2000),
   sourcePage: z.string().trim().max(100).optional().default('/support'),
-  // Honeypot field (hidden from genuine users)
   botHp: z.string().optional(),
   form_rendered_at: z.number().optional(),
 });
@@ -69,7 +67,7 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
 
-    // 3. Honeypot trap check (D3)
+    // 3. Honeypot trap check
     if (body.botHp && body.botHp.trim().length > 0) {
       const fakeTicket = `FIC-INQ-${new Date().getFullYear()}-${crypto.randomInt(10000, 99999)}`;
       return apiSuccess({
@@ -111,38 +109,22 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 7. Generate Server-Side Ticket ID using cryptographically secure random integers per CODE-02
-    const randomTicketSuffix = crypto.randomInt(10000, 99999);
-    const inquiryId = `FIC-INQ-${new Date().getFullYear()}-${randomTicketSuffix}`;
-    const timestampIST = formatISTDate(new Date());
-
-    // 8. Append directly to Google Sheets 'Support Requests' tab
-    const sheetId = process.env.GOOGLE_SHEET_ID;
-    if (sheetId) {
-      try {
-        const rowData = [
-          sanitizeCell(timestampIST),
-          sanitizeCell(inquiryId),
-          sanitizeCell(data.type),
-          sanitizeCell(normalizedOrderId),
-          sanitizeCell(data.name),
-          sanitizeCell(data.email),
-          sanitizeCell(data.phone || ''),
-          sanitizeCell(data.category || data.type),
-          sanitizeCell(data.message),
-          sanitizeCell('NEW'),
-        ];
-
-        await appendSheetValues(sheetId, "'Support Requests'!A2", [rowData]);
-      } catch (sheetErr) {
-        console.warn('[Support API] Failed to append to Support Requests sheet:', (sheetErr as Error).message);
-      }
-    }
+    // 7. Dispatch via microservices API client layer (Ficcado-Website-Data)
+    const result = await submitInquiry({
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      type: data.type,
+      orderId: normalizedOrderId || undefined,
+      category: data.category || data.type,
+      message: data.message,
+      sourcePage: data.sourcePage,
+    });
 
     return apiSuccess(
       {
-        inquiryId,
-        message: 'Support request received successfully.',
+        inquiryId: result.ticketId,
+        message: result.message || 'Support request received successfully.',
       },
       {
         cacheControl: 'no-store, no-cache, must-revalidate',

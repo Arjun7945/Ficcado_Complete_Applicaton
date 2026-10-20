@@ -45,7 +45,6 @@ describe('Health Endpoint Protection per D4', () => {
     // Strictly ensure zero sensitive data or PII in response
     const jsonStr = JSON.stringify(body);
     assert.strictEqual(jsonStr.includes('PRIVATE KEY'), false, 'Must not leak private keys');
-    assert.strictEqual(jsonStr.includes('1U1bdFZH'), false, 'Must not leak raw Sheet ID');
     process.env.ADMIN_TOKEN = origToken;
   });
 });

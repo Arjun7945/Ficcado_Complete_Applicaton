@@ -34,7 +34,7 @@ export async function GET() {
 - **Rohith Murali**: Co-Founder & Chief Financial Officer (CFO) — Financial strategy, budgets, expenses, and strategic grounding.
 
 ## Engineering & Architecture
-- **Arjun PS**: Lead Full-Stack Architect & Developer — Headless Google Sheets catalog engine, Next.js 16 App Router architecture, responsive UI engineering, and search/AI discoverability systems.
+- **Arjun PS**: Lead Full-Stack Architect & Developer — Next.js 16 App Router architecture, Microservices API engine, responsive UI engineering, and search/AI discoverability systems.
 
 ## Customer Support, Story & Policy Documents
 - [About Ficcado & Founders](${siteUrl}/about): The complete 2024 founding story by Sinan MS, Ganga Lakshmi, and Rohith Murali.

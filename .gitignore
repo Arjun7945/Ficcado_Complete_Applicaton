@@ -9,6 +9,16 @@ desktop.ini
 *.swp
 *.swo
 
+# Root safety net for environments and build targets
+.env
+.env.local
+*.env
+target/
+
+# Keep .env.example tracked
+!.env.example
+!**/.env.example
+
 # Node / Logs (if created at root)
 npm-debug.log*
 yarn-debug.log*

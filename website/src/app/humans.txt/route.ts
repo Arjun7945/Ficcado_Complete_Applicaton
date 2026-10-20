@@ -19,14 +19,14 @@ Location: India
 /* DEVELOPER & ARCHITECT */
 Lead Full-Stack Architect & Developer: Arjun PS
 Fingerprint: Arjun PS
-Role: Frontend & Backend Systems Engineering, Next.js App Router Architecture, Google Sheets Real-time Engine, SEO & Structured Data Engineering
+Role: Frontend & Backend Systems Engineering, Next.js App Router Architecture, Microservices API Engine, SEO & Structured Data Engineering
 
 /* SITE & TECHNOLOGY */
 Standards: HTML5, CSS3, Schema.org JSON-LD
 Framework: Next.js 16 (App Router, Turbopack)
 Library: React 19
 Language: TypeScript
-Data Layer: Real-time Google Sheets API with Resilient Local Caching
+Data Layer: Ficcado Microservices API Gateway with Resilient Caching
 Fonts: Plus Jakarta Sans
 Icons: Lucide React
 Last Update: October 2026

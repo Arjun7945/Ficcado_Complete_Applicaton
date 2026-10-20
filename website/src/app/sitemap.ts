@@ -36,7 +36,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: cat.status === 'live' ? 0.9 : 0.6,
   }));
 
-  // 3. Products directly mapped from Google Sheet catalog
+  // 3. Products directly mapped from catalog
   let productRoutes: MetadataRoute.Sitemap = [];
   try {
     const products = await getProducts();

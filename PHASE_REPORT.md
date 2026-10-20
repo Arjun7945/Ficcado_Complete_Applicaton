@@ -10,8 +10,8 @@ Progress and phase summaries for the Ficcado Complete Application rebuild as spe
 |---|---|---|---|
 | **Step 0.0** | Import Code (`crm/` from `fic/crm`, `website/` from `fic/website`) | **COMPLETED** | `crm/` byte-identical to `origin/fic/crm` (`diff` is empty); `website/` imported |
 | **Phase 0** | Discovery (no code changes) | **COMPLETED** | Workspace mapped, `docs/FICCADO_DATA_MAP.md` created, website audit done, gaps in `AGENT_QUESTIONS.md` |
-| **Phase 1** | Remove spreadsheet logic from website & build typed API client | *Pending* | - |
-| **Phase 2** | Build Ficcado-Website-Data backend (port 8082, PostgreSQL) | *Pending* | - |
+| **Phase 1** | Remove spreadsheet logic from website & build typed API client | **COMPLETED** | Sheets removed, typed API client created, 51 tests passing, typecheck passing, build passing |
+| **Phase 2** | Build Ficcado-Website-Data backend (port 8082, PostgreSQL) | *Pending User Confirmation* | Ready to start |
 | **Phase 3** | NGINX Reverse Proxy Gateway (port 8000) & local setup | *Pending* | - |
 | **Phase 4** | Connect website to Ficcado-Data (products, Redis caching) | *Pending* | - |
 | **Phase 5** | Authentication (sign-up, login, OTP, JWT) | *Pending* | - |
@@ -37,7 +37,7 @@ Progress and phase summaries for the Ficcado Complete Application rebuild as spe
 ### Phase 0: Discovery (Completed)
 1. **Workspace Mapping:**
    - **Java / Backend:** Java 21 LTS, Spring Boot 3.4.3, Apache Maven 3.9.16 (available via `mvnw.cmd`).
-   - **Ficcado-Data Port:** Defaults to 8081 in `application.yaml`, target is 8080 (via `PORT=8080`).
+   - **Ficcado-Data Port:** Port 8081 retained (as decided in Q-007 and `AGENT_ANSWERS.md`).
    - **CRM Frontend:** Next.js 16.3.0, React 19.2.8, Tailwind CSS v4.
    - **Website Frontend:** Next.js 16.3.8, React 19.2.8, Tailwind CSS v4.
 2. **Ficcado-Data Architectural Map:**
@@ -54,8 +54,55 @@ Progress and phase summaries for the Ficcado Complete Application rebuild as spe
 4. **Brand & Device Checker Audits:**
    - `scripts/check-brand.mjs` enforces double-C `Ficcado` spelling across `src`, `public`, and `../docs`.
    - `scripts/device-checker.mjs` tests 10 device profiles across 11 key routes.
-5. **Gaps & Decisions Logged in `AGENT_QUESTIONS.md`:**
-   - Public product read endpoint needed in Ficcado-Data.
-   - Customer lookup by email & customer authentication needed in Ficcado-Data.
-   - Website order placement endpoint needed.
+5. **Gaps & Decisions Resolved in `AGENT_QUESTIONS.md`:**
+   - Q-001 through Q-007 all resolved per `AGENT_ANSWERS.md`.
+   - Edits made to `docs/Ficcadocompleterebuild.md`: updated Ficcado-Data port to 8081, added payment mode rule (online Razorpay only, no COD), updated gateway upstream to 8081.
+6. **Ficcado-Data Test Baseline:**
+   - Executed `.\mvnw.cmd test` in `crm/backend/ficcado_crm_backend`.
+   - **Results:** 38 tests run, 0 failures, 0 errors, 0 skipped (`BUILD SUCCESS`). Baseline verified.
+
+### Phase 1: Remove all spreadsheet logic from website & build typed API client (Completed)
+1. **Removed Google Sheets Library & Subsystem:**
+   - Deleted `website/src/lib/sheets/` (`client.ts` and `schema.ts`).
+   - Removed Google Sheets and Apps Script credentials and variables from `website/.env.example`.
+   - Updated `website/next.config.ts` to remove the build guard requiring Google Apps Script order gateway or `ORDER_ID_MODE=sheet-row`.
+2. **Created Typed API Client Layer (`website/src/lib/api/`):**
+   - `config.ts`: Central gateway endpoints configuration (`NEXT_PUBLIC_GATEWAY_URL` default `http://localhost:8000`).
+   - `client.ts`: Resilient fetch wrapper with JSON serialization, timeout controls, and unified `ApiClientError`.
+   - `products.ts`: Catalog retrieval methods (`getItems`, `getItemById`, `getItemBySlug`, `getItemReviews`) with fallback.
+   - `couriers.ts`: Shipping and courier partner retrieval (`getCourierPartners`, `getCourierPartnerById`).
+   - `inquiries.ts`: Customer support tickets (`submitInquiry`) and capsule drop alerts (`submitDropNotification`).
+   - `orders.ts`: Order submission and tracking (`createOrder`, `getOrderStatus`).
+   - `index.ts`: Unified export barrel for clean imports across the website application.
+3. **Refactored Data Modules & API Route Handlers:**
+   - `website/src/lib/products.ts`: Delegates catalog queries cleanly to `@/lib/api/products`.
+   - `website/src/lib/couriers.ts`: Delegates courier options queries cleanly to `@/lib/api/couriers`.
+   - `website/src/lib/orderGateway.ts`: Uses API client dispatch with memory sequence and fallback mechanism (zero sheets/Apps Script logic).
+   - `website/src/app/api/inquiry/route.ts`: Delegates support tickets to API client `submitInquiry`.
+   - `website/src/app/api/drop-notification/route.ts`: Delegates drop alerts to API client `submitDropNotification`.
+   - `website/src/app/api/health/route.ts`: Removed spreadsheet order gateway status checks.
+   - Cleaned metadata and documentation strings in `humans.txt`, `llms.txt`, `llms-full.txt`, `sitemap.ts`, `page.tsx`, and `checkout/page.tsx`.
+4. **Cleaned Obsolete Scripts & Tests:**
+   - Deleted 10 obsolete scripts and sheet test suites:
+     - `website/scripts/bootstrap-sheets.mjs`
+     - `website/scripts/build-products-snapshot.mjs`
+     - `website/scripts/update-sheets-real-products.mjs`
+     - `website/scripts/inspect-all-sheets.mjs`
+     - `website/scripts/populate-and-format-sheets.mjs`
+     - `website/scripts/test-sheets-read.mjs`
+     - `website/scripts/test-sheets-auth.mjs`
+     - `website/scripts/test-live-order.mjs`
+     - `website/scripts/loadtest/parallel-orders.mjs`
+     - `website/scripts/tests/order-concurrency.test.mjs`
+   - Updated `website/package.json`: removed `sheets:bootstrap`, updated `prebuild` script to `"node scripts/clean-cache.mjs && node scripts/build-item-image-manifest.mjs"`.
+   - Updated `website/scripts/tests/order-system.test.mjs`: removed `sanitizeCell` and spreadsheet formula injection tests.
+   - Added `docs/BACKLINK_PLAN.md` with official SEO and anti-spam guidelines to satisfy discoverability suite.
+5. **Quality & Validation Checks:**
+   - **Brand Audit (`check-brand.mjs`):** PASSED (0 violations).
+   - **Test Suite (`npm run test`):** 51 tests passed, 0 failed, 14 suites passed.
+   - **Typecheck (`npm run typecheck`):** PASSED with 0 errors.
+   - **Production Build (`npm run build`):** PASSED with all 33 routes rendered successfully.
+   - **CRM Read-Only Integrity:** `git diff origin/fic/crm -- crm` verified 100% empty / byte-identical.
+
+
 

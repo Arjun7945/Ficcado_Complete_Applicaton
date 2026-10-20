@@ -4,7 +4,7 @@
 // Reach Out To Us / Customer Support — /support
 // Refactored per REFACTOR_ON_PREVIOUS_UPDATE.md:
 // - Added 'Enter Order ID' text input with format validation (FIC-A0001 or team Order ID).
-// - Routed submissions to Google Sheets 'Support Requests' tab.
+// - Routed submissions to Support & Enquiries API service.
 // - Honest confirmation messaging with Ficcado operations team.
 // =============================================================================
 

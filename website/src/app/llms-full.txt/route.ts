@@ -45,16 +45,16 @@ Ficcado was founded in 2024 by three close friends who refused to accept paper-t
 - **Rohith Murali**: Co-Founder & Chief Financial Officer (CFO) — Financial strategy, budgets, expenses, and strategic grounding.
 
 ### Engineering & Technical Architecture
-- **Arjun PS**: Lead Full-Stack Architect & Developer — Engineered the headless Google Sheets database integration, Next.js 16 App Router architecture, responsive UI, search engine optimization, and AI discoverability frameworks.
+- **Arjun PS**: Lead Full-Stack Architect & Developer — Engineered the Microservices API architecture, Next.js 16 App Router architecture, responsive UI, search engine optimization, and AI discoverability frameworks.
 
 ---
 
-## 2. Product Catalog (Google Sheets Source of Truth)
+## 2. Product Catalog (Ficcado Database Source of Truth)
 
 `;
 
   if (products.length === 0) {
-    text += `Catalog is currently updating from Google Sheets.\n\n`;
+    text += `Catalog is currently updating.\n\n`;
   } else {
     products.forEach((p) => {
       text += `### ${p.name}
@@ -102,7 +102,7 @@ A: ${item.answer}
 Customers select items on the website, pick an active courier partner at checkout, and initiate a WhatsApp conversation. The Ficcado order bot generates a Reference ID (e.g., FIC-A0001) for payment and address confirmation.
 
 ### Shipping & Delivery
-All deliveries are handled through verified pan-India courier partners dynamically loaded from our logistics operations sheet. ₹0 rate signifies Free Shipping.
+All deliveries are handled through verified pan-India courier partners dynamically loaded from our logistics operations system. ₹0 rate signifies Free Shipping.
 
 ### Doorstep Returns & Replacements
 - 7-Day Return Window for unworn, unwashed garments with tags intact.

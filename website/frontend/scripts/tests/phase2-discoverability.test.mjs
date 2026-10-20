@@ -80,7 +80,9 @@ describe('Phase 2: Crawler & AI Ingestion Manifests', () => {
   });
 
   test('docs/BACKLINK_PLAN.md exists with legitimate authority building strategy', async () => {
-    const planPath = path.join(PROJECT_ROOT, '../docs/BACKLINK_PLAN.md');
+    const candidate1 = path.join(PROJECT_ROOT, '../docs/BACKLINK_PLAN.md');
+    const candidate2 = path.join(PROJECT_ROOT, '../../docs/BACKLINK_PLAN.md');
+    const planPath = fs.existsSync(candidate1) ? candidate1 : candidate2;
     assert.ok(fs.existsSync(planPath), 'docs/BACKLINK_PLAN.md must exist');
 
     const content = fs.readFileSync(planPath, 'utf8');

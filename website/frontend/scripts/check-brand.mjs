@@ -13,7 +13,7 @@ const FORBIDDEN = [
   /\bficcado\s+clothings\b/i,
 ];
 
-const SCAN_DIRS = ['src', 'public', '../docs'];
+const SCAN_DIRS = ['src', 'public', '../docs', '../../docs'];
 const ALLOWED_FILES = new Set([
   // Historical briefs and requirement specifications that cite prior mistakes as problem statements
   '../docs/briefs/AGENT_BRIEF.md',
@@ -23,6 +23,13 @@ const ALLOWED_FILES = new Set([
   '../docs/memory.md',
   '../docs/prd.md',
   '../docs/Ficcadocompleterebuild.md',
+  '../../docs/briefs/AGENT_BRIEF.md',
+  '../../docs/briefs/AGENT_BRIEF_2_WHATSAPP_ORDERING_REFACTOR.md',
+  '../../docs/briefs/REFACTOR_ON_PREVIOUS_UPDATE.md',
+  '../../docs/REQUIREMENT_AND_REFACTOR_PART_2.md',
+  '../../docs/memory.md',
+  '../../docs/prd.md',
+  '../../docs/Ficcadocompleterebuild.md',
 ]);
 
 let violations = [];

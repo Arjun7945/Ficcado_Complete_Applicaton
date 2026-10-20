@@ -38,5 +38,43 @@ This document tracks questions, architectural considerations, and assumptions re
 
 ---
 
+### Q-004: Ficcado-Data Public / Website Product Read Endpoints (Phase 4 Gap)
+- **Context:**
+  All existing endpoints in `ItemController` (`/api/items/**`) require Spring Security Admin authentication. The website storefront needs read access to active products, images, and sizes.
+- **Options:**
+  1. **Option A (Recommended):** Add an additive controller in a new file (e.g. `PublicItemController.java` mapped to `/api/public/items` or `/api/public/products`) that reuses `itemService.getActiveItemsWithSizes()` and permits unauthenticated access in `SecurityConfig.java`.
+  2. **Option B:** Expose `/api/items/active` and `/api/items/{id}` directly in `SecurityConfig.java` permitAll list.
+- **Recommended Default:** Option A follows the additive architecture rule without modifying existing admin endpoint behavior.
+
+---
+
+### Q-005: Customer Lookup by Email & Customer Authentication in Ficcado-Data (Phase 5 Gap)
+- **Context:**
+  Customers authenticate using email as primary identifier. The `Customer` table already possesses `email_id` and `password_hash`, but `CustomerRepository` currently only queries by `phoneNumber`.
+- **Options:**
+  1. **Option A (Recommended):** Add additive repository queries `findByEmailIdIgnoreCase(String email)` and `existsByEmailIdIgnoreCase(String email)` to `CustomerRepository`, and add a dedicated `CustomerAuthService` / `CustomerAuthController` for customer signup and password verification.
+  2. **Option B:** Perform in-memory filtering of customers by email.
+- **Recommended Default:** Option A (indexed database query).
+
+---
+
+### Q-006: Website Sale Placement Endpoint (Phase 6 Gap)
+- **Context:**
+  `SaleController.create` is secured with `@PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN')")`.
+- **Options:**
+  1. **Option A (Recommended):** Provide an additive endpoint (e.g. in `PublicOrderController.java` or `WebsiteOrderController.java`) accepting public/customer order requests, validating items and payment status, and invoking the existing `saleService.createSale(sale, null)`.
+- **Recommended Default:** Option A.
+
+---
+
+### Q-007: Ficcado-Data Port Default
+- **Context:**
+  `crm/backend/ficcado_crm_backend/src/main/resources/application.yaml` has `${PORT:8081}`, but `docs/Ficcadocompleterebuild.md` mandates port **8080**.
+- **Options:**
+  1. **Option A (Recommended):** Set environment variable `PORT=8080` (and update default in `application.yaml` to 8080).
+- **Recommended Default:** Option A.
+
+---
+
 ## Resolved Questions / Decisions Log
 *(None yet)*

@@ -123,9 +123,11 @@ management:
       base-path: /actuator
   endpoint:
     health:
-      show-details: when-authorized
+      show-details: always
   health:
     mail:
+      enabled: false
+    redis:
       enabled: false
   info:
     env:

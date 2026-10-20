@@ -73,6 +73,9 @@ management:
   endpoint:
     health:
       show-details: always
+  health:
+    mail:
+      enabled: false
   metrics:
     tags:
       application: ficcado_website_data

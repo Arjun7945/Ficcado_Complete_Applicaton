@@ -23,6 +23,7 @@ const ALLOWED_FILES = new Set([
   '../docs/memory.md',
   '../docs/prd.md',
   '../docs/Ficcadocompleterebuild.md',
+  '../docs/reportofphase1to6.md',
   '../../docs/briefs/AGENT_BRIEF.md',
   '../../docs/briefs/AGENT_BRIEF_2_WHATSAPP_ORDERING_REFACTOR.md',
   '../../docs/briefs/REFACTOR_ON_PREVIOUS_UPDATE.md',
@@ -30,6 +31,7 @@ const ALLOWED_FILES = new Set([
   '../../docs/memory.md',
   '../../docs/prd.md',
   '../../docs/Ficcadocompleterebuild.md',
+  '../../docs/reportofphase1to6.md',
 ]);
 
 let violations = [];

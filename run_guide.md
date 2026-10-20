@@ -26,7 +26,7 @@ Verify that the following are installed and accessible in your terminal:
 1. **Java 21 LTS:** `java -version`
 2. **Node.js 20+ LTS & npm:** `node -v` and `npm -v`
 3. **PostgreSQL 15+:** Running locally on port `5432`
-4. **NGINX:** Installed locally (`nginx -v`)
+4. **API Gateway:** Either run `node gateway/proxy.mjs` (included, zero-dependency, works out-of-the-box on Windows/Linux/macOS) or installed native NGINX (`nginx -v`)
 5. *(Note: Global Maven is NOT required; each backend includes Maven Wrapper `mvnw` / `mvnw.cmd`)*
 
 ### 2.2 Database Initialization
@@ -142,9 +142,17 @@ Expected response: `{"status":"UP"}`
 
 ---
 
-### Terminal 4: Start NGINX API Gateway (Port 8000)
+### Terminal 4: Start API Gateway (Port 8000)
 The gateway acts as the single reverse proxy for the website, handling routing, CORS, rate limiting, and blocking internal APIs.
 
+#### Option A: Zero-Dependency Node.js Gateway Proxy (Recommended for Windows / No NGINX)
+Run the native Node.js reverse proxy directly from the repository root (uses only Node.js built-ins):
+```powershell
+node gateway/proxy.mjs
+```
+*(Or in bash: `node gateway/proxy.mjs`)*
+
+#### Option B: Native NGINX (If NGINX is installed on your system)
 **Windows PowerShell (from repository root):**
 ```powershell
 # Test configuration syntax
@@ -152,26 +160,21 @@ nginx -t -c "$pwd\gateway\nginx.conf"
 
 # Launch NGINX
 nginx -c "$pwd\gateway\nginx.conf"
-```
 
-**macOS / Linux (from repository root):**
-```bash
-# Test configuration syntax
-nginx -t -c "$(pwd)/gateway/nginx.conf"
-
-# Launch NGINX
-nginx -c "$(pwd)/gateway/nginx.conf"
-```
-
-**To reload or stop NGINX when needed:**
-```powershell
+# To stop or reload NGINX:
 nginx -s reload
 nginx -s stop
 ```
 
+**macOS / Linux (from repository root):**
+```bash
+nginx -t -c "$(pwd)/gateway/nginx.conf"
+nginx -c "$(pwd)/gateway/nginx.conf"
+```
+
 **Quick Verification:**  
 Open in browser: `http://localhost:8000/health`  
-Expected response: `{"status":"UP","gateway":"Ficcado API Gateway","port":8000,"version":"1.0.0"}`
+Expected response: `{"status":"UP","gateway":"...","port":8000,"version":"1.0.0"}`
 
 ---
 

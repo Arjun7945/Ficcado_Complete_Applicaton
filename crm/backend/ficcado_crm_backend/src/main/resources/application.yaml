@@ -44,7 +44,7 @@ spring:
     validate-on-migrate: true
     placeholders:
       seed-admin-email: ${SEED_ADMIN_EMAIL:admin@ficcado.com}
-      seed-admin-password-hash: '${SEED_ADMIN_PASSWORD_HASH:$2b$10$HkQGdiGS8wfuf0ofXogakeQliSzphi8L7YXeLiCgggxMdDw4./TV2}'
+      seed-admin-password-hash: '${SEED_ADMIN_PASSWORD_HASH:$2a$10$ecOmlKKAMHPmImwe/hl/YuTP4k..3jN2UW4Yp1RRItvHwVcw4odG2}'
 
 
 

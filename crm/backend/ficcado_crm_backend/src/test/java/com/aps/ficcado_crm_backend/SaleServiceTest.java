@@ -403,4 +403,192 @@ class SaleServiceTest {
         assertEquals(admin.getId(), updated.getUpdatedByAdmin().getId());
         verify(returnRefundRepository, times(1)).save(any(ReturnRefund.class));
     }
+
+    @Test
+    @DisplayName("CRM sale created without remarks defaults remarks to 'CRM SALE'")
+    void createSale_crmSaleWithoutRemarks_storesCrmSaleMark() {
+        Sale newSale = Sale.builder()
+                .invoiceNumber("INV-CRM-001")
+                .saleStatus(SaleStatus.COMPLETED)
+                .deliveryStatus(DeliveryStatus.DELIVERED)
+                .fulfilmentSource(FulfilmentSource.TAKE_FROM_INVENTORY)
+                .customerName("Jane Doe")
+                .customerPhoneNumber("9876543210")
+                .totalAmount(new BigDecimal("1000"))
+                .lineItems(new ArrayList<>())
+                .build();
+
+        when(saleRepository.save(any(Sale.class))).thenAnswer(i -> i.getArgument(0));
+
+        Sale created = saleService.createSale(newSale, admin);
+
+        assertNotNull(created);
+        assertEquals("CRM SALE", created.getRemarks());
+    }
+
+    @Test
+    @DisplayName("CRM sale created with admin remarks stores 'CRM SALE | <admin text>'")
+    void createSale_crmSaleWithAdminRemarks_storesPrefixedMark() {
+        Sale newSale = Sale.builder()
+                .invoiceNumber("INV-CRM-002")
+                .saleStatus(SaleStatus.COMPLETED)
+                .deliveryStatus(DeliveryStatus.DELIVERED)
+                .fulfilmentSource(FulfilmentSource.TAKE_FROM_INVENTORY)
+                .customerName("Jane Doe")
+                .customerPhoneNumber("9876543210")
+                .totalAmount(new BigDecimal("1000"))
+                .remarks("In-store counter purchase")
+                .lineItems(new ArrayList<>())
+                .build();
+
+        when(saleRepository.save(any(Sale.class))).thenAnswer(i -> i.getArgument(0));
+
+        Sale created = saleService.createSale(newSale, admin);
+
+        assertNotNull(created);
+        assertEquals("CRM SALE | In-store counter purchase", created.getRemarks());
+    }
+
+    @Test
+    @DisplayName("Non-admin sale creation without remarks defaults to 'No_Remarks'")
+    void createSale_nonAdminWithoutRemarks_defaultsToNoRemarks() {
+        Sale newSale = Sale.builder()
+                .invoiceNumber("INV-SYS-001")
+                .saleStatus(SaleStatus.COMPLETED)
+                .deliveryStatus(DeliveryStatus.DELIVERED)
+                .fulfilmentSource(FulfilmentSource.TAKE_FROM_INVENTORY)
+                .customerName("Jane Doe")
+                .customerPhoneNumber("9876543210")
+                .totalAmount(new BigDecimal("1000"))
+                .lineItems(new ArrayList<>())
+                .build();
+
+        when(saleRepository.save(any(Sale.class))).thenAnswer(i -> i.getArgument(0));
+
+        Sale created = saleService.createSale(newSale, null);
+
+        assertNotNull(created);
+        assertEquals("No_Remarks", created.getRemarks());
+    }
+
+    @Test
+    @DisplayName("Updating sale preserves CRM SALE source mark when remarks not provided or blank")
+    void updateSale_preservesCrmSaleMark_whenRemarksNotProvidedOrBlank() {
+        Sale existing = Sale.builder()
+                .id(101L)
+                .invoiceNumber("INV-CRM-101")
+                .saleStatus(SaleStatus.NOT_PROVIDED_OR_ORDER_ONLY_PLACED)
+                .remarks("CRM SALE")
+                .totalAmount(new BigDecimal("1000"))
+                .lineItems(new ArrayList<>())
+                .build();
+
+        Sale incoming = Sale.builder()
+                .remarks("No_Remarks")
+                .build();
+
+        when(saleRepository.findById(101L)).thenReturn(Optional.of(existing));
+        when(saleRepository.save(any(Sale.class))).thenAnswer(i -> i.getArgument(0));
+
+        Sale updated = saleService.updateSale(101L, incoming, admin);
+
+        assertNotNull(updated);
+        assertEquals("CRM SALE", updated.getRemarks());
+    }
+
+    @Test
+    @DisplayName("Updating sale preserves CRM SALE mark when admin enters new remarks text")
+    void updateSale_preservesCrmSaleMark_whenNewRemarksProvided() {
+        Sale existing = Sale.builder()
+                .id(102L)
+                .invoiceNumber("INV-CRM-102")
+                .saleStatus(SaleStatus.NOT_PROVIDED_OR_ORDER_ONLY_PLACED)
+                .remarks("CRM SALE")
+                .totalAmount(new BigDecimal("1000"))
+                .lineItems(new ArrayList<>())
+                .build();
+
+        Sale incoming = Sale.builder()
+                .remarks("Customer requested gift packaging")
+                .build();
+
+        when(saleRepository.findById(102L)).thenReturn(Optional.of(existing));
+        when(saleRepository.save(any(Sale.class))).thenAnswer(i -> i.getArgument(0));
+
+        Sale updated = saleService.updateSale(102L, incoming, admin);
+
+        assertNotNull(updated);
+        assertEquals("CRM SALE | Customer requested gift packaging", updated.getRemarks());
+    }
+
+    @Test
+    @DisplayName("Updating sale does not duplicate prefix when incoming already has 'CRM SALE'")
+    void updateSale_doesNotDuplicatePrefix_whenIncomingAlreadyHasPrefix() {
+        Sale existing = Sale.builder()
+                .id(103L)
+                .invoiceNumber("INV-CRM-103")
+                .saleStatus(SaleStatus.NOT_PROVIDED_OR_ORDER_ONLY_PLACED)
+                .remarks("CRM SALE | Original note")
+                .totalAmount(new BigDecimal("1000"))
+                .lineItems(new ArrayList<>())
+                .build();
+
+        Sale incoming = Sale.builder()
+                .remarks("CRM SALE | Updated note")
+                .build();
+
+        when(saleRepository.findById(103L)).thenReturn(Optional.of(existing));
+        when(saleRepository.save(any(Sale.class))).thenAnswer(i -> i.getArgument(0));
+
+        Sale updated = saleService.updateSale(103L, incoming, admin);
+
+        assertNotNull(updated);
+        assertEquals("CRM SALE | Updated note", updated.getRemarks());
+    }
+
+    @Test
+    @DisplayName("Pre-existing sale without source mark is not retroactively backfilled on update")
+    void updateSale_preExistingSaleWithoutPrefix_isNotRetroactivelyBackfilled() {
+        Sale existing = Sale.builder()
+                .id(104L)
+                .invoiceNumber("INV-OLD-104")
+                .saleStatus(SaleStatus.NOT_PROVIDED_OR_ORDER_ONLY_PLACED)
+                .remarks("Legacy note without mark")
+                .totalAmount(new BigDecimal("1000"))
+                .lineItems(new ArrayList<>())
+                .build();
+
+        Sale incoming = Sale.builder()
+                .remarks("Updated legacy note")
+                .build();
+
+        when(saleRepository.findById(104L)).thenReturn(Optional.of(existing));
+        when(saleRepository.save(any(Sale.class))).thenAnswer(i -> i.getArgument(0));
+
+        Sale updated = saleService.updateSale(104L, incoming, admin);
+
+        assertNotNull(updated);
+        assertEquals("Updated legacy note", updated.getRemarks());
+    }
+
+    @Test
+    @DisplayName("Completing sale preserves CRM SALE mark")
+    void completeSale_preservesCrmSaleMark() {
+        Sale existing = Sale.builder()
+                .id(105L)
+                .invoiceNumber("INV-CRM-105")
+                .saleStatus(SaleStatus.NOT_PROVIDED_OR_ORDER_ONLY_PLACED)
+                .remarks("CRM SALE")
+                .totalAmount(new BigDecimal("1000"))
+                .lineItems(new ArrayList<>())
+                .build();
+
+        when(saleRepository.findById(105L)).thenReturn(Optional.of(existing));
+        when(saleRepository.save(any(Sale.class))).thenAnswer(i -> i.getArgument(0));
+
+        Sale completed = saleService.markSaleCompleted(105L, "Paid", "Cash", "TXN-999", "Delivered", "Tester", "Payment collected", admin);
+
+        assertNotNull(completed);
+        assertEquals("CRM SALE | Payment collected", completed.getRemarks());
+    }
 }

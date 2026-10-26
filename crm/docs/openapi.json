@@ -882,7 +882,7 @@
     "/api/admins/{id}" : {
       "get" : {
         "tags" : [ "Admins" ],
-        "summary" : "Get admin by ID (SUPERADMIN or self)",
+        "summary" : "Get admin by ID (SUPERADMIN, ADMIN or self)",
         "operationId" : "getById_7",
         "parameters" : [ {
           "name" : "id",
@@ -908,7 +908,7 @@
       },
       "put" : {
         "tags" : [ "Admins" ],
-        "summary" : "Update admin (SUPERADMIN or self)",
+        "summary" : "Update admin (SUPERADMIN, ADMIN or self)",
         "operationId" : "update_10",
         "parameters" : [ {
           "name" : "id",
@@ -2120,7 +2120,7 @@
     "/api/admins" : {
       "get" : {
         "tags" : [ "Admins" ],
-        "summary" : "List all active admins (SUPERADMIN only)",
+        "summary" : "List all active admins (SUPERADMIN or ADMIN)",
         "operationId" : "getAll_11",
         "responses" : {
           "200" : {
@@ -2140,7 +2140,7 @@
       },
       "post" : {
         "tags" : [ "Admins" ],
-        "summary" : "Create admin (SUPERADMIN only)",
+        "summary" : "Create admin (SUPERADMIN or ADMIN)",
         "operationId" : "create_9",
         "requestBody" : {
           "content" : {
@@ -2207,7 +2207,7 @@
     "/api/admins/{id}/deactivate" : {
       "patch" : {
         "tags" : [ "Admins" ],
-        "summary" : "Deactivate admin (soft delete, SUPERADMIN only)",
+        "summary" : "Deactivate admin (soft delete, SUPERADMIN or ADMIN)",
         "operationId" : "deactivate",
         "parameters" : [ {
           "name" : "id",
@@ -2402,7 +2402,7 @@
     "/api/reports/profitability" : {
       "get" : {
         "tags" : [ "Reports & Profitability" ],
-        "summary" : "Calculate profitability for a given period (daily/weekly/monthly/custom) [SUPERADMIN only]",
+        "summary" : "Calculate profitability for a given period (daily/weekly/monthly/custom) [SUPERADMIN or ADMIN]",
         "operationId" : "getProfitability",
         "parameters" : [ {
           "name" : "period",
@@ -3987,6 +3987,9 @@
             "type" : "integer",
             "format" : "int32",
             "minimum" : 0
+          },
+          "reason" : {
+            "type" : "string"
           }
         }
       },

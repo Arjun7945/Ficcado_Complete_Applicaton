@@ -75,8 +75,9 @@ public class InventoryController {
     public ResponseEntity<InventoryResponse> adjustQuantity(@PathVariable Long id,
                                                              @Valid @RequestBody QuantityAdjustRequest request,
                                                              @AuthenticationPrincipal Admin admin) {
-        log.info("REST request to adjust inventory [id={}] quantity to {}", id, request.totalQuantity());
-        return inventoryService.adjustQuantity(id, request.totalQuantity(), admin)
+        log.info("REST request to adjust inventory [id={}] quantity to {}, reason={}",
+                id, request.totalQuantity(), request.reason());
+        return inventoryService.adjustQuantity(id, request.totalQuantity(), request.reason(), admin)
                 .map(InventoryMapper::toResponse)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());

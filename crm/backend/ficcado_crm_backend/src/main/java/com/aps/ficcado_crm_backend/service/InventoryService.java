@@ -197,21 +197,35 @@ public class InventoryService {
 
     @Transactional
     public Optional<Inventory> adjustQuantity(Long id, int targetQuantity, Admin admin) {
-        log.info("Adjusting inventory quantity for [id={}] to {}", id, targetQuantity);
+        return adjustQuantity(id, targetQuantity, null, admin);
+    }
+
+    @Transactional
+    public Optional<Inventory> adjustQuantity(Long id, int targetQuantity, String reason, Admin admin) {
+        log.info("Adjusting inventory quantity for [id={}] to {}, reason={}", id, targetQuantity, reason);
         return inventoryRepository.findById(id).map(inv -> {
             int oldQty = inv.getTotalQuantity();
             inv.setTotalQuantity(targetQuantity);
             inv.setUpdatedByAdmin(admin);
             Inventory saved = inventoryRepository.save(inv);
 
+            String message = buildAdjustMessage(inv.getItem().getItemName(), inv.getSize(), oldQty, targetQuantity, reason);
+
             activityLogService.log(admin, "ADJUST", "INVENTORY", "inventory",
                     saved.getId().toString(),
-                    "Inventory adjusted: " + inv.getItem().getItemName()
-                            + " size " + inv.getSize() + " from " + oldQty + " → " + targetQuantity);
+                    message);
 
             log.info("Inventory [id={}] adjusted from {} to {}", id, oldQty, targetQuantity);
             return saved;
         });
+    }
+
+    public static String buildAdjustMessage(String itemName, String size, int oldQty, int targetQuantity, String reason) {
+        String base = "Inventory adjusted: " + itemName + " size " + size + " from " + oldQty + " → " + targetQuantity;
+        if (reason != null && !reason.trim().isEmpty()) {
+            return base + " — " + reason.trim();
+        }
+        return base;
     }
 
     // ── Internal helpers ──────────────────────────────────────────────────────

@@ -20,7 +20,8 @@ public class InventoryDto {
     ) {}
 
     public record QuantityAdjustRequest(
-            @Min(value = 0, message = "Total quantity must be 0 or greater") int totalQuantity
+            @Min(value = 0, message = "Total quantity must be 0 or greater") int totalQuantity,
+            String reason
     ) {}
 
     public record UnallocatedResponse(Long itemId, String size, int unallocatedQuantity) {}

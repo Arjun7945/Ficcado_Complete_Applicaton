@@ -96,13 +96,13 @@ export async function getAuthSession(): Promise<{ admin: SessionAdmin } | { erro
 }
 
 /**
- * Throws a 403 Response if not a Superadmin.
+ * Throws a 403 Response if not an Admin or Superadmin.
  */
 export async function requireSuperadmin(): Promise<SessionAdmin> {
   const admin = await requireAuth();
-  if (admin.role !== 'superadmin') {
+  if (admin.role !== 'superadmin' && admin.role !== 'admin') {
     throw new Response(
-      JSON.stringify({ error: 'This action requires Superadmin privileges.' }),
+      JSON.stringify({ error: 'This action requires Admin privileges.' }),
       { status: 403, headers: { 'Content-Type': 'application/json' } }
     );
   }

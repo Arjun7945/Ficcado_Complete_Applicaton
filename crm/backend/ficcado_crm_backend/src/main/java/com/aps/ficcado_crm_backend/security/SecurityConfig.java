@@ -64,8 +64,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
-                        // Public storefront & review endpoints — no auth required
-                        .requestMatchers("/api/public/**").permitAll()
+                        // Public storefront (read-only GET) & review endpoints — narrow, explicit matchers only
+                        .requestMatchers(HttpMethod.GET, "/api/public/products/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/public/categories/**").permitAll()
+                        .requestMatchers("/api/public/reviews/**").permitAll()
                         // Customer unauthenticated auth routes & internal service routes
                         .requestMatchers("/api/customer/auth/**").permitAll()
                         .requestMatchers("/api/internal/**").permitAll()

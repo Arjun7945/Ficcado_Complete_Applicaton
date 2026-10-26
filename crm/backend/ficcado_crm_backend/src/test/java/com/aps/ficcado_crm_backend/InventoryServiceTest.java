@@ -158,6 +158,52 @@ class InventoryServiceTest {
     }
 
     @Test
+    @DisplayName("buildAdjustMessage: null reason omits separator (no trailing —)")
+    void buildAdjustMessage_nullReason_omitsSeparator() {
+        String msg = InventoryService.buildAdjustMessage("ETERNITY-BLACK", "L", 2, 5, null);
+        assertEquals("Inventory adjusted: ETERNITY-BLACK size L from 2 → 5", msg);
+    }
+
+    @Test
+    @DisplayName("buildAdjustMessage: empty reason omits separator")
+    void buildAdjustMessage_emptyReason_omitsSeparator() {
+        String msg = InventoryService.buildAdjustMessage("ETERNITY-BLACK", "L", 2, 5, "");
+        assertEquals("Inventory adjusted: ETERNITY-BLACK size L from 2 → 5", msg);
+    }
+
+    @Test
+    @DisplayName("buildAdjustMessage: blank reason omits separator")
+    void buildAdjustMessage_blankReason_omitsSeparator() {
+        String msg = InventoryService.buildAdjustMessage("ETERNITY-BLACK", "L", 2, 5, "   ");
+        assertEquals("Inventory adjusted: ETERNITY-BLACK size L from 2 → 5", msg);
+    }
+
+    @Test
+    @DisplayName("buildAdjustMessage: non-empty reason includes separator and trimmed reason")
+    void buildAdjustMessage_nonEmptyReason_includesSeparator() {
+        String msg = InventoryService.buildAdjustMessage("ETERNITY-BLACK", "L", 2, 5, "Damaged stock");
+        assertEquals("Inventory adjusted: ETERNITY-BLACK size L from 2 → 5 — Damaged stock", msg);
+    }
+
+    @Test
+    @DisplayName("adjustQuantity with non-empty reason logs formatted message to ActivityLogService")
+    void adjustQuantity_withReason_logsFormattedMessage() {
+        when(inventoryRepository.findById(100L)).thenReturn(Optional.of(inventory));
+        when(inventoryRepository.save(any(Inventory.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        inventoryService.adjustQuantity(100L, 50, "Stock recount", admin);
+
+        verify(activityLogService).log(
+                eq(admin),
+                eq("ADJUST"),
+                eq("INVENTORY"),
+                eq("inventory"),
+                eq("100"),
+                eq("Inventory adjusted: Oversized Hoodie size L from 20 → 50 — Stock recount")
+        );
+    }
+
+    @Test
     @DisplayName("getUnallocatedQuantity calculates total stock minus allocations")
     void getUnallocatedQuantity_calculatesCorrectly() {
         when(inventoryRepository.findUnallocatedQuantity(10L, "L")).thenReturn(Optional.of(12));

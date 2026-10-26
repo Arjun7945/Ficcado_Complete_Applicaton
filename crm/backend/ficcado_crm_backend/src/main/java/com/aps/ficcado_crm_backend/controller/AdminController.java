@@ -33,9 +33,9 @@ public class AdminController {
     private final AuthService authService;
     private final ActivityLogService activityLogService;
 
-    @PreAuthorize("hasRole('SUPERADMIN')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN')")
     @GetMapping
-    @Operation(summary = "List all active admins (SUPERADMIN only)")
+    @Operation(summary = "List all active admins (SUPERADMIN or ADMIN)")
     public List<AdminResponse> getAll() {
         log.debug("GET /api/admins - listing all admins");
         return authService.getAllAdmins().stream()
@@ -43,9 +43,9 @@ public class AdminController {
                 .toList();
     }
 
-    @PreAuthorize("hasRole('SUPERADMIN') or #id == authentication.principal.id")
+    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN') or #id == authentication.principal.id")
     @GetMapping("/{id}")
-    @Operation(summary = "Get admin by ID (SUPERADMIN or self)")
+    @Operation(summary = "Get admin by ID (SUPERADMIN, ADMIN or self)")
     public ResponseEntity<AdminResponse> getById(@PathVariable Long id) {
         log.debug("GET /api/admins/{} - getting admin by id", id);
         return authService.findAdminById(id)
@@ -55,13 +55,13 @@ public class AdminController {
     }
 
 
-    @PreAuthorize("hasRole('SUPERADMIN')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN')")
     @PostMapping
-    @Operation(summary = "Create admin (SUPERADMIN only)")
+    @Operation(summary = "Create admin (SUPERADMIN or ADMIN)")
     public ResponseEntity<AdminResponse> create(@Valid @RequestBody AdminCreateRequest request,
                                                 @AuthenticationPrincipal Admin currentAdmin) {
         log.info("Creating admin account: {} ({})", request.adminName(), request.emailId());
-        if (!authService.hasRole(currentAdmin, AdminRole.SUPERADMIN)) {
+        if (!authService.hasRole(currentAdmin, AdminRole.SUPERADMIN) && !authService.hasRole(currentAdmin, AdminRole.ADMIN)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
@@ -81,17 +81,17 @@ public class AdminController {
         return ResponseEntity.status(HttpStatus.CREATED).body(AdminMapper.toResponse(saved));
     }
 
-    @PreAuthorize("hasRole('SUPERADMIN') or #id == authentication.principal.id")
+    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN') or #id == authentication.principal.id")
     @PutMapping("/{id}")
-    @Operation(summary = "Update admin (SUPERADMIN or self)")
+    @Operation(summary = "Update admin (SUPERADMIN, ADMIN or self)")
     public ResponseEntity<AdminResponse> update(@PathVariable Long id,
                                                 @Valid @RequestBody AdminUpdateRequest request,
                                                 @AuthenticationPrincipal Admin currentAdmin) {
         log.info("Updating admin account [id={}]", id);
-        boolean isSuperadmin = authService.hasRole(currentAdmin, AdminRole.SUPERADMIN);
+        boolean hasAdminAccess = authService.hasRole(currentAdmin, AdminRole.SUPERADMIN) || authService.hasRole(currentAdmin, AdminRole.ADMIN);
         boolean isSelf = currentAdmin.getId().equals(id);
 
-        if (!isSuperadmin && !isSelf) {
+        if (!hasAdminAccess && !isSelf) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
@@ -102,23 +102,23 @@ public class AdminController {
                 existing.setNotifications(NotificationSetting.fromString(request.notifications()));
             if (request.password() != null && !request.password().isBlank())
                 existing.setPasswordHash(request.password());   // AuthService will hash if not a bcrypt string
-            if (isSuperadmin && request.isActive() != null)
+            if (hasAdminAccess && request.isActive() != null)
                 existing.setIsActive(request.isActive());
 
             Admin saved = authService.updateAdmin(existing, currentAdmin);
             activityLogService.log(currentAdmin, "UPDATE", "ADMINS", "admins",
-                    id.toString(), "Admin updated: " + saved.getAdminName());
+                id.toString(), "Admin updated: " + saved.getAdminName());
             return ResponseEntity.ok(AdminMapper.toResponse(saved));
         }).orElse(ResponseEntity.notFound().build());
     }
 
-    @PreAuthorize("hasRole('SUPERADMIN')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN')")
     @PatchMapping("/{id}/deactivate")
-    @Operation(summary = "Deactivate admin (soft delete, SUPERADMIN only)")
+    @Operation(summary = "Deactivate admin (soft delete, SUPERADMIN or ADMIN)")
     public ResponseEntity<Void> deactivate(@PathVariable Long id,
                                            @AuthenticationPrincipal Admin currentAdmin) {
         log.info("Deactivating admin [id={}]", id);
-        if (!authService.hasRole(currentAdmin, AdminRole.SUPERADMIN)) {
+        if (!authService.hasRole(currentAdmin, AdminRole.SUPERADMIN) && !authService.hasRole(currentAdmin, AdminRole.ADMIN)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         var maybeAdmin = authService.findAdminById(id);

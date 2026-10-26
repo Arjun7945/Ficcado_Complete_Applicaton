@@ -142,9 +142,7 @@ public class SaleService {
         if (sale.getReceivedBy() == null || sale.getReceivedBy().isBlank() || "N/A".equalsIgnoreCase(sale.getReceivedBy().trim())) {
             sale.setReceivedBy("Not_Received_Yet");
         }
-        if (sale.getRemarks() == null || sale.getRemarks().isBlank() || "N/A".equalsIgnoreCase(sale.getRemarks().trim())) {
-            sale.setRemarks("No_Remarks");
-        }
+        sale.setRemarks(formatSaleRemarksOnCreate(sale.getRemarks(), performedByAdmin));
         if (sale.getCustomerAddress() == null || sale.getCustomerAddress().isBlank() || "N/A".equalsIgnoreCase(sale.getCustomerAddress().trim())) {
             sale.setCustomerAddress("Address_Not_Provided_Yet");
         }
@@ -165,7 +163,7 @@ public class SaleService {
         salesLogService.log(performedByAdmin, "Sales", "CREATE", saved.getInvoiceNumber(),
                 salesLogService.saleCreatedMessage(
                         saved.getInvoiceNumber(), saved.getCustomerName(),
-                        performedByAdmin.getAdminName(),
+                        performedByAdmin != null ? performedByAdmin.getAdminName() : "System",
                         saved.getTotalAmount().toPlainString()));
 
         return saved;
@@ -246,7 +244,7 @@ public class SaleService {
             existing.setReceivedBy(incoming.getReceivedBy());
         }
         if (incoming.getRemarks() != null) {
-            existing.setRemarks(incoming.getRemarks());
+            existing.setRemarks(preserveSourceMark(existing.getRemarks(), incoming.getRemarks()));
         }
         if (incoming.getSaleClosedByAdmin() != null) {
             existing.setSaleClosedByAdmin(incoming.getSaleClosedByAdmin());
@@ -454,7 +452,7 @@ public class SaleService {
         }
 
         if (remarks != null && !remarks.isBlank() && !"No_Remarks".equalsIgnoreCase(remarks.trim())) {
-            sale.setRemarks(remarks.trim());
+            sale.setRemarks(preserveSourceMark(sale.getRemarks(), remarks.trim()));
         }
 
         sale.setSaleClosedByAdmin(performedByAdmin);
@@ -550,6 +548,64 @@ public class SaleService {
                         }
                     });
         }
+    }
+
+    /**
+     * Formats remarks when a sale is created.
+     * When created by a CRM admin:
+     * - If remarks is null, blank, "No_Remarks", or "N/A", sets "CRM SALE".
+     * - If admin provided text, sets "CRM SALE | <admin text>" (or keeps if already prefixed).
+     * When not created by a CRM admin (e.g. website/system):
+     * - Sets trimmed remarks or "No_Remarks" if empty/blank.
+     */
+    public static String formatSaleRemarksOnCreate(String initialRemarks, Admin performedByAdmin) {
+        if (performedByAdmin != null) {
+            String trimmed = initialRemarks != null ? initialRemarks.trim() : "";
+            if (trimmed.isEmpty() || "No_Remarks".equalsIgnoreCase(trimmed) || "N/A".equalsIgnoreCase(trimmed)) {
+                return "CRM SALE";
+            }
+            if (trimmed.startsWith("CRM SALE")) {
+                return trimmed;
+            }
+            return "CRM SALE | " + trimmed;
+        } else {
+            if (initialRemarks == null || initialRemarks.isBlank() || "N/A".equalsIgnoreCase(initialRemarks.trim())) {
+                return "No_Remarks";
+            }
+            return initialRemarks.trim();
+        }
+    }
+
+    /**
+     * Preserves source mark (e.g. CRM SALE or WEBSITE SALE) when updating or completing a sale.
+     * Prevents sale updates from removing the source mark.
+     * Existing sales without a source mark are not retroactively backfilled.
+     */
+    public static String preserveSourceMark(String existingRemarks, String incomingRemarks) {
+        String existing = existingRemarks != null ? existingRemarks.trim() : "";
+        String incoming = incomingRemarks != null ? incomingRemarks.trim() : "";
+
+        String prefix = null;
+        if (existing.startsWith("CRM SALE")) {
+            prefix = "CRM SALE";
+        } else if (existing.startsWith("WEBSITE SALE")) {
+            prefix = "WEBSITE SALE";
+        }
+
+        if (prefix != null) {
+            if (incoming.isEmpty() || "No_Remarks".equalsIgnoreCase(incoming) || "N/A".equalsIgnoreCase(incoming)) {
+                return existing;
+            }
+            if (incoming.startsWith(prefix)) {
+                return incoming;
+            }
+            return prefix + " | " + incoming;
+        }
+
+        if (incoming.isEmpty() || "No_Remarks".equalsIgnoreCase(incoming) || "N/A".equalsIgnoreCase(incoming)) {
+            return existing.isEmpty() ? "No_Remarks" : existing;
+        }
+        return incoming;
     }
 }
 

@@ -40,6 +40,7 @@ interface Sale {
   saleClosedBy?:        string;
   discount:             number;
   customerEmail:        string;
+  remarks?:             string;
 }
 
 const NO_EMAIL_MSG = 'No email on file for this customer — add one via phone lookup or edit the customer record.';
@@ -202,6 +203,11 @@ export default function SalesPage() {
                   </span>
                   <StatusBadge status={sale.paymentStatus} />
                 </div>
+                {sale.remarks && sale.remarks !== 'No_Remarks' && (
+                  <div style={{ fontSize: 11, color: 'var(--color-ink-muted)', marginTop: -4, marginBottom: 6 }}>
+                    {sale.remarks}
+                  </div>
+                )}
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div>
@@ -306,6 +312,11 @@ export default function SalesPage() {
                         }}>
                           {sale.invoiceNumber}
                         </span>
+                        {sale.remarks && sale.remarks !== 'No_Remarks' && (
+                          <div style={{ fontSize: 11, color: 'var(--color-ink-muted)', marginTop: 2 }}>
+                            {sale.remarks}
+                          </div>
+                        )}
                         {sale.discount > 0 && (
                           <div style={{ fontSize: 10, color: 'var(--color-error)', marginTop: 2 }}>
                             −₹{sale.discount.toLocaleString('en-IN')} disc.

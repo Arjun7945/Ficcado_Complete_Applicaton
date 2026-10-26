@@ -34,9 +34,9 @@ public class ReportsController {
 
     private final ProfitabilityService profitabilityService;
 
-    @PreAuthorize("hasRole('SUPERADMIN')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN')")
     @GetMapping("/profitability")
-    @Operation(summary = "Calculate profitability for a given period (daily/weekly/monthly/custom) [SUPERADMIN only]")
+    @Operation(summary = "Calculate profitability for a given period (daily/weekly/monthly/custom) [SUPERADMIN or ADMIN]")
     public ResponseEntity<ProfitabilityResponse> getProfitability(
             @RequestParam(defaultValue = "monthly")
             @Parameter(description = "daily | weekly | monthly | custom") String period,

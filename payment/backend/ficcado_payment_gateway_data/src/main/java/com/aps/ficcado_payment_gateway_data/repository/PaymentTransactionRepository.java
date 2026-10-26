@@ -20,6 +20,17 @@ public interface PaymentTransactionRepository extends JpaRepository<PaymentTrans
 
     List<PaymentTransaction> findBySyncStatus(String syncStatus);
 
+    Optional<PaymentTransaction> findByRefundId(String refundId);
+
+    @org.springframework.data.jpa.repository.Query(
+        "SELECT p FROM PaymentTransaction p WHERE p.paymentStatus IN :statuses AND p.createdAt <= :olderThan ORDER BY p.createdAt ASC"
+    )
+    List<PaymentTransaction> findReconciliationCandidates(
+            @org.springframework.data.repository.query.Param("statuses") List<String> statuses,
+            @org.springframework.data.repository.query.Param("olderThan") java.time.Instant olderThan,
+            org.springframework.data.domain.Pageable pageable
+    );
+
     boolean existsByTransactionId(String transactionId);
 
     boolean existsByRazorpayOrderId(String razorpayOrderId);

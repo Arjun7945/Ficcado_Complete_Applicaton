@@ -11,6 +11,10 @@ spring:
     hibernate:
       ddl-auto: create-drop
     show-sql: false
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema-test.sql
   flyway:
     enabled: false
 
@@ -19,6 +23,17 @@ app:
     key-id: rzp_test_mock_key
     key-secret: rzp_test_mock_secret
     webhook-secret: rzp_test_webhook_secret
+    base-url: http://localhost:8083/mock-razorpay
+    connect-timeout-ms: 1000
+    read-timeout-ms: 1000
   ficcado-data:
     url: http://localhost:8081
     internal-secret: ficcado-internal-service-secret-key-change-in-prod
+  reconciliation:
+    enabled: false
+    cron: "0 */10 * * * *"
+    batch-size: 100
+    max-transient-retries: 6
+    circuit-breaker:
+      failure-threshold: 5
+      open-duration-ms: 1000

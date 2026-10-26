@@ -26,7 +26,7 @@ public enum PaymentStatus {
         }
         return switch (this) {
             case CREATED -> target == PROCESSING || target == FAILED || target == EXPIRED;
-            case PROCESSING -> target == COMPLETED || target == REFUND_PENDING || target == FAILED;
+            case PROCESSING -> target == COMPLETED || target == REFUND_PENDING || target == FAILED || target == EXPIRED;
             case REFUND_PENDING -> target == REFUNDED;
             case COMPLETED, FAILED, REFUNDED, EXPIRED -> false;
         };

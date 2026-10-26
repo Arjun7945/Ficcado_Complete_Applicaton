@@ -66,7 +66,16 @@ public class RazorpayWebhookController {
             JsonNode paymentEntity = payloadObj.path("payment").path("entity");
             JsonNode orderEntity = payloadObj.path("order").path("entity");
 
-            String paymentId = paymentEntity.hasNonNull("id") ? paymentEntity.get("id").asText() : null;
+            JsonNode refundEntity = payloadObj.hasNonNull("refund") && payloadObj.get("refund").hasNonNull("entity")
+                    ? payloadObj.get("refund").get("entity")
+                    : objectMapper.createObjectNode();
+
+            String paymentId = paymentEntity.hasNonNull("id")
+                    ? paymentEntity.get("id").asText()
+                    : (refundEntity.hasNonNull("payment_id") ? refundEntity.get("payment_id").asText() : null);
+
+            String refundId = refundEntity.hasNonNull("id") ? refundEntity.get("id").asText() : null;
+
             String orderId = paymentEntity.hasNonNull("order_id")
                     ? paymentEntity.get("order_id").asText()
                     : (orderEntity.hasNonNull("id") ? orderEntity.get("id").asText() : null);
@@ -83,10 +92,19 @@ public class RazorpayWebhookController {
             webhookLogRepository.save(webhookLog);
 
             // 2. Process event actions
+            Optional<PaymentTransaction> txOpt = Optional.empty();
             if (orderId != null) {
-                Optional<PaymentTransaction> txOpt = transactionRepository.findByRazorpayOrderId(orderId);
-                if (txOpt.isPresent()) {
-                    PaymentTransaction tx = txOpt.get();
+                txOpt = transactionRepository.findByRazorpayOrderId(orderId);
+            }
+            if (txOpt.isEmpty() && paymentId != null) {
+                txOpt = transactionRepository.findByRazorpayPaymentId(paymentId);
+            }
+            if (txOpt.isEmpty() && refundId != null) {
+                txOpt = transactionRepository.findByRefundId(refundId);
+            }
+
+            if (txOpt.isPresent()) {
+                PaymentTransaction tx = txOpt.get();
                     tx.setWebhookEventsCount(tx.getWebhookEventsCount() + 1);
 
                     switch (eventType) {
@@ -114,7 +132,6 @@ public class RazorpayWebhookController {
                         default -> log.info("Unhandled webhook event type: {}", eventType);
                     }
                 }
-            }
 
             return ResponseEntity.ok(Map.of("status", "success", "eventId", eventId));
 

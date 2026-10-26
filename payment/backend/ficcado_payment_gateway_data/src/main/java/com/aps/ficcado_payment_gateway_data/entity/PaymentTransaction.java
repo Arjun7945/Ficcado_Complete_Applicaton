@@ -94,6 +94,16 @@ public class PaymentTransaction {
     @Builder.Default
     private BigDecimal deliveryCharge = BigDecimal.ZERO;
 
+    @Column(name = "refund_id", length = 100)
+    private String refundId;
+
+    @Column(name = "reconciliation_run_count", nullable = false)
+    @Builder.Default
+    private Integer reconciliationRunCount = 0;
+
+    @Column(name = "last_reconciled_at")
+    private Instant lastReconciledAt;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

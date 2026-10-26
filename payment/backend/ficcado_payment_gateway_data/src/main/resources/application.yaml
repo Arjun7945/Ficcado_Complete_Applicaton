@@ -35,9 +35,20 @@ app:
     key-id: ${RAZORPAY_KEY_ID:rzp_test_ficcado_demo_key}
     key-secret: ${RAZORPAY_KEY_SECRET:rzp_test_ficcado_secret_12345}
     webhook-secret: ${RAZORPAY_WEBHOOK_SECRET:rzp_webhook_secret_12345}
+    base-url: ${RAZORPAY_BASE_URL:https://api.razorpay.com/v1}
+    connect-timeout-ms: ${RAZORPAY_CONNECT_TIMEOUT_MS:5000}
+    read-timeout-ms: ${RAZORPAY_READ_TIMEOUT_MS:5000}
   ficcado-data:
     url: ${FICCADO_DATA_URL:http://localhost:8081}
     internal-secret: ${INTERNAL_API_KEY:ficcado-internal-service-secret-key-change-in-prod}
+  reconciliation:
+    enabled: ${RECONCILIATION_ENABLED:true}
+    cron: ${RECONCILIATION_CRON:0 */10 * * * *}
+    batch-size: ${RECONCILIATION_BATCH_SIZE:100}
+    max-transient-retries: ${RECONCILIATION_MAX_TRANSIENT_RETRIES:6}
+    circuit-breaker:
+      failure-threshold: ${CIRCUIT_BREAKER_FAILURE_THRESHOLD:5}
+      open-duration-ms: ${CIRCUIT_BREAKER_OPEN_DURATION_MS:30000}
 
 management:
   endpoints:

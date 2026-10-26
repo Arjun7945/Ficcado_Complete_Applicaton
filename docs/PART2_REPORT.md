@@ -17,7 +17,7 @@ This report records all verified actions, command execution results, test output
 | **P2-5** | Customer Wishlist Service | **Completed & Verified (Gate 6 Released)** | Microservice-isolated wishlist on ficcado_website_data, 200 items hard cap, optimistic UI, guest prompt with redirect protection, and batch product hydration. |
 | **P2-6** | Checkout Details & Saved Addresses | **Completed & Verified (Gate 7 Released)** | Guest auth guard, verified account display, saved address selector with 10-cap management, courier delivery selection, server-side quote calculation, and zero simulated payment code. |
 | **P2-7** | Sale Only After Successful Verified Payment | **Completed & Verified (Gate 8 Released)** | Pessimistic locking (AUD-01), invoice retry (AUD-02), website sale remark, state machine with @Version, transactional outbox, customer isolation, and idempotent email notifications. |
-| **P2-8** | Razorpay Reconciliation Scheduler (10-Min, ShedLock) | **In Progress** | 10-min ShedLock scheduled job, Razorpay client, captured order sync, business/transient refund handling, 48-hour expiry. |
+| **P2-8** | Razorpay Reconciliation Scheduler (10-Min, ShedLock) | **Completed & Verified (Gate 9 Released)** | 10-min ShedLock scheduled job, Razorpay client with circuit breaker, captured order sync, business/transient refund handling, 48-hour expiry, idempotent refund guard, and Micrometer metrics. |
 | **P2-9** | Load Tests (k6), Logging Audit & CI Compliance | Not Started | |
 | **P2-10**| Approved Audit Fixes | Not Started | |
 | **P2-11**| Handoff & Required Credentials | Not Started | |
@@ -664,13 +664,96 @@ This report records all verified actions, command execution results, test output
 
 ---
 
+### P2-8: Razorpay Reconciliation Scheduler (10-Min, ShedLock) (C-4) — COMPLETE & VERIFIED
+
+#### 1. Implementations & Architectural Changes
+- **Distributed Scheduler Locking with ShedLock (AUD-07):**
+  - Integrated `shedlock-spring` (5.16.0) and `shedlock-provider-jdbc-template` (5.16.0) in `ficcado_payment_gateway_data`.
+  - Created Flyway migration `V3__reconciliation_and_shedlock.sql`:
+    - Table `shedlock` (`name VARCHAR(64) PRIMARY KEY`, `lock_until`, `locked_at`, `locked_by`).
+    - Added columns `refund_id VARCHAR(100)`, `reconciliation_run_count INT NOT NULL DEFAULT 0`, and `last_reconciled_at TIMESTAMPTZ` on `payment_transactions`.
+    - Added composite lookup index `idx_payment_tx_reconciliation (payment_status, created_at)`.
+  - Created `ShedLockConfig.java` enabling `@EnableSchedulerLock(defaultLockAtMostFor = "PT10M")` with `JdbcTemplateLockProvider` using database time.
+  - Created `PaymentReconciliationScheduler.java` executing `@Scheduled(cron = "${app.reconciliation.cron:0 */10 * * * *}")` guarded by `@SchedulerLock(name = "paymentReconciliationLock", lockAtLeastFor = "PT1M", lockAtMostFor = "PT9M")`.
+- **Razorpay REST API Client & Circuit Breaker:**
+  - Implemented thread-safe `CircuitBreaker.java` (`CLOSED`, `OPEN`, `HALF_OPEN`):
+    - Failure threshold: 5 consecutive failures trips circuit breaker to `OPEN` for 30,000 ms.
+    - Probing: after 30s open duration, transitions to `HALF_OPEN` for single trial call. Success resets to `CLOSED`, failure trips back to `OPEN`.
+    - Fast fail: throws `CircuitBreakerOpenException` when `OPEN`.
+  - Created `DefaultRazorpayApiClient.java` with 5000 ms connect timeout and 5000 ms read timeout via `SimpleClientHttpRequestFactory`.
+  - Methods implemented:
+    - `fetchPaymentsForOrder(orderId)`: queries `GET /orders/{orderId}/payments` with Basic Auth.
+    - `initiateRefund(paymentId, amount, note)`: calls `POST /payments/{paymentId}/refund`.
+    - `fetchRefundStatus(refundId)`: calls `GET /refunds/{refundId}`.
+- **Reconciliation Engine (`PaymentReconciliationService.java`):**
+  - Queries candidate transactions: `paymentStatus IN ('CREATED', 'PROCESSING', 'REFUND_PENDING')` where `createdAt <= now - 5 minutes`, ordered by `createdAt ASC`, limit 100.
+  - Implements all 5 reconciliation branches:
+    1. **Branch 1 (Captured payment without sale):** transitions `CREATED -> PROCESSING -> COMPLETED`, calls `syncService.executeSyncSale`, resets `reconciliationRunCount = 0`, and notifies customer via outbox event.
+    2. **Branch 2 (Business failure):** initiates refund of full captured amount via Razorpay API, stores `refundId`, transitions to `REFUND_PENDING`, and notifies customer to place the order again.
+    3. **Branch 2B (Transient retry threshold):** transient failures are retried for up to 5 runs staying in `PROCESSING` (`syncStatus = RETRY_QUEUED`). On the 6th run (~1 hour of transient errors), starts refund, stores `refundId`, transitions to `REFUND_PENDING`, and notifies customer.
+    4. **Branch 3 (All payments failed):** transitions to `FAILED`, sets `syncStatus = PAYMENT_FAILED`, and notifies customer.
+    5. **Branch 4 (>48 hours without payment):** transitions to `EXPIRED`, sets `syncStatus = EXPIRED`, with strictly zero customer notification.
+    6. **Branch 5 (Refund processed):** verifies `refundId` with Razorpay API; when status is `processed`, transitions `REFUND_PENDING -> REFUNDED`, sets `syncStatus = REFUNDED`, and notifies customer.
+  - **Idempotent Refund Guard:** strictly checks `tx.getRefundId() == null` before calling Razorpay refund API; refund is never created twice even if job runs repeatedly or concurrently.
+  - **Batch Resilience:** individual candidate processing is wrapped in try-catch; failure or exception on one candidate never interrupts the remainder of the batch.
+  - **Micrometer Metrics:** records `ficcado.reconciliation.runs` (counter), `ficcado.reconciliation.duration` (timer), and `ficcado.reconciliation.outcomes` with tag `outcome`.
+- **Webhook Controller Enhancement (`RazorpayWebhookController.java`):**
+  - Enhanced `refund.processed` webhook handler to locate transactions by `orderId`, `paymentId`, or `refundId`.
+
+#### 2. Test Verification & Results
+- **Payment Gateway Backend Tests (`ficcado_payment_gateway_data`):**
+  - `PaymentReconciliationTest.java`: 10/10 pass
+    1. `capturedPaymentCompletesSaleAndNotifiesCustomer` (Branch 1)
+    2. `businessFailureInitiatesRefundAndNotifiesCustomer` (Branch 2)
+    3. `transientFailureRetriedUpTo6RunsThenRefunds` (Branch 2B)
+    4. `refundCreatedOnceEvenIfJobRunsTwice` (Idempotent refund guard)
+    5. `allPaymentsFailedMarksFailedAndNotifiesCustomer` (Branch 3)
+    6. `olderThan48HoursWithoutPaymentMarksExpiredWithoutNotification` (Branch 4)
+    7. `refundProcessedMarksRefunded` (Branch 5)
+    8. `batchContinuesAfterOneAttemptFails` (Batch resilience)
+    9. `userPaidBrowserClosedWebhookLostReconciliationCompletesSale` (Full end-to-end recovery)
+    10. `shedLockPreventsSimultaneousRuns` (ShedLock distributed locking)
+  - `CircuitBreakerTest.java`: 4/4 pass (threshold trip, recovery through half-open, probe failure trip, reset)
+  - `PaymentControllerTest.java`: 7/7 pass
+  - `RazorpayServiceTest.java`: 3/3 pass
+  - `RazorpayWebhookControllerTest.java`: 4/4 pass
+  - Full Payment Gateway Backend Suite: **29/29 tests pass (0 failures, 0 errors, 0 skipped)**.
+- **CRM Backend Tests (`ficcado_crm_backend`):**
+  - Full CRM Backend Suite: **151/151 tests pass (0 failures, 0 errors, 0 skipped)**.
+- **Website Data Backend Tests (`ficcado_website_data`):**
+  - Full Website Data Backend Suite: **49/49 tests pass (0 failures, 0 errors, 0 skipped)**.
+- **Website Frontend Tests:**
+  - `scripts/tests/reconciliation.test.mjs`: 5/5 pass (ShedLock, 10-min scheduler, circuit breaker, 5 branches, Micrometer metrics).
+  - Full Website Frontend Suite: **101/101 tests pass across 23 suites (0 failures, 0 errors, 0 skipped)**.
+- **Brand & Device Verifications:**
+  - `npm run check:brand`: PASS (strictly `Ficcado` and `FIC-`).
+  - `npm run check:devices`: 324/324 tests pass (100% clean across all 12 screen profiles and 27 routes).
+- **Code Quality & Production Builds:**
+  - `npm run typecheck`: PASS (0 errors).
+  - `npm run lint`: PASS (0 errors, 0 warnings).
+  - Next.js Website Build: 37/37 routes compiled cleanly.
+  - Next.js CRM Build: 28/28 routes compiled cleanly.
+
+---
+
 ## Open Questions & Gate Status
 
-### GATE 8: Released — Proceeding to Phase P2-8 (Razorpay Reconciliation Scheduler)
-- Phase P2-7 (Sale Only After Successful Payment) is 100% implemented, verified, and committed.
-- All 150 CRM backend tests, 15 payment gateway tests, 49 website-data backend tests, 96 website frontend tests, and 324 device matrix checks pass with 0 skipped and 0 regressions.
-- All 5 Docker Compose containers healthy.
-- Next Phase in sequence: **Phase P2-8: Razorpay Reconciliation Scheduler (10-Min, ShedLock) (C-4)**.
+### GATE 9: Released — Slated Post-P2-8 Audit Items & Phase P2-9
+- Phase P2-8 (Razorpay Reconciliation Scheduler) is 100% implemented, verified, and committed.
+- Test verification tally across all modules:
+  - CRM Backend (`ficcado_crm_backend`): **151/151 pass** (0 skipped)
+  - Payment Gateway (`ficcado_payment_gateway_data`): **29/29 pass** (0 skipped)
+  - Website Data Backend (`ficcado_website_data`): **49/49 pass** (0 skipped)
+  - Website Frontend: **101/101 pass** (0 skipped, 23 suites)
+  - Device Compatibility Checker: **324/324 pass** (12 mobile, tablet, and desktop device profiles)
+  - Brand Spelling Audit: **PASS** (strictly `Ficcado` and prefix `FIC-`)
+  - Typecheck & Lint: **PASS** (0 errors, 0 warnings)
+  - Next.js Builds: **PASS** (Website 37/37 routes, CRM 28/28 routes)
+- Approved Audit Items prior to Phase P2-9:
+  - **AUD-11 (Connection Pools & Redis Verification):** Scheduled after P2-8 and before P2-9 load tests.
+  - **AUD-12 (Database Indexes on Foreign Keys):** Scheduled after P2-8 and before P2-9 load tests.
+- Next Phase in sequence: **AUD-11 / AUD-12 and Phase P2-9: Load tests (k6), Logging check, CI and compliance verification**.
+
 
 
 

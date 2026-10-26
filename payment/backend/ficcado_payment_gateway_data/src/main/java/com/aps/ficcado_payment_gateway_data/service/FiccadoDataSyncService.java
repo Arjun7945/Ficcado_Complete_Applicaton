@@ -45,6 +45,14 @@ public class FiccadoDataSyncService {
     @Value("${app.ficcado-data.internal-secret:ficcado-internal-service-secret-key-change-in-prod}")
     private String internalSecret;
 
+    public enum SyncResultType {
+        SUCCESS,
+        BUSINESS_FAILURE,
+        TRANSIENT_FAILURE
+    }
+
+    public record SyncOutcome(SyncResultType type, String message) {}
+
     public record InternalSaleResult(
             boolean success,
             String message,
@@ -60,11 +68,19 @@ public class FiccadoDataSyncService {
      */
     @Transactional
     public boolean syncSaleToFiccadoData(PaymentTransaction inputTx) {
+        return executeSyncSale(inputTx).type() == SyncResultType.SUCCESS;
+    }
+
+    /**
+     * Detailed execution returning exact failure classification (business vs transient) for reconciliation.
+     */
+    @Transactional
+    public SyncOutcome executeSyncSale(PaymentTransaction inputTx) {
         PaymentTransaction tx = transactionRepository.findById(inputTx.getId()).orElse(inputTx);
         if ("COMPLETED".equals(tx.getPaymentStatus()) || "SYNCED_TO_FICCADO_DATA".equals(tx.getSyncStatus())) {
             log.info("Transaction {} already synchronized to Ficcado-Data with invoice {}",
                     tx.getTransactionId(), tx.getFiccadoInvoiceNumber());
-            return true;
+            return new SyncOutcome(SyncResultType.SUCCESS, "Already synchronized");
         }
 
         try {
@@ -108,7 +124,7 @@ public class FiccadoDataSyncService {
 
                 log.info("Successfully synchronized payment to Ficcado-Data. Invoice: {}, Sale ID: {}",
                         result.invoiceNumber(), result.saleId());
-                return true;
+                return new SyncOutcome(SyncResultType.SUCCESS, "Synchronized with invoice " + result.invoiceNumber());
             }
 
         } catch (HttpClientErrorException.Conflict conflictEx) {
@@ -123,7 +139,7 @@ public class FiccadoDataSyncService {
 
             log.warn("AUTOMATED REFUND FLAGGED for paymentId={}, customer={}",
                     tx.getRazorpayPaymentId(), tx.getCustomerEmail());
-            return false;
+            return new SyncOutcome(SyncResultType.BUSINESS_FAILURE, conflictEx.getResponseBodyAsString());
 
         } catch (HttpClientErrorException.BadRequest badReqEx) {
             // Business failure: invalid payload or missing item!
@@ -134,7 +150,7 @@ public class FiccadoDataSyncService {
             transactionRepository.save(tx);
 
             saveOutboxEvent(tx, "REFUND_PENDING", badReqEx.getResponseBodyAsString());
-            return false;
+            return new SyncOutcome(SyncResultType.BUSINESS_FAILURE, badReqEx.getResponseBodyAsString());
 
         } catch (HttpServerErrorException | ResourceAccessException transientEx) {
             // Transient failure: 5xx, network timeout, connection refused
@@ -143,7 +159,7 @@ public class FiccadoDataSyncService {
             tx.setSyncStatus("RETRY_QUEUED");
             tx.setFailureReason("Transient error: " + transientEx.getMessage());
             transactionRepository.save(tx);
-            return false;
+            return new SyncOutcome(SyncResultType.TRANSIENT_FAILURE, transientEx.getMessage());
 
         } catch (Exception ex) {
             log.error("Unexpected error during sale synchronization for transaction {}: {}",
@@ -151,13 +167,13 @@ public class FiccadoDataSyncService {
             tx.setSyncStatus("RETRY_QUEUED");
             tx.setFailureReason(ex.getMessage());
             transactionRepository.save(tx);
-            return false;
+            return new SyncOutcome(SyncResultType.TRANSIENT_FAILURE, ex.getMessage());
         }
 
-        return false;
+        return new SyncOutcome(SyncResultType.TRANSIENT_FAILURE, "Unknown sync failure");
     }
 
-    private void saveOutboxEvent(PaymentTransaction tx, String status, String reason) {
+    public void saveOutboxEvent(PaymentTransaction tx, String status, String reason) {
         try {
             OrderStatusEvent event = new OrderStatusEvent(
                     "ORDER_STATUS_CHANGED",

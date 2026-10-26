@@ -105,6 +105,10 @@ public class FiccadoDataSyncService {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.set("X-Internal-Secret", internalSecret);
+            String correlationId = org.slf4j.MDC.get("correlationId");
+            if (correlationId != null && !correlationId.isBlank()) {
+                headers.set("X-Correlation-Id", correlationId);
+            }
 
             HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(payload, headers);
             String url = ficcadoDataUrl + "/api/internal/orders/website-orders";

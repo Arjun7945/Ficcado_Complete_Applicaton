@@ -3,6 +3,7 @@ package com.aps.ficcado_crm_backend.config;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CachingConfigurer;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.interceptor.CacheErrorHandler;
@@ -41,6 +42,20 @@ public class CacheConfig implements CachingConfigurer {
                 .serializeValuesWith(
                         RedisSerializationContext.SerializationPair.fromSerializer(new GenericJackson2JsonRedisSerializer())
                 );
+    }
+
+    @Bean
+    public org.springframework.beans.factory.config.BeanPostProcessor cacheManagerMetricsPostProcessor(io.micrometer.core.instrument.MeterRegistry meterRegistry) {
+        return new org.springframework.beans.factory.config.BeanPostProcessor() {
+            @Override
+            public Object postProcessAfterInitialization(Object bean, String beanName) {
+                if (bean instanceof CacheManager cacheManager && !(bean instanceof InstrumentedCacheManager)) {
+                    log.info("Wrapping CacheManager '{}' with InstrumentedCacheManager for Micrometer metrics", beanName);
+                    return new InstrumentedCacheManager(cacheManager, meterRegistry);
+                }
+                return bean;
+            }
+        };
     }
 
     /**

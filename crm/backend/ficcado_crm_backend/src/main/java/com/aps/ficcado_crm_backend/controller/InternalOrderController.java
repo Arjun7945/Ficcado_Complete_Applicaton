@@ -1,6 +1,7 @@
 package com.aps.ficcado_crm_backend.controller;
 
 import com.aps.ficcado_crm_backend.dto.InternalOrderDto.*;
+import com.aps.ficcado_crm_backend.entity.Customer;
 import com.aps.ficcado_crm_backend.entity.Inventory;
 import com.aps.ficcado_crm_backend.entity.Item;
 import com.aps.ficcado_crm_backend.entity.Sale;
@@ -10,6 +11,7 @@ import com.aps.ficcado_crm_backend.entity.enums.FulfilmentSource;
 import com.aps.ficcado_crm_backend.entity.enums.PaymentStatus;
 import com.aps.ficcado_crm_backend.entity.enums.SaleStatus;
 import com.aps.ficcado_crm_backend.entity.enums.ItemStatus;
+import com.aps.ficcado_crm_backend.repository.CustomerRepository;
 import com.aps.ficcado_crm_backend.repository.InventoryRepository;
 import com.aps.ficcado_crm_backend.repository.ItemRepository;
 import com.aps.ficcado_crm_backend.repository.SaleRepository;
@@ -44,9 +46,10 @@ import java.util.Optional;
  *
  * Guarantees:
  * - Idempotency: Duplicate transactionId returns existing sale without double stock deduction.
- * - Stock safety: Verifies inventory before deducting.
+ * - Stock safety: Verifies inventory with row locking before deducting.
  * - Online-only: Enforces PAID status with online payment mode.
  * - Server-side quote: Computes unit prices, line totals, delivery charge, and stock availability from database.
+ * - Remarks: Strictly set to "WEBSITE SALE".
  */
 @Slf4j
 @RestController
@@ -58,13 +61,14 @@ public class InternalOrderController {
     private final SaleRepository saleRepository;
     private final ItemRepository itemRepository;
     private final InventoryRepository inventoryRepository;
+    private final CustomerRepository customerRepository;
     private final SaleService saleService;
     private final DeliveryService deliveryService;
 
     @Value("${app.internal.api-key:ficcado-internal-service-secret-key-change-in-prod}")
     private String internalApiKey;
 
-    @PostMapping("/create-paid-sale")
+    @PostMapping(value = {"/create-paid-sale", "/website-orders"})
     @Operation(summary = "Create an official Sale and deduct inventory for a verified online payment")
     @Transactional
     public ResponseEntity<?> createPaidSale(
@@ -97,7 +101,41 @@ public class InternalOrderController {
             ));
         }
 
-        // 2. Resolve Items & Validate Stock
+        // 2. Resolve customer details from database if customerId is present (never trust client)
+        String custName = request.customerName();
+        String custEmail = request.customerEmail();
+        String custPhone = request.customerPhone();
+        String custAddress = request.customerAddress();
+
+        if (request.customerId() != null) {
+            Optional<Customer> cOpt = customerRepository.findById(request.customerId());
+            if (cOpt.isPresent()) {
+                Customer c = cOpt.get();
+                if (c.getCustomerName() != null && !c.getCustomerName().isBlank()) custName = c.getCustomerName();
+                if (c.getEmailId() != null && !c.getEmailId().isBlank()) custEmail = c.getEmailId();
+                if (c.getPhoneNumber() != null && !c.getPhoneNumber().isBlank()) custPhone = c.getPhoneNumber();
+                if (c.getAddresses() != null && !c.getAddresses().isEmpty()) {
+                    var matchedAddr = c.getAddresses().stream()
+                            .filter(a -> a.getAddress() != null && a.getAddress().equalsIgnoreCase(request.customerAddress()))
+                            .findFirst();
+                    if (matchedAddr.isPresent()) {
+                        custAddress = matchedAddr.get().getAddress();
+                    } else if (custAddress == null || custAddress.isBlank()) {
+                        var defaultAddr = c.getAddresses().stream()
+                                .filter(a -> Boolean.TRUE.equals(a.getIsDefault()))
+                                .findFirst();
+                        if (defaultAddr.isPresent()) {
+                            custAddress = defaultAddr.get().getAddress();
+                        } else {
+                            custAddress = c.getAddresses().get(0).getAddress();
+                        }
+                    }
+                }
+            }
+        }
+
+        // 3. Resolve Items & Validate Stock & Recompute Quote
+        BigDecimal computedItemsTotal = BigDecimal.ZERO;
         List<SaleLineItem> lineItems = new ArrayList<>();
         for (InternalOrderLineItem itemReq : request.lineItems()) {
             Optional<Item> itemOpt = Optional.empty();
@@ -115,9 +153,14 @@ public class InternalOrderController {
             }
 
             Item item = itemOpt.get();
+            if (item.getCurrentStatus() != ItemStatus.ACTIVE && item.getCurrentStatus() != ItemStatus.IN_STOCK) {
+                log.error("Item '{}' is inactive (status={}) during sale creation", item.getItemName(), item.getCurrentStatus());
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body(new InternalSaleResponse(false, "Item is inactive: " + item.getItemName(), null, null, null, null, false));
+            }
 
-            // Check inventory stock
-            Optional<Inventory> invOpt = inventoryRepository.findByItemIdAndSize(item.getId(), itemReq.size());
+            // Check inventory stock using row lock
+            Optional<Inventory> invOpt = inventoryRepository.findByItemIdAndSizeForUpdate(item.getId(), itemReq.size());
             int availableStock = invOpt.map(Inventory::getTotalQuantity).orElse(0);
             if (availableStock < itemReq.quantity()) {
                 log.error("Insufficient stock for item '{}' (size {}). Available: {}, Requested: {}",
@@ -130,24 +173,39 @@ public class InternalOrderController {
                         ));
             }
 
-            BigDecimal lineTotal = itemReq.priceEach().multiply(BigDecimal.valueOf(itemReq.quantity()));
+            BigDecimal unitPrice = item.getPriceOfItem() != null ? item.getPriceOfItem() : itemReq.priceEach();
+            BigDecimal lineTotal = unitPrice.multiply(BigDecimal.valueOf(itemReq.quantity()));
+            computedItemsTotal = computedItemsTotal.add(lineTotal);
+
             SaleLineItem lineItem = SaleLineItem.builder()
                     .item(item)
                     .itemName(item.getItemName())
                     .size(itemReq.size())
                     .quantity(itemReq.quantity())
-                    .priceEach(itemReq.priceEach())
+                    .priceEach(unitPrice)
                     .totalPrice(lineTotal)
                     .build();
 
             lineItems.add(lineItem);
         }
 
-        // 3. Generate unique invoice number: FIC-INV-[timestamp]
+        BigDecimal deliveryCharge = request.deliveryChargeAmount() != null ? request.deliveryChargeAmount() : BigDecimal.ZERO;
+        BigDecimal expectedTotal = computedItemsTotal.add(deliveryCharge);
+        if (expectedTotal.compareTo(request.amount()) != 0) {
+            log.error("Amount mismatch for transactionId={}: expected {}, received {}",
+                    request.transactionId(), expectedTotal, request.amount());
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(new InternalSaleResponse(
+                            false,
+                            "AMOUNT_MISMATCH: Computed total " + expectedTotal + " does not match paid amount " + request.amount(),
+                            null, null, null, null, false
+                    ));
+        }
+
+        // 4. Generate unique invoice number: FIC-INV-[timestamp]
         String invoiceNumber = generateUniqueInvoiceNumber();
 
-        // 4. Construct Sale entity
-        BigDecimal deliveryCharge = request.deliveryChargeAmount() != null ? request.deliveryChargeAmount() : BigDecimal.ZERO;
+        // 5. Construct Sale entity
         boolean deliveryEnabled = deliveryCharge.compareTo(BigDecimal.ZERO) > 0;
 
         Sale sale = Sale.builder()
@@ -157,16 +215,16 @@ public class InternalOrderController {
                 .modeOfPayment("ONLINE_RAZORPAY")
                 .transactionId(request.transactionId())
                 .deliveryStatus(DeliveryStatus.PENDING)
-                .customerName(request.customerName())
-                .customerEmail(request.customerEmail())
-                .customerPhoneNumber(request.customerPhone())
-                .customerAddress(request.customerAddress())
+                .customerName(custName)
+                .customerEmail(custEmail)
+                .customerPhoneNumber(custPhone)
+                .customerAddress(custAddress)
                 .deliveryChargeEnabled(deliveryEnabled)
                 .deliveryChargeAmount(deliveryCharge)
                 .totalAmount(request.amount())
                 .fulfilmentSource(FulfilmentSource.TAKE_FROM_INVENTORY)
                 .fulfilmentRequestStatus("Normal")
-                .remarks("Website order via Razorpay | Order ID: " + (request.razorpayOrderId() != null ? request.razorpayOrderId() : "N/A"))
+                .remarks("WEBSITE SALE")
                 .lineItems(new ArrayList<>())
                 .build();
 
@@ -175,8 +233,26 @@ public class InternalOrderController {
             sale.getLineItems().add(li);
         }
 
-        // 5. Delegate to SaleService.createSale (system admin = null)
-        Sale saved = saleService.createSale(sale, null);
+        // 5. Delegate to SaleService.createSale with retry on invoice collision
+        Sale saved = null;
+        int attempts = 0;
+        while (saved == null && attempts < 3) {
+            attempts++;
+            sale.setInvoiceNumber(generateUniqueInvoiceNumber());
+            try {
+                saved = saleService.createSale(sale, null);
+            } catch (org.springframework.dao.DataIntegrityViolationException ex) {
+                if (attempts >= 3) {
+                    throw ex;
+                }
+                log.warn("Invoice number collision on [{}], retrying... (attempt {})", sale.getInvoiceNumber(), attempts);
+                try {
+                    Thread.sleep(5);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }
 
         log.info("Successfully recorded online sale [invoice={}, id={}, total={}]",
                 saved.getInvoiceNumber(), saved.getId(), saved.getTotalAmount());

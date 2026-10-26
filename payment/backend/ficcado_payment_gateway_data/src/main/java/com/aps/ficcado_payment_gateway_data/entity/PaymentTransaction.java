@@ -79,6 +79,21 @@ public class PaymentTransaction {
     @Builder.Default
     private Integer webhookEventsCount = 0;
 
+    @Version
+    @Column(name = "version", nullable = false)
+    @Builder.Default
+    private Long version = 0L;
+
+    @Column(name = "address_id")
+    private Long addressId;
+
+    @Column(name = "courier_partner", length = 100)
+    private String courierPartner;
+
+    @Column(name = "delivery_charge", precision = 12, scale = 2)
+    @Builder.Default
+    private BigDecimal deliveryCharge = BigDecimal.ZERO;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -86,4 +101,31 @@ public class PaymentTransaction {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    /**
+     * Transition the payment transaction state using strict state machine rules.
+     * Throws IllegalStateException if transition is not permitted.
+     */
+    public synchronized void transitionTo(PaymentStatus targetStatus, String reason) {
+        PaymentStatus current;
+        try {
+            current = PaymentStatus.valueOf(this.paymentStatus);
+        } catch (Exception e) {
+            current = PaymentStatus.CREATED;
+        }
+
+        if (current == targetStatus) {
+            return; // Idempotent
+        }
+
+        if (!current.canTransitionTo(targetStatus)) {
+            throw new IllegalStateException("Illegal payment status transition: cannot transition from "
+                    + current + " to " + targetStatus + " for transaction " + this.transactionId);
+        }
+
+        this.paymentStatus = targetStatus.name();
+        if (reason != null && !reason.isBlank()) {
+            this.failureReason = reason;
+        }
+    }
 }

@@ -12,20 +12,21 @@ public class PaymentDto {
 
     public record OrderItemDto(
             Long itemId,
-            @NotBlank String itemName,
+            String itemName,
             @NotBlank String size,
             @NotNull @Positive Integer quantity,
-            @NotNull BigDecimal priceEach
+            BigDecimal priceEach
     ) {}
 
     public record CreateOrderRequest(
-            @NotNull @Positive BigDecimal amount,
+            BigDecimal amount,
             String currency,
             Long customerId,
-            @NotBlank String customerName,
-            @NotBlank String customerEmail,
-            @NotBlank String customerPhone,
-            @NotBlank String shippingAddress,
+            String customerName,
+            String customerEmail,
+            String customerPhone,
+            String shippingAddress,
+            Long addressId,
             BigDecimal deliveryCharge,
             String courierPartner,
             @NotEmpty List<OrderItemDto> items
@@ -57,7 +58,7 @@ public class PaymentDto {
             String invoiceNumber,
             Long saleId,
             String transactionId,
-            String syncStatus
+            String status
     ) {}
 
     public record PaymentStatusResponse(
@@ -72,6 +73,21 @@ public class PaymentDto {
             Long saleId,
             String customerName,
             String customerEmail,
+            String failureReason,
             String createdAt
     ) {}
+
+    public record OrderStatusEvent(
+            String eventType,
+            String transactionId,
+            String razorpayOrderId,
+            String status,
+            String invoiceNumber,
+            Long saleId,
+            String customerEmail,
+            String customerName,
+            BigDecimal amount,
+            String failureReason
+    ) {}
 }
+

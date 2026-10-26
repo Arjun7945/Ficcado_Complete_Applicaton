@@ -1861,6 +1861,43 @@
         }
       }
     },
+    "/api/internal/orders/website-orders" : {
+      "post" : {
+        "tags" : [ "Internal Order Handshakes" ],
+        "summary" : "Create an official Sale and deduct inventory for a verified online payment",
+        "operationId" : "createPaidSale_1",
+        "parameters" : [ {
+          "name" : "X-Internal-Secret",
+          "in" : "header",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreatePaidSaleRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/internal/customer/otp-login" : {
       "post" : {
         "tags" : [ "Internal Service Handshakes" ],
@@ -4918,21 +4955,21 @@
           "amount" : {
             "type" : "number"
           },
+          "customerId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
           "customerName" : {
-            "type" : "string",
-            "minLength" : 1
+            "type" : "string"
           },
           "customerEmail" : {
-            "type" : "string",
-            "minLength" : 1
+            "type" : "string"
           },
           "customerPhone" : {
-            "type" : "string",
-            "minLength" : 1
+            "type" : "string"
           },
           "customerAddress" : {
-            "type" : "string",
-            "minLength" : 1
+            "type" : "string"
           },
           "deliveryChargeAmount" : {
             "type" : "number"
@@ -4948,7 +4985,7 @@
             "minItems" : 1
           }
         },
-        "required" : [ "amount", "customerAddress", "customerEmail", "customerName", "customerPhone", "lineItems", "transactionId" ]
+        "required" : [ "amount", "lineItems", "transactionId" ]
       },
       "InternalOrderLineItem" : {
         "type" : "object",

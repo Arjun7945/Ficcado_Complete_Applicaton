@@ -112,7 +112,7 @@ class RazorpayWebhookControllerTest {
         verify(syncService, times(1)).syncSaleToFiccadoData(any());
 
         PaymentTransaction updated = transactionRepository.findByRazorpayOrderId(orderId).orElseThrow();
-        assertEquals("CAPTURED", updated.getPaymentStatus());
+        assertEquals("PROCESSING", updated.getPaymentStatus());
         assertEquals(paymentId, updated.getRazorpayPaymentId());
 
         // 2. Second event call with same event_id: Should be ignored idempotently without calling syncService again
@@ -124,5 +124,103 @@ class RazorpayWebhookControllerTest {
                 .andExpect(jsonPath("$.status").value("already_processed"));
 
         verify(syncService, times(1)).syncSaleToFiccadoData(any());
+    }
+
+    @Test
+    @DisplayName("webhook handles payment.failed: transitions to FAILED and makes ZERO calls to Ficcado-Data")
+    void handlesPaymentFailedWithoutFiccadoCall() throws Exception {
+        String orderId = "order_wh_failed";
+        String eventId = "evt_wh_failed_1";
+
+        PaymentTransaction tx = PaymentTransaction.builder()
+                .transactionId("FIC-TXN-WH-FAIL")
+                .razorpayOrderId(orderId)
+                .amount(BigDecimal.valueOf(1499))
+                .customerName("Failed User")
+                .customerEmail("failed@ficcado.in")
+                .customerPhone("9876543210")
+                .shippingAddress("Aluva")
+                .orderItemsJson("[]")
+                .paymentStatus("CREATED")
+                .build();
+        transactionRepository.save(tx);
+
+        String payload = """
+                {
+                    "event_id": "%s",
+                    "event": "payment.failed",
+                    "payload": {
+                        "payment": {
+                            "entity": {
+                                "id": "pay_failed_1",
+                                "order_id": "%s",
+                                "error_description": "Card expired at bank"
+                            }
+                        }
+                    }
+                }
+                """.formatted(eventId, orderId);
+
+        String signature = razorpayService.calculateHmacSha256(payload, "rzp_test_webhook_secret");
+
+        mockMvc.perform(post("/api/v1/webhooks/razorpay")
+                        .header("X-Razorpay-Signature", signature)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"));
+
+        PaymentTransaction updated = transactionRepository.findByRazorpayOrderId(orderId).orElseThrow();
+        assertEquals("FAILED", updated.getPaymentStatus());
+        assertEquals("Card expired at bank", updated.getFailureReason());
+
+        // CRITICAL INVARIANT (Part 2 Rule): Zero calls to Ficcado-Data on failed payment!
+        verify(syncService, org.mockito.Mockito.never()).syncSaleToFiccadoData(any());
+    }
+
+    @Test
+    @DisplayName("webhook handles refund.processed: transitions from REFUND_PENDING to REFUNDED")
+    void handlesRefundProcessed() throws Exception {
+        String orderId = "order_wh_refund";
+        String eventId = "evt_wh_refund_1";
+
+        PaymentTransaction tx = PaymentTransaction.builder()
+                .transactionId("FIC-TXN-WH-REFUND")
+                .razorpayOrderId(orderId)
+                .amount(BigDecimal.valueOf(1499))
+                .customerName("Refund User")
+                .customerEmail("refund@ficcado.in")
+                .customerPhone("9876543210")
+                .shippingAddress("Aluva")
+                .orderItemsJson("[]")
+                .paymentStatus("REFUND_PENDING")
+                .build();
+        transactionRepository.save(tx);
+
+        String payload = """
+                {
+                    "event_id": "%s",
+                    "event": "refund.processed",
+                    "payload": {
+                        "order": {
+                            "entity": {
+                                "id": "%s"
+                            }
+                        }
+                    }
+                }
+                """.formatted(eventId, orderId);
+
+        String signature = razorpayService.calculateHmacSha256(payload, "rzp_test_webhook_secret");
+
+        mockMvc.perform(post("/api/v1/webhooks/razorpay")
+                        .header("X-Razorpay-Signature", signature)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"));
+
+        PaymentTransaction updated = transactionRepository.findByRazorpayOrderId(orderId).orElseThrow();
+        assertEquals("REFUNDED", updated.getPaymentStatus());
     }
 }

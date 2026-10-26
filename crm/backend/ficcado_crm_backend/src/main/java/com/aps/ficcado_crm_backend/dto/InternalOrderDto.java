@@ -22,14 +22,30 @@ public class InternalOrderDto {
             @NotBlank String transactionId,
             String razorpayOrderId,
             @NotNull BigDecimal amount,
-            @NotBlank String customerName,
-            @NotBlank String customerEmail,
-            @NotBlank String customerPhone,
-            @NotBlank String customerAddress,
+            Long customerId,
+            String customerName,
+            String customerEmail,
+            String customerPhone,
+            String customerAddress,
             BigDecimal deliveryChargeAmount,
             String courierPartner,
             @NotEmpty List<InternalOrderLineItem> lineItems
-    ) {}
+    ) {
+        public CreatePaidSaleRequest(
+                String transactionId,
+                String razorpayOrderId,
+                BigDecimal amount,
+                String customerName,
+                String customerEmail,
+                String customerPhone,
+                String customerAddress,
+                BigDecimal deliveryChargeAmount,
+                String courierPartner,
+                List<InternalOrderLineItem> lineItems
+        ) {
+            this(transactionId, razorpayOrderId, amount, null, customerName, customerEmail, customerPhone, customerAddress, deliveryChargeAmount, courierPartner, lineItems);
+        }
+    }
 
     public record InternalSaleResponse(
             boolean success,

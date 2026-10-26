@@ -1,7 +1,9 @@
 package com.aps.ficcado_crm_backend.repository;
 
 import com.aps.ficcado_crm_backend.entity.Inventory;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -13,6 +15,10 @@ import java.util.Optional;
 public interface InventoryRepository extends JpaRepository<Inventory, Long> {
 
     Optional<Inventory> findByItemIdAndSize(Long itemId, String size);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT i FROM Inventory i WHERE i.item.id = :itemId AND i.size = :size")
+    Optional<Inventory> findByItemIdAndSizeForUpdate(@Param("itemId") Long itemId, @Param("size") String size);
 
     List<Inventory> findByItemId(Long itemId);
 

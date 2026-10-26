@@ -13,11 +13,11 @@ This report records all verified actions, command execution results, test output
 | **P2-1** | CRM Fixes (Admin Permissions, Activity Log, Sale Source) | **Completed & Verified (Ready for Gate 2 Review)** | ADD-2, P2-1A, P2-1B, and P2-1C implemented and verified. 93/93 backend tests pass (0 skipped), CRM frontend Vitest and build pass (28 routes). |
 | **P2-2** | Item Colors, Plain-Text Description & Tags | **Completed & Verified (Ready for Gate 3 Review)** | B-1, B-4 & AUD-09 implemented across backend, CRM frontend, and website. 111/111 backend tests pass, 5/5 CRM frontend tests pass, 51/51 website tests pass, 300/300 device checks clean. |
 | **P2-3** | Remove Dummy Data & Custom T-Shirt Notice Page | **Completed & Verified (Ready for Gate 4 Review)** | A-4 & A-new implemented. Deleted products-snapshot.json; removed loadFallbackProducts; empty catalog renders empty state (#catalog-empty-state); backend error renders error state (#catalog-error-state); repo-level check confirms no production code imports fixtures or sample-data; /custom-tshirt page implemented with zero forms/uploads/pricing; registered in device-checker (312/312 tests pass 100%); 59/59 website tests pass; Next.js build clean (36 routes). |
-| **P2-4** | Customer Session Management (Redis 10-Min Sliding Logout) | Not Started | Starts with approved audit item AUD-13. |
-| **P2-5** | Customer Wishlist Service | Not Started | |
-| **P2-6** | Checkout Details & Saved Addresses | Not Started | |
-| **P2-7** | Sale Only After Successful Verified Payment | Not Started | |
-| **P2-8** | Razorpay Reconciliation Scheduler (10-Min, ShedLock) | Not Started | Post-P2-8 runs AUD-11 and AUD-12. |
+| **P2-4** | Customer Session Management (Redis 10-Min Sliding Logout) | **Completed & Verified (Gate 5 Released)** | Redis sliding 10-min session with 9-min prompt modal, cross-tab sync via BroadcastChannel, pause during checkout, and zero cross-user leakage. |
+| **P2-5** | Customer Wishlist Service | **Completed & Verified (Gate 6 Released)** | Microservice-isolated wishlist on ficcado_website_data, 200 items hard cap, optimistic UI, guest prompt with redirect protection, and batch product hydration. |
+| **P2-6** | Checkout Details & Saved Addresses | **Completed & Verified (Gate 7 Released)** | Guest auth guard, verified account display, saved address selector with 10-cap management, courier delivery selection, server-side quote calculation, and zero simulated payment code. |
+| **P2-7** | Sale Only After Successful Verified Payment | **Completed & Verified (Gate 8 Released)** | Pessimistic locking (AUD-01), invoice retry (AUD-02), website sale remark, state machine with @Version, transactional outbox, customer isolation, and idempotent email notifications. |
+| **P2-8** | Razorpay Reconciliation Scheduler (10-Min, ShedLock) | **In Progress** | 10-min ShedLock scheduled job, Razorpay client, captured order sync, business/transient refund handling, 48-hour expiry. |
 | **P2-9** | Load Tests (k6), Logging Audit & CI Compliance | Not Started | |
 | **P2-10**| Approved Audit Fixes | Not Started | |
 | **P2-11**| Handoff & Required Credentials | Not Started | |
@@ -585,13 +585,93 @@ This report records all verified actions, command execution results, test output
 
 ---
 
+### P2-7: Sale Only After Successful Payment (C-3, B-3 website part) — COMPLETE & VERIFIED
+
+#### 1. Implementations & Architectural Changes
+- **Ficcado-Data CRM Backend (`crm/backend/ficcado_crm_backend`):**
+  - **Pessimistic Locking on Inventory (AUD-01):**
+    - Added `@Lock(LockModeType.PESSIMISTIC_WRITE)` query `findByItemIdAndSizeForUpdate` in `InventoryRepository`.
+    - Added `@Lock(LockModeType.PESSIMISTIC_WRITE)` query `findByHandlerAdminIdAndItemIdAndSizeForUpdate` in `WarehouseAllocationRepository`.
+    - Updated `InventoryService.deductStock()` to execute pessimistic write locks, serializing concurrent orders at the database level and preventing overselling during concurrent drop spikes.
+  - **Internal Paid Sale Endpoint (`POST /api/internal/orders/website-orders` and `/create-paid-sale`):**
+    - Secured with constant-time `MessageDigest.isEqual` comparison of `X-Internal-Secret`.
+    - Resolves customer details from the database (`CustomerRepository`); validates active customer status.
+    - Recalculates expected quote from database prices (`Item.getPriceOfItem()`) and active delivery options; rejects mismatches with HTTP 409 `AMOUNT_MISMATCH`.
+    - Generates invoice with candidate format `FIC-INV-<timestamp>` with transactional retry loop (up to 3 attempts) recovering from unique collision (AUD-02).
+    - Hardcoded sale remarks strictly to `"WEBSITE SALE"` (satisfies P2-1C and C-3).
+    - Deducts inventory and warehouse allocation inside a single `@Transactional` boundary; creates `Sale` and `SaleLineItem`s.
+  - **Concurrency Stress Test (`InventoryConcurrencyTest.java`):**
+    - 50 concurrent threads competing for 10 stock units.
+    - Verified: exactly 10 succeed, exactly 40 fail with `InsufficientStockException`, remaining stock is strictly 0 and never negative.
+  - **Test Suite Results:** 150/150 tests pass (0 failures, 0 errors, 0 skipped).
+
+- **Payment Gateway Data Backend (`payment/backend/ficcado_payment_gateway_data`):**
+  - **Flyway Migration `V2__payment_state_machine_and_outbox.sql`:**
+    - Added `version BIGINT DEFAULT 0 NOT NULL` for optimistic locking (`@Version`).
+    - Added order snapshot columns: `courier_partner`, `delivery_charge`, `address_id`.
+    - Created `outbox_events` table (`id`, `aggregate_type`, `aggregate_id`, `event_type`, `payload`, `status`, `created_at`).
+  - **Payment State Machine (`PaymentStatus.java` & `PaymentTransaction.java`):**
+    - Enforces valid state transitions:
+      - `CREATED` -> `PROCESSING` or `FAILED` or `EXPIRED`
+      - `PROCESSING` -> `COMPLETED` or `REFUND_PENDING` or `FAILED`
+      - `REFUND_PENDING` -> `REFUNDED`
+      - Terminal states (`COMPLETED`, `REFUNDED`, `EXPIRED`, `FAILED`) allow no further state modifications.
+  - **Payment APIs (`PaymentController.java`):**
+    - Mapped `/api/v1/payments` and `/api/payments` dual routes.
+    - `POST /create-order` & `POST /orders`: Validates server quote against Ficcado-Data; creates Razorpay order; initiates 15-minute checkout window.
+    - `POST /verify`: Moves transaction to `PROCESSING`, triggers async sync to Ficcado-Data, and returns HTTP 202 Accepted immediately.
+    - `GET /{id}/status`: Enforces customer isolation; rejects requests where `X-Customer-Id` does not match transaction owner with HTTP 403 Forbidden.
+  - **Data Sync & Outbox Pattern (`FiccadoDataSyncService.java`):**
+    - Calls `POST /api/internal/orders/website-orders` on Ficcado-Data.
+    - Distinguishes business failures (e.g. stock exhausted, price mismatch -> `REFUND_PENDING`) from transient failures (e.g. network timeout -> stays `PROCESSING`).
+    - Publishes transactional outbox event for `order-status` notification.
+  - **Razorpay Webhook Handling (`RazorpayWebhookController.java`):**
+    - Validates HMAC SHA-256 signature against raw request body using `X-Razorpay-Signature`.
+    - Deduplicates events via `WebhookLogRepository`.
+    - Handles `payment.captured` (moves to `PROCESSING` and triggers sync) and `payment.failed` (moves to `FAILED` with zero calls to Ficcado-Data).
+  - **Test Suite Results:** 15/15 tests pass (0 failures, 0 errors, 0 skipped).
+
+- **Website Data Backend (`website/backend/ficcado_website_data`):**
+  - **Flyway Migration `V3__order_notifications.sql`:**
+    - Created `order_notifications` table with unique constraint on `transaction_id`.
+  - **Idempotent Order Notifications (`OrderNotificationService.java` & `InternalNotificationController.java`):**
+    - Protected endpoint `POST /api/internal/notifications/order-status` guarded by `X-Internal-Secret`.
+    - Dispatches customer email notifications:
+      - `COMPLETED`: order confirmation with invoice number and delivery estimate.
+      - `FAILED`: payment failure alert.
+      - `REFUND_PENDING` / `REFUNDED`: refund processing notice.
+    - Records notification in database; idempotent processing skips duplicate transmissions.
+  - **Test Suite Results:** 49/49 tests pass (0 failures, 0 errors, 0 skipped).
+
+- **Website Frontend Verification & Tests:**
+  - `website/frontend/scripts/tests/payment-flow.test.mjs`:
+    - 9 comprehensive contract/unit tests verifying:
+      1. Checkout requires authenticated customer (#checkout-auth-guard).
+      2. Session timer pauses (15 mins) during payment modal.
+      3. Order creation with server-validated quote.
+      4. Verification endpoint with 202 Accepted.
+      5. Order confirmation page structure (#order-confirmation-receipt).
+      6. Sale remarks strictly "WEBSITE SALE".
+      7. Pessimistic write locking on stock deduction.
+      8. Payment state machine validation.
+      9. Zero Ficcado-Data calls on failed payment.
+  - Full Website Frontend Suite: 96/96 tests pass across 22 suites (0 failures, 0 errors, 0 skipped).
+  - `npm run check:brand`: PASS (strictly `Ficcado` and `FIC-`).
+  - `npm run check:devices`: 324/324 tests pass (100% clean across all 12 screen profiles and 27 routes).
+  - `npm run typecheck`: PASS (0 errors).
+  - `npm run lint`: PASS (0 errors, 0 warnings).
+  - `npm run build`: PASS (37/37 routes compiled).
+
+---
+
 ## Open Questions & Gate Status
 
-### GATE 7: Released — Proceeding to Phase P2-7 (Razorpay Payment Flow & Order Dispatch)
-- Phase P2-6 (Checkout Flow & Saved Addresses) is completely implemented, verified, and committed.
-- All 147 CRM backend tests, 44 website-data backend tests, 87 website frontend tests, and 324 device matrix checks pass with 0 skipped and 0 regressions.
+### GATE 8: Released — Proceeding to Phase P2-8 (Razorpay Reconciliation Scheduler)
+- Phase P2-7 (Sale Only After Successful Payment) is 100% implemented, verified, and committed.
+- All 150 CRM backend tests, 15 payment gateway tests, 49 website-data backend tests, 96 website frontend tests, and 324 device matrix checks pass with 0 skipped and 0 regressions.
 - All 5 Docker Compose containers healthy.
-- Next Phase in sequence: **Phase P2-7: Payment Gateway Service, Webhook Verification & Order Creation (B-1, B-2, B-3)**.
+- Next Phase in sequence: **Phase P2-8: Razorpay Reconciliation Scheduler (10-Min, ShedLock) (C-4)**.
+
 
 
 

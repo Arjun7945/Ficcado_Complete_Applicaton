@@ -1,7 +1,11 @@
 package com.aps.ficcado_payment_gateway_data.controller;
 
+import com.aps.ficcado_payment_gateway_data.dto.PaymentDto.OrderStatusEvent;
+import com.aps.ficcado_payment_gateway_data.entity.OutboxEvent;
+import com.aps.ficcado_payment_gateway_data.entity.PaymentStatus;
 import com.aps.ficcado_payment_gateway_data.entity.PaymentTransaction;
 import com.aps.ficcado_payment_gateway_data.entity.WebhookLog;
+import com.aps.ficcado_payment_gateway_data.repository.OutboxEventRepository;
 import com.aps.ficcado_payment_gateway_data.repository.PaymentTransactionRepository;
 import com.aps.ficcado_payment_gateway_data.repository.WebhookLogRepository;
 import com.aps.ficcado_payment_gateway_data.service.FiccadoDataSyncService;
@@ -20,13 +24,14 @@ import java.util.Optional;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/webhooks/razorpay")
+@RequestMapping(value = {"/api/v1/webhooks/razorpay", "/api/payments/webhook"})
 @RequiredArgsConstructor
 public class RazorpayWebhookController {
 
     private final RazorpayService razorpayService;
     private final WebhookLogRepository webhookLogRepository;
     private final PaymentTransactionRepository transactionRepository;
+    private final OutboxEventRepository outboxEventRepository;
     private final FiccadoDataSyncService syncService;
     private final ObjectMapper objectMapper;
 
@@ -87,18 +92,24 @@ public class RazorpayWebhookController {
                     switch (eventType) {
                         case "payment.captured", "order.paid" -> {
                             if (paymentId != null) tx.setRazorpayPaymentId(paymentId);
-                            tx.setPaymentStatus("CAPTURED");
+                            tx.transitionTo(PaymentStatus.PROCESSING, null);
                             transactionRepository.save(tx);
                             syncService.syncSaleToFiccadoData(tx);
                         }
                         case "payment.failed" -> {
-                            tx.setPaymentStatus("FAILED");
                             String reason = paymentEntity.hasNonNull("error_description")
                                     ? paymentEntity.get("error_description").asText()
                                     : "Payment failed at gateway";
-                            tx.setFailureReason(reason);
+                            tx.transitionTo(PaymentStatus.FAILED, reason);
                             transactionRepository.save(tx);
-                            log.warn("Payment failed for orderId={}: {}", orderId, reason);
+                            saveOutboxEvent(tx, "FAILED", reason);
+                            log.warn("Payment failed for orderId={}: {} (Zero writes to Ficcado-Data)", orderId, reason);
+                        }
+                        case "refund.processed" -> {
+                            tx.transitionTo(PaymentStatus.REFUNDED, "Refund processed by gateway");
+                            transactionRepository.save(tx);
+                            saveOutboxEvent(tx, "REFUNDED", null);
+                            log.info("Refund processed for orderId={}", orderId);
                         }
                         default -> log.info("Unhandled webhook event type: {}", eventType);
                     }
@@ -113,4 +124,33 @@ public class RazorpayWebhookController {
                     .body(Map.of("error", "Webhook processing failed: " + e.getMessage()));
         }
     }
+
+    private void saveOutboxEvent(PaymentTransaction tx, String status, String reason) {
+        try {
+            OrderStatusEvent event = new OrderStatusEvent(
+                    "ORDER_STATUS_CHANGED",
+                    tx.getTransactionId(),
+                    tx.getRazorpayOrderId(),
+                    status,
+                    tx.getFiccadoInvoiceNumber(),
+                    tx.getFiccadoSaleId(),
+                    tx.getCustomerEmail(),
+                    tx.getCustomerName(),
+                    tx.getAmount(),
+                    reason
+            );
+
+            OutboxEvent outbox = OutboxEvent.builder()
+                    .eventType("order-status")
+                    .aggregateId(tx.getTransactionId())
+                    .payload(objectMapper.writeValueAsString(event))
+                    .status("PENDING")
+                    .build();
+
+            outboxEventRepository.save(outbox);
+        } catch (Exception e) {
+            log.error("Failed to save webhook outbox event: {}", e.getMessage());
+        }
+    }
 }
+

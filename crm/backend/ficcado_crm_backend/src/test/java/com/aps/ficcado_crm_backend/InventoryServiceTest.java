@@ -77,7 +77,7 @@ class InventoryServiceTest {
     @Test
     @DisplayName("deductFromInventory reduces stock and records history")
     void deductFromInventory_success() {
-        when(inventoryRepository.findByItemIdAndSize(10L, "L")).thenReturn(Optional.of(inventory));
+        when(inventoryRepository.findByItemIdAndSizeForUpdate(10L, "L")).thenReturn(Optional.of(inventory));
         when(inventoryRepository.save(any(Inventory.class))).thenAnswer(inv -> inv.getArgument(0));
 
         inventoryService.deductFromInventory(10L, "L", 5, "INV-101", "SALE", admin);
@@ -90,7 +90,7 @@ class InventoryServiceTest {
     @Test
     @DisplayName("deductFromInventory throws IllegalStateException when stock is insufficient")
     void deductFromInventory_insufficientStock_throwsIllegalStateException() {
-        when(inventoryRepository.findByItemIdAndSize(10L, "L")).thenReturn(Optional.of(inventory));
+        when(inventoryRepository.findByItemIdAndSizeForUpdate(10L, "L")).thenReturn(Optional.of(inventory));
 
         IllegalStateException ex = assertThrows(IllegalStateException.class,
                 () -> inventoryService.deductFromInventory(10L, "L", 25, "INV-102", "SALE", admin));
@@ -118,7 +118,7 @@ class InventoryServiceTest {
                 .handlerAdmin(admin)
                 .build();
 
-        when(warehouseAllocationRepository.findByHandlerAdminIdAndItemIdAndSize(1L, 10L, "L"))
+        when(warehouseAllocationRepository.findByHandlerAdminIdAndItemIdAndSizeForUpdate(1L, 10L, "L"))
                 .thenReturn(Optional.of(wa));
         when(warehouseAllocationRepository.save(any(WarehouseAllocation.class))).thenAnswer(inv -> inv.getArgument(0));
 

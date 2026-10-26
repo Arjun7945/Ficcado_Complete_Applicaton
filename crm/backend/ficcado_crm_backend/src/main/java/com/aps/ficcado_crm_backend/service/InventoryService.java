@@ -48,7 +48,7 @@ public class InventoryService {
         if (itemId == null) {
             throw new IllegalArgumentException("Cannot deduct inventory: itemId cannot be null (size: %s)".formatted(size));
         }
-        Inventory inv = inventoryRepository.findByItemIdAndSize(itemId, size)
+        Inventory inv = inventoryRepository.findByItemIdAndSizeForUpdate(itemId, size)
                 .orElseThrow(() -> new IllegalStateException(
                         "Inventory record not found for item %d, size %s".formatted(itemId, size)));
 
@@ -82,7 +82,7 @@ public class InventoryService {
             throw new IllegalArgumentException("Cannot deduct warehouse stock: itemId cannot be null (size: %s)".formatted(size));
         }
         WarehouseAllocation wa = warehouseAllocationRepository
-                .findByHandlerAdminIdAndItemIdAndSize(handlerAdminId, itemId, size)
+                .findByHandlerAdminIdAndItemIdAndSizeForUpdate(handlerAdminId, itemId, size)
                 .orElseThrow(() -> new IllegalStateException(
                         "No warehouse allocation found for handler %d, item %d, size %s"
                                 .formatted(handlerAdminId, itemId, size)));

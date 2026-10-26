@@ -9,8 +9,8 @@ This report records all verified actions, command execution results, test output
 | Phase | Description | Status | Evidence / Notes |
 |---|---|---|---|
 | **P2-0A** | Docker Compose Infrastructure | **Completed & Verified** | All 5 containers up and healthy; connectivity and policies verified with live commands. |
-| **P2-0** | Baseline, Discovery, UI Guide & Audit | **In Progress** | Baseline test run, discovery, UI guide and audit underway. |
-| **P2-1** | CRM Fixes (Admin Permissions, Activity Log, Sale Source) | Not Started | Pending Gate 1 approval. |
+| **P2-0** | Baseline, Discovery, UI Guide & Audit | **Completed (Gate 1 Pause)** | Full baseline test runs, discovery items located, UI Guide and Audit reports written. Stopped for Gate 1 developer review. |
+| **P2-1** | CRM Fixes (Admin Permissions, Activity Log, Sale Source) | **Blocked at Gate 1** | Awaiting developer review of `docs/PART2_AUDIT.md` [OUT] findings. |
 | **P2-2** | Item Colors, Plain-Text Description & Tags | Not Started | |
 | **P2-3** | Remove Dummy Data & Custom T-Shirt Notice Page | Not Started | |
 | **P2-4** | Customer Session Management (Redis 10-Min Sliding Logout) | Not Started | |
@@ -91,10 +91,53 @@ This report records all verified actions, command execution results, test output
 
 ---
 
+### P2-0: Baseline, Discovery, UI Guide & Technical Audit
+
+#### 1. Baseline Test Suite Verification (All 5 Modules)
+
+| Module | Build / Test Command | Result | Pass | Fail | Skipped | Notes |
+|---|---|:---:|:---:|:---:|:---:|---|
+| **CRM Backend** (`ficcado_crm_backend`) | `.\mvnw.cmd test` | **PASS** | 62 | 0 | 0 | All unit and MockMvc tests passed cleanly. |
+| **Website Backend** (`ficcado_website_data`) | `.\mvnw.cmd test` | **PASS** | 19 | 0 | 0 | Flyway migrations & WebMvc tests passed cleanly. |
+| **Payment Backend** (`ficcado_payment_gateway_data`) | `.\mvnw.cmd test` | **PASS** | 10 | 0 | 0 | Razorpay webhook & payment controller tests passed. |
+| **Website Frontend** (`website/frontend`) | `npm test`<br>`npm run typecheck`<br>`npm run lint`<br>`npm run build`<br>`npm run check:brand`<br>`node scripts/device-checker.mjs` | **PASS** | 51 tests (14 suites)<br>0 type errors<br>0 lint errors<br>35 routes built<br>0 brand violations<br>300/300 device checks | 0 | 0 | Full clean pass across all 6 verification tools and 12 device matrix profiles. |
+| **CRM Frontend** (`crm/ficcado_crm_app`) | `npm run build`<br>`npm run lint` | **MIXED (Baseline)** | 28 routes compiled | 246 errors (lint)<br>32 warnings | 0 | Next.js compilation succeeds with 28 routes. Pre-existing lint failure documented (explicit `any` and React 19 hook rules). |
+
+#### 2. Discovery Items Registry
+
+| Item Marked *(discover)* | File & Line Reference | Current Implementation & Behavior |
+|---|---|---|
+| **Customer Auth & JWT** | `CustomerAuthController.java:55-140`<br>`CustomerJwtAuthenticationFilter.java:45-80` | Implements `/register`, `/login`, `/logout`, and `/me`. Sets `ficcado_customer_session` cookie. |
+| **Session Loss on Refresh** | `CustomerAuthContext.tsx:35-80`<br>`CustomerJwtAuthenticationFilter.java` | Cross-port origin differences (port 3000 vs 8000) and missing Redis session store cause cookie loss during SSR navigation and browser refresh. |
+| **Wishlist Feature** | `next.config.ts:18` | Wishlist does not yet exist in backend database. Legacy `/favorites` route redirects to `/`. |
+| **Checkout Couriers & Charges** | `website/frontend/src/lib/api/couriers.ts:15-30`<br>`checkout/page.tsx:31-41` | Default couriers (`del-standard`: ₹0, `del-priority`: ₹99). Checkout still contains simulated payment IDs (`pay_sim_...`) and simulated signatures. |
+| **Payment Service State** | `FiccadoDataSyncService.java:32, 86`<br>`PaymentTransaction.java:18-89` | Synchronous `RestTemplate` calls to Ficcado-Data without circuit breaker. `PaymentTransaction` lacks `@Version` and state machine enums. |
+| **Sales `remarks` Column** | `crm/backend/.../entity/Sale.java:115`<br>`dashboard/sales/page.tsx` | Column `remarks` exists (default `"No_Remarks"`). Displayed in CRM sales reports and table details. |
+| **Activity Log Stray Separator** | `crm/backend/.../service/InventoryService.java:209` | Message builder produces `"Inventory adjusted: ... from 2 → 5 — "` when reason/note is empty due to unconditional ` + " — "`. |
+| **Admin Role Checks** | `AdminController.java`, `SecurityConfig.java`, `AppSidebar.tsx:165-220` | Certain administrative endpoints and sidebar sections restrict access to `SUPERADMIN`, denying newly created `ADMIN` users. |
+| **Concurrency & Atomic Safety** | `SaleService.java:63` (`@Transactional`)<br>`InventoryService.java:42` (`@Transactional`)<br>`InventoryRepository.java:15` | `createSale` is `@Transactional`, but `deductFromInventory` reads and updates quantity without pessimistic locks (`@Lock(PESSIMISTIC_WRITE)`) or conditional atomic queries, risking overselling under concurrent checkouts. |
+| **Device Checker Route List** | `website/frontend/scripts/device-checker.mjs:198-220` | Explicit list of 22 routes tested across 12 mobile, tablet, and desktop device profiles. |
+
+#### 3. Created Governance Artifacts
+- **UI Guide:** [`docs/PART2_UI_GUIDE.md`](file:///e:/A%20FICCADO%20Full%20App/Ficcado_Complete_Applicaton/docs/PART2_UI_GUIDE.md) — Comprehensive guide with dedicated sections for Website and CRM frontends detailing tokens, typography, layouts, components, and error states with file citations.
+- **Technical Audit:** [`docs/PART2_AUDIT.md`](file:///e:/A%20FICCADO%20Full%20App/Ficcado_Complete_Applicaton/docs/PART2_AUDIT.md) — Full Microservices Compliance Checklist (13 items), Code Quality Review, 10,000 User Scalability Analysis, and Findings Registry with `[REQ]` and `[OUT]` labels.
+
+#### 4. GATE 1 Status: STOPPED FOR DEVELOPER REVIEW
+- Per `Part2.md` Section 7 (P2-0 Step 6), no application code changes have been made in P2-0.
+- Phase P2-1 is paused pending developer review of the five `[OUT]` items in `docs/PART2_AUDIT.md`:
+  - `AUD-09`: Add `@Version` Optimistic Locking to Core Entities
+  - `AUD-10`: Fix 278 Pre-Existing ESLint Errors in CRM Frontend
+  - `AUD-11`: Database Connection Pool Scalability Tuning & PgBouncer Guidance
+  - `AUD-12`: Add Explicit B-Tree Indexes on Foreign Keys and Filter Columns
+  - `AUD-13`: Sensitive PII Masking in Application Logs
+
+---
+
 ## Dependencies Added Log
 *(No new dependencies added)*
 
 ---
 
 ## Open Questions
-*(No open questions at this time)*
+- **Gate 1 Approval:** Awaiting developer decision (`APPROVED` or `REJECTED`) on audit items `AUD-09` through `AUD-13` in `docs/PART2_AUDIT.md`.
+

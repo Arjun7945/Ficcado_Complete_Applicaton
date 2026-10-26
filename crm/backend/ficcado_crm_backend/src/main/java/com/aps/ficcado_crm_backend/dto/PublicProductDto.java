@@ -37,8 +37,21 @@ public class PublicProductDto {
             boolean inStock,
             boolean featured,
             boolean active,
-            Integer sortOrder
-    ) {}
+            Integer sortOrder,
+            List<String> tags
+    ) {
+        public PublicProductResponse(Long id, String name, String slug, String type, String category,
+                                     BigDecimal price, BigDecimal rating, Integer reviews,
+                                     List<String> sizes, Map<String, Boolean> sizeStock,
+                                     List<String> colors, String desc, String description,
+                                     String img, String flatImg, List<String> images,
+                                     boolean inStock, boolean featured, boolean active,
+                                     Integer sortOrder) {
+            this(id, name, slug, type, category, price, rating, reviews, sizes, sizeStock,
+                 colors, desc, description, img, flatImg, images, inStock, featured, active,
+                 sortOrder, List.of());
+        }
+    }
 
     public record PublicCategoryResponse(
             String id,

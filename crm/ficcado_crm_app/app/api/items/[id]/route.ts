@@ -26,7 +26,14 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     });
     return Response.json({ success: true, item: updated });
   } catch (err: any) {
-    return Response.json({ error: err.message || "Couldn't update item." }, { status: 500 });
+    const status = err.status || 500;
+    return Response.json({
+      error: err.message || "Couldn't update item.",
+      detail: err.message,
+      code: err.data?.code || err.data?.errorCode,
+      expectedVersion: err.data?.expectedVersion,
+      actualVersion: err.data?.actualVersion,
+    }, { status });
   }
 }
 

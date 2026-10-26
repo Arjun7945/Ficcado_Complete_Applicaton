@@ -27,6 +27,38 @@ import java.util.UUID;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(ItemVersionConflictException.class)
+    public ProblemDetail handleItemVersionConflict(ItemVersionConflictException ex) {
+        log.warn("ItemVersionConflictException: {}", ex.getMessage());
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        pd.setType(URI.create("urn:ficcado:item-version-conflict"));
+        pd.setTitle("Item Version Conflict");
+        pd.setProperty("errorCode", ItemVersionConflictException.ERROR_CODE);
+        pd.setProperty("code", ItemVersionConflictException.ERROR_CODE);
+        pd.setProperty("error", ItemVersionConflictException.ERROR_CODE);
+        if (ex.getExpectedVersion() != null) {
+            pd.setProperty("expectedVersion", ex.getExpectedVersion());
+        }
+        if (ex.getActualVersion() != null) {
+            pd.setProperty("actualVersion", ex.getActualVersion());
+        }
+        pd.setProperty("timestamp", Instant.now());
+        return pd;
+    }
+
+    @ExceptionHandler(org.springframework.orm.ObjectOptimisticLockingFailureException.class)
+    public ProblemDetail handleObjectOptimisticLocking(org.springframework.orm.ObjectOptimisticLockingFailureException ex) {
+        log.warn("ObjectOptimisticLockingFailureException: {}", ex.getMessage());
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ItemVersionConflictException.DEFAULT_MESSAGE);
+        pd.setType(URI.create("urn:ficcado:item-version-conflict"));
+        pd.setTitle("Item Version Conflict");
+        pd.setProperty("errorCode", ItemVersionConflictException.ERROR_CODE);
+        pd.setProperty("code", ItemVersionConflictException.ERROR_CODE);
+        pd.setProperty("error", ItemVersionConflictException.ERROR_CODE);
+        pd.setProperty("timestamp", Instant.now());
+        return pd;
+    }
+
     @ExceptionHandler(SaleLockedException.class)
     public ProblemDetail handleSaleLocked(SaleLockedException ex) {
         log.warn("SaleLockedException: {}", ex.getMessage());

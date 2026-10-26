@@ -3930,6 +3930,25 @@
           },
           "currentStatus" : {
             "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "colors" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "tags" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
           }
         },
         "required" : [ "itemName", "itemType", "priceOfItem" ]
@@ -3977,6 +3996,25 @@
             "items" : {
               "$ref" : "#/components/schemas/ItemImageDto"
             }
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "colors" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "tags" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int64"
           }
         }
       },
@@ -4974,6 +5012,12 @@
           "sortOrder" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "tags" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
           }
         }
       },

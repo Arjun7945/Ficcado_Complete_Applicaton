@@ -123,6 +123,10 @@ export interface ItemResponse {
   priceOfItem: number;
   costPrice: number;
   currentStatus: ItemStatus | string;
+  description?: string;
+  colors?: string[];
+  tags?: string[];
+  version?: number;
   sizes?: ItemSizeResponse[];
   images?: ItemImageResponse[];
   averageRating?: number;
@@ -136,6 +140,10 @@ export interface ItemRequest {
   priceOfItem: number;
   costPrice?: number;
   currentStatus: ItemStatus | string;
+  description?: string;
+  colors?: string[];
+  tags?: string[];
+  version?: number;
   sizes?: string[];
 }
 

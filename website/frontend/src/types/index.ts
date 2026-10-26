@@ -69,6 +69,7 @@ export interface Product {
   sizes: SizeOption[];
   desc?: string;
   description?: string;
+  tags?: string[];
   inStock?: boolean;
   featured?: boolean;
   active?: boolean;

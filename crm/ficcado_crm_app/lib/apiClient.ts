@@ -84,14 +84,18 @@ export async function apiFetch<T = any>(
 
   if (!response.ok) {
     let errorDetail = `HTTP ${response.status} ${response.statusText}`;
+    let errJson: any = null;
     try {
-      const errJson = await response.json();
+      errJson = await response.json();
       errorDetail = errJson.detail || errJson.message || errJson.error || errorDetail;
     } catch {
       // ignore json parse error
     }
     logger.error('API request failed', { url, status: response.status, detail: errorDetail });
-    throw new Error(errorDetail);
+    const err = new Error(errorDetail);
+    (err as any).status = response.status;
+    (err as any).data = errJson;
+    throw err;
   }
 
   if (response.status === 204) { // 204 No Content

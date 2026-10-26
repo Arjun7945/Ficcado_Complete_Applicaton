@@ -3,8 +3,10 @@ package com.aps.ficcado_crm_backend.mapper;
 import com.aps.ficcado_crm_backend.dto.ItemDto.ItemImageDto;
 import com.aps.ficcado_crm_backend.dto.ItemDto.ItemResponse;
 import com.aps.ficcado_crm_backend.entity.Item;
+import com.aps.ficcado_crm_backend.entity.ItemColor;
 import com.aps.ficcado_crm_backend.entity.ItemImage;
 import com.aps.ficcado_crm_backend.entity.ItemSize;
+import com.aps.ficcado_crm_backend.entity.ItemTag;
 
 import java.math.BigDecimal;
 import java.util.Collections;
@@ -48,6 +50,14 @@ public final class ItemMapper {
                 ? item.getSizes().stream().map(ItemSize::getSize).sorted().toList()
                 : Collections.emptyList();
 
+        List<String> colors = item.getColors() != null
+                ? item.getColors().stream().map(ItemColor::getColorHex).toList()
+                : Collections.emptyList();
+
+        List<String> tags = item.getTags() != null
+                ? item.getTags().stream().map(ItemTag::getTag).toList()
+                : Collections.emptyList();
+
         return new ItemResponse(
                 item.getId(),
                 item.getItemName(),
@@ -59,7 +69,11 @@ public final class ItemMapper {
                 coverUrl,
                 item.getAverageRating() != null ? item.getAverageRating() : BigDecimal.ZERO,
                 item.getReviewCount() != null ? item.getReviewCount() : 0,
-                imageDtos
+                imageDtos,
+                item.getDescription(),
+                colors,
+                tags,
+                item.getVersion()
         );
     }
 }

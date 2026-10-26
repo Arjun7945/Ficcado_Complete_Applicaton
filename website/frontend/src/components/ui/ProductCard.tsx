@@ -111,6 +111,25 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
             />
           ))}
         </div>
+
+        {/* Tags */}
+        {product.tags && product.tags.length > 0 && (
+          <div className="mt-1.5 flex items-center gap-1 flex-wrap">
+            {product.tags.slice(0, 2).map((tag) => (
+              <span
+                key={tag}
+                className="inline-block text-[10px] font-medium px-1.5 py-0.5 rounded bg-[var(--bg-surface-alt)] text-[var(--text-muted)] border border-[var(--border-light)]"
+              >
+                #{tag}
+              </span>
+            ))}
+            {product.tags.length > 2 && (
+              <span className="text-[10px] text-[var(--text-muted)]">
+                +{product.tags.length - 2}
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </article>
   );

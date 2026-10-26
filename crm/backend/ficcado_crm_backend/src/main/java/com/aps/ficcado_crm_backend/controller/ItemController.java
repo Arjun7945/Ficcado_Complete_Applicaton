@@ -72,6 +72,9 @@ public class ItemController {
                 request.costPrice(),
                 request.effectiveSizes(),
                 request.effectiveStatus(),
+                request.description(),
+                request.colors(),
+                request.tags(),
                 admin
         );
         return ResponseEntity.status(HttpStatus.CREATED).body(ItemMapper.toResponse(saved));
@@ -82,7 +85,7 @@ public class ItemController {
     public ResponseEntity<ItemResponse> update(@PathVariable Long id,
                                                @Valid @RequestBody ItemRequest request,
                                                @AuthenticationPrincipal Admin admin) {
-        log.info("REST request to update item [id={}]", id);
+        log.info("REST request to update item [id={}, version={}]", id, request.version());
         return itemService.updateItem(
                 id,
                 request.itemName(),
@@ -91,6 +94,10 @@ public class ItemController {
                 request.costPrice(),
                 request.effectiveSizes(),
                 request.effectiveStatus(),
+                request.description(),
+                request.colors(),
+                request.tags(),
+                request.version(),
                 admin
         ).map(ItemMapper::toResponse)
          .map(ResponseEntity::ok)

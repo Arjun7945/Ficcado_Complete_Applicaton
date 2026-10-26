@@ -11,7 +11,7 @@ This report records all verified actions, command execution results, test output
 | **P2-0A** | Docker Compose Infrastructure | **Completed & Verified** | All 5 containers up and healthy; connectivity and policies verified with live commands. |
 | **P2-0** | Baseline, Discovery, UI Guide & Audit | **Completed & Verified (Gate 1 Released)** | Full baseline test runs, discovery items located, UI Guide, Audit and Addendum completed. Gate 1 released by developer. |
 | **P2-1** | CRM Fixes (Admin Permissions, Activity Log, Sale Source) | **Completed & Verified (Ready for Gate 2 Review)** | ADD-2, P2-1A, P2-1B, and P2-1C implemented and verified. 93/93 backend tests pass (0 skipped), CRM frontend Vitest and build pass (28 routes). |
-| **P2-2** | Item Colors, Plain-Text Description & Tags | Not Started | Includes approved audit item AUD-09. |
+| **P2-2** | Item Colors, Plain-Text Description & Tags | **Completed & Verified (Ready for Gate 3 Review)** | B-1, B-4 & AUD-09 implemented across backend, CRM frontend, and website. 111/111 backend tests pass, 5/5 CRM frontend tests pass, 51/51 website tests pass, 300/300 device checks clean. |
 | **P2-3** | Remove Dummy Data & Custom T-Shirt Notice Page | Not Started | |
 | **P2-4** | Customer Session Management (Redis 10-Min Sliding Logout) | Not Started | Starts with approved audit item AUD-13. |
 | **P2-5** | Customer Wishlist Service | Not Started | |
@@ -228,6 +228,67 @@ This report records all verified actions, command execution results, test output
 
 ---
 
+### P2-2: Item Colors, Plain-Text Description, Tags & AUD-09 Optimistic Locking
+
+#### 1. Backend Architecture & Implementation
+- **Flyway Migration (`V3__item_colors_description_tags_version.sql`):**
+  - Added `description TEXT` and `version BIGINT DEFAULT 0 NOT NULL` to table `items`.
+  - Created `item_colors` table (`id BIGSERIAL PRIMARY KEY`, `item_id BIGINT REFERENCES items(id) ON DELETE CASCADE`, `color_hex VARCHAR(7) NOT NULL`, `display_order INT NOT NULL`, `CONSTRAINT uq_item_color UNIQUE (item_id, color_hex)`).
+  - Created `item_tags` table (`id BIGSERIAL PRIMARY KEY`, `item_id BIGINT REFERENCES items(id) ON DELETE CASCADE`, `tag VARCHAR(30) NOT NULL`, `CONSTRAINT uq_item_tag UNIQUE (item_id, tag)`).
+  - Created index `idx_item_tags_lower ON item_tags(lower(tag))`.
+- **Entities & Mappings:**
+  - `ItemColor.java`: Maps `item_id`, `colorHex` (#RRGGBB uppercase), `displayOrder`.
+  - `ItemTag.java`: Maps `item_id`, `tag` (trimmed, lowercase unique constraint per item).
+  - `Item.java`: Annotated with `@Version private Long version = 0L;`, mapped `colors` (OneToMany LAZY `ItemColor` with `@OrderBy("displayOrder ASC")`), mapped `tags` (OneToMany LAZY `ItemTag`), and `description`.
+- **Validation Business Rules (`ItemService.java`):**
+  - `validateColors`: Maximum 12 colors; format strictly `#RRGGBB` (normalized to uppercase); rejects duplicates case-insensitively.
+  - `validateTags`: Maximum 10 tags; length 2 to 30 characters; rejects duplicates case-insensitively.
+  - `validateDescription`: Maximum 2000 characters plain text.
+- **AUD-09 Optimistic Locking (`ItemService.java`, `ItemVersionConflictException.java`, `GlobalExceptionHandler.java`):**
+  - Scope strictly on `Item` entity per AUD-09 decisions.
+  - If `version` is supplied in `updateItem` and differs from current entity version, throws `ItemVersionConflictException(version, item.getVersion())`.
+  - If `version` is null, update proceeds normally (backward-compatible).
+  - `GlobalExceptionHandler`: Maps both `ItemVersionConflictException` and Spring ORM `ObjectOptimisticLockingFailureException` to RFC 9457 ProblemDetail with HTTP 409 Conflict, `code: "ITEM_VERSION_CONFLICT"`, message `"This item was changed by another admin. Reload to see the latest version."`, and expected/actual version metadata.
+  - **AUD-09 Rule 5 Compliance:** `version` is never exposed in public product DTOs (`PublicProductResponse`). Verified by reflection tests.
+- **Backend Test Verification:**
+  - Created `ItemValidationAndLockingTest.java`: 18 tests covering color validation (valid, invalid hex, >12 colors, duplicates), tag validation (valid, lengths, >10 tags, duplicates), description length (>2000), optimistic locking (matching version, stale version conflict, backward-compatible null version, concurrent update simulation), exception handler ProblemDetail mapping, and public DTO safety reflection.
+  - Overall suite: `Tests run: 111, Failures: 0, Errors: 0, Skipped: 0`.
+
+#### 2. CRM Frontend Implementation (`crm/ficcado_crm_app`)
+- **API Route Handlers:**
+  - `app/api/items/route.ts`: Maps `description`, `colors`, `tags`, and `version` in GET; forwards `description`, `colors`, `tags` in POST; forwards backend error status.
+  - `app/api/items/[id]/route.ts`: Forwards `description`, `colors`, `tags`, `version` in PUT; catches 409 and returns HTTP 409 with RFC 9457 error code `ITEM_VERSION_CONFLICT`.
+  - `lib/apiClient.ts`: Enhanced `apiFetch` to attach HTTP `status` and `data` to thrown Error instances.
+- **Items Management Page (`app/(app)/dashboard/items/page.tsx`):**
+  - Extended `Item` interface with `description?: string; colors?: string[]; tags?: string[]; version?: number;`.
+  - **Color Picker & Swatches:** Color picker input synced with text input, `#RRGGBB` validation, swatch circles with delete button, max 12 indicator.
+  - **Tags Management:** Tag input, Enter key / click to add, 2-30 char validation, duplicate tag warning, tag badge list with delete button, max 10 indicator.
+  - **Description:** Plain-text textarea with dynamic character counter (`{length} / 2000`).
+  - **Conflict Handling (AUD-09):** On HTTP 409 Conflict / `ITEM_VERSION_CONFLICT`, renders an error banner:
+    `⚠️ This item was changed by another admin. Reload to see the latest version.` with a **"Reload Item"** button that reloads the catalog and closes the stale edit modal.
+  - **Catalog Table & Mobile View:** Displays color swatch dots and tag badges directly in table rows.
+- **CRM Frontend Tests & Build:**
+  - Created `test/ItemForm.test.tsx`: 4 Vitest tests verifying table rendering, edit modal fields, color hex validation, and optimistic locking 409 banner + reload.
+  - Command: `npm test` ➔ **PASS** (`2 passed, 5 tests passed`).
+  - Command: `npm run build` ➔ **PASS** (All 28 static and dynamic routes compiled cleanly).
+
+#### 3. Website Frontend Implementation (`website/frontend`)
+- **Types (`src/types/index.ts`):** Added `tags?: string[];` to `Product` interface.
+- **Product Modal (`src/components/modals/ProductModal.tsx`):**
+  - Renders plain-text description with `whitespace-pre-line` (escaped, line breaks preserved, never rendered as HTML).
+  - Renders `#tag` badges below description; hidden cleanly if empty.
+- **Product Card (`src/components/ui/ProductCard.tsx`):**
+  - Renders `#tag` badges below color swatches; hidden cleanly if empty.
+- **Website Quality & Device Compatibility:**
+  - `npm test`: **PASS** (51/51 unit tests passed).
+  - `npm run typecheck`: **PASS** (0 TypeScript errors).
+  - `npm run check:brand`: **PASS** (Strict brand spelling `Ficcado` and prefix `FIC-`).
+  - `npm run lint`: **PASS** (0 ESLint errors).
+  - `node scripts/device-checker.mjs`: **PASS** (300/300 device matrix validations passed across 12 mobile, tablet, and desktop viewports).
+  - `npm run build`: **PASS** (35/35 routes compiled cleanly with Next.js Turbopack).
+
+---
+
 ## Dependencies Added Log
 
 | Module | Package Name | Version | Scope | Reason |
@@ -242,12 +303,14 @@ This report records all verified actions, command execution results, test output
 
 ## Open Questions & Gate Status
 
-### GATE 2: Ready for Developer Review
-- Phase P2-1 (CRM Fixes) is fully implemented, verified, and clean.
-- All 93 backend tests in `ficcado_crm_backend` pass with 0 skipped.
-- CRM frontend test framework configured and passing.
-- Next Phase in sequence: **Phase P2-2: Item colors, plain-text description and tags (B-1, B-4)**, incorporating approved audit item **AUD-09** (`Item` optimistic locking).
-- **Status:** Paused at Gate 2 awaiting developer review and confirmation to proceed with Phase P2-2.
+### GATE 3: Ready for Developer Review
+- Phase P2-2 (Item Colors, Plain-Text Description, Tags, and AUD-09 Optimistic Locking) is completely implemented and verified across all tiers.
+- All 111 backend tests in `ficcado_crm_backend` pass (0 skipped).
+- CRM frontend test suite (5/5 tests) and build (28/28 routes) pass cleanly.
+- Website frontend test suite (51/51 tests), typecheck, brand check, lint, 300-device matrix, and build (35/35 routes) pass cleanly.
+- Next Phase in sequence: **Phase P2-3: Remove dummy data & custom t-shirt notice page**.
+- **Status:** Paused at Gate 3 awaiting developer review and confirmation to proceed with Phase P2-3.
+
 
 
 

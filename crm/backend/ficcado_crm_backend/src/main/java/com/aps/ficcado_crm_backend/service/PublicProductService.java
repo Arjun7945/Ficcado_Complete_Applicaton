@@ -5,8 +5,10 @@ import com.aps.ficcado_crm_backend.dto.PublicProductDto.PublicProductResponse;
 import com.aps.ficcado_crm_backend.dto.PublicProductDto.PublicReviewResponse;
 import com.aps.ficcado_crm_backend.entity.Inventory;
 import com.aps.ficcado_crm_backend.entity.Item;
+import com.aps.ficcado_crm_backend.entity.ItemColor;
 import com.aps.ficcado_crm_backend.entity.ItemImage;
 import com.aps.ficcado_crm_backend.entity.ItemSize;
+import com.aps.ficcado_crm_backend.entity.ItemTag;
 import com.aps.ficcado_crm_backend.entity.Review;
 import com.aps.ficcado_crm_backend.entity.enums.ItemStatus;
 import com.aps.ficcado_crm_backend.repository.InventoryRepository;
@@ -224,11 +226,20 @@ public class PublicProductService {
         String flatImg = images.size() > 1 ? images.get(1) : img;
 
         // Default or extracted colors
-        List<String> colors = resolveColors(slug);
+        List<String> colors = (item.getColors() != null && !item.getColors().isEmpty())
+                ? item.getColors().stream().map(ItemColor::getColorHex).toList()
+                : resolveColors(slug);
 
-        String description = (item.getItemName() != null)
+        // Tags
+        List<String> tags = (item.getTags() != null && !item.getTags().isEmpty())
+                ? item.getTags().stream().map(ItemTag::getTag).toList()
+                : List.of();
+
+        String description = (item.getDescription() != null && !item.getDescription().isBlank())
+                ? item.getDescription().trim()
+                : ((item.getItemName() != null)
                 ? item.getItemName() + " — High quality 240gsm combed cotton with signature relaxed unisex silhouette. Engineered by Ficcado."
-                : "Premium streetwear apparel by Ficcado.";
+                : "Premium streetwear apparel by Ficcado.");
 
         return new PublicProductResponse(
                 item.getId(),
@@ -252,7 +263,8 @@ public class PublicProductService {
                 inStock,
                 true,   // featured
                 true,   // active
-                item.getId() != null ? item.getId().intValue() : 1
+                item.getId() != null ? item.getId().intValue() : 1,
+                tags
         );
     }
 

@@ -30,6 +30,10 @@ export async function GET(request: Request) {
         sizes: Array.isArray(it.sizes) ? it.sizes.map((s: any) => s.size || s).join(', ') : '',
         currentStatus: it.currentStatus || 'ACTIVE',
         status: statusLabel,
+        description: it.description || '',
+        colors: it.colors || [],
+        tags: it.tags || [],
+        version: it.version != null ? it.version : 0,
         coverThumbnailUrl: it.coverThumbnailUrl || null,
         images: it.images || [],
         averageRating: it.averageRating || 0,
@@ -39,7 +43,8 @@ export async function GET(request: Request) {
 
     return Response.json({ items });
   } catch (err: any) {
-    return Response.json({ error: err.message || "Couldn't load items." }, { status: 500 });
+    const status = err.status || 500;
+    return Response.json({ error: err.message || "Couldn't load items." }, { status });
   }
 }
 
@@ -57,6 +62,9 @@ export async function POST(request: Request) {
       costPrice: parseFloat(body.costPrice || 0),
       sizes,
       currentStatus: body.currentStatus || 'ACTIVE',
+      description: body.description || null,
+      colors: body.colors || null,
+      tags: body.tags || null,
     };
 
     const saved = await apiClient.post('/api/items', payload, {
@@ -65,6 +73,7 @@ export async function POST(request: Request) {
 
     return Response.json({ success: true, message: `Item '${saved.itemName}' created.`, item: saved }, { status: 201 });
   } catch (err: any) {
-    return Response.json({ error: err.message || "Couldn't create item." }, { status: 500 });
+    const status = err.status || 500;
+    return Response.json({ error: err.message || "Couldn't create item." }, { status });
   }
 }

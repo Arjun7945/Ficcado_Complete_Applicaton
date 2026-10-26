@@ -41,6 +41,24 @@ public class Item {
     @Builder.Default
     private ItemStatus currentStatus = ItemStatus.ACTIVE;
 
+    @Column(name = "description", columnDefinition = "TEXT")
+    private String description;
+
+    @Version
+    @Column(name = "version", nullable = false)
+    @Builder.Default
+    private Long version = 0L;
+
+    @OneToMany(mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OrderBy("displayOrder ASC")
+    @Builder.Default
+    private List<ItemColor> colors = new ArrayList<>();
+
+    @OneToMany(mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OrderBy("id ASC")
+    @Builder.Default
+    private List<ItemTag> tags = new ArrayList<>();
+
     // Child table: available sizes (replaces comma-separated available_sizes column)
     @OneToMany(mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @Builder.Default

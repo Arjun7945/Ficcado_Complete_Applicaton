@@ -21,8 +21,17 @@ public class ItemDto {
             @PositiveOrZero(message = "Cost price must be 0 or greater") BigDecimal costPrice,
             List<String> sizes,
             List<String> availableSizes,
-            String currentStatus
+            String currentStatus,
+            String description,
+            List<String> colors,
+            List<String> tags,
+            Long version
     ) {
+        public ItemRequest(String itemName, String itemType, BigDecimal priceOfItem, BigDecimal costPrice,
+                           List<String> sizes, List<String> availableSizes, String currentStatus) {
+            this(itemName, itemType, priceOfItem, costPrice, sizes, availableSizes, currentStatus, null, null, null, null);
+        }
+
         public List<String> effectiveSizes() {
             if (sizes != null && !sizes.isEmpty()) return sizes;
             if (availableSizes != null && !availableSizes.isEmpty()) return availableSizes;
@@ -58,6 +67,18 @@ public class ItemDto {
             String coverThumbnailUrl,
             BigDecimal averageRating,
             Integer reviewCount,
-            List<ItemImageDto> images
-    ) {}
+            List<ItemImageDto> images,
+            String description,
+            List<String> colors,
+            List<String> tags,
+            Long version
+    ) {
+        public ItemResponse(Long id, String itemName, String itemType, BigDecimal priceOfItem,
+                            BigDecimal costPrice, String currentStatus, List<String> sizes,
+                            String coverThumbnailUrl, BigDecimal averageRating, Integer reviewCount,
+                            List<ItemImageDto> images) {
+            this(id, itemName, itemType, priceOfItem, costPrice, currentStatus, sizes, coverThumbnailUrl,
+                 averageRating, reviewCount, images, null, List.of(), List.of(), 0L);
+        }
+    }
 }

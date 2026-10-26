@@ -355,15 +355,15 @@ function ProductModalDialog({ product }: { product: Product }) {
               )}
 
               {/* Description */}
-              {product.desc && (
+              {(product.description || product.desc) && (
                 <div>
                   <p
-                    className={`text-xs md:text-sm leading-relaxed transition-all ${expanded ? '' : 'line-clamp-3 md:line-clamp-4'}`}
+                    className={`text-xs md:text-sm leading-relaxed whitespace-pre-line transition-all ${expanded ? '' : 'line-clamp-3 md:line-clamp-4'}`}
                     style={{ color: 'var(--text-secondary)' }}
                   >
-                    {product.desc}
+                    {product.description || product.desc}
                   </p>
-                  {product.desc.length > 120 && (
+                  {((product.description || product.desc)?.length ?? 0) > 120 && (
                     <button
                       onClick={() => setExpanded((e) => !e)}
                       className="mt-1 text-xs font-semibold transition-opacity hover:opacity-70"
@@ -372,6 +372,20 @@ function ProductModalDialog({ product }: { product: Product }) {
                       {expanded ? 'Show less' : 'Read full specs'}
                     </button>
                   )}
+                </div>
+              )}
+
+              {/* Tags */}
+              {product.tags && product.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {product.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[var(--bg-surface-alt)] text-[var(--text-muted)] border border-[var(--border-light)]"
+                    >
+                      #{tag}
+                    </span>
+                  ))}
                 </div>
               )}
             </div>

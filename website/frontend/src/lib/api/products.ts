@@ -4,14 +4,10 @@
 // Replaces previous Google Sheets integration.
 // =============================================================================
 
-import fs from 'node:fs';
-import path from 'node:path';
 import { apiClient } from './client';
 import { API_CONFIG } from './config';
 import type { Product, CustomerReview } from '@/types';
-import { isCategoryLive, CATEGORIES_CONFIG, type CategoryConfig } from '@/config/categories';
-
-const SNAPSHOT_FILE = path.join(process.cwd(), 'src', 'generated', 'products-snapshot.json');
+import { CATEGORIES_CONFIG, type CategoryConfig } from '@/config/categories';
 
 export interface GetItemsOptions {
   includeOutOfStock?: boolean;
@@ -19,44 +15,21 @@ export interface GetItemsOptions {
   search?: string;
 }
 
-function loadFallbackProducts(options?: GetItemsOptions): Product[] {
-  const includeOutOfStock = options?.includeOutOfStock ?? false;
-  const category = options?.category?.toLowerCase();
-  const search = options?.search?.toLowerCase().trim();
-
-  try {
-    if (fs.existsSync(SNAPSHOT_FILE)) {
-      const content = fs.readFileSync(SNAPSHOT_FILE, 'utf8');
-      const parsed = JSON.parse(content);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return (parsed as Product[]).filter((p) => {
-          const stockMatch = includeOutOfStock || (p.inStock && isCategoryLive(p.category));
-          const categoryMatch = !category || category === 'all' || p.category.toLowerCase() === category;
-          const searchMatch =
-            !search ||
-            p.name.toLowerCase().includes(search) ||
-            (p.desc && p.desc.toLowerCase().includes(search));
-          return stockMatch && categoryMatch && searchMatch;
-        });
-      }
-    }
-  } catch (err) {
-    console.warn('[Catalog API] Unable to load fallback products:', (err as Error).message);
-  }
-  return [];
+export interface CatalogResult {
+  products: Product[];
+  error?: string | null;
 }
 
 /**
- * Fetches all active products from Ficcado-Data via Gateway.
- * Gracefully uses local fallback during development / offline build if gateway is not reachable.
+ * Fetches products from Ficcado-Data via Gateway with explicit success/error state.
+ * Never loads dummy or snapshot data on empty catalog or backend failure.
  */
-export async function getItems(options?: GetItemsOptions): Promise<Product[]> {
+export async function getItemsResult(options?: GetItemsOptions): Promise<CatalogResult> {
   const includeOutOfStock = options?.includeOutOfStock ?? false;
   const category = options?.category;
   const search = options?.search;
 
   try {
-    // In Phase 4, the gateway routes /api/public/products to Ficcado-Data:8081
     const res = await apiClient<{ success: boolean; data: Product[] }>(
       API_CONFIG.routes.products,
       {
@@ -69,18 +42,29 @@ export async function getItems(options?: GetItemsOptions): Promise<Product[]> {
       }
     );
 
-    if (res && Array.isArray(res.data) && res.data.length > 0) {
-      return res.data;
+    if (res && Array.isArray(res.data)) {
+      return { products: res.data, error: null };
     }
-  } catch {
-    // Gateway not running yet / offline build mode — fallback to catalog snapshot
+    return { products: [], error: null };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unable to reach product service';
+    console.warn('[Catalog API] Failed to fetch products from backend:', message);
+    return { products: [], error: message };
   }
+}
 
-  return loadFallbackProducts(options);
+/**
+ * Fetches all active products from Ficcado-Data via Gateway.
+ * Returns empty array if catalog is empty or backend is unreachable.
+ */
+export async function getItems(options?: GetItemsOptions): Promise<Product[]> {
+  const result = await getItemsResult(options);
+  return result.products;
 }
 
 /**
  * Fetches single product by ID.
+ * Returns undefined if item is not found or backend fails.
  */
 export async function getItemById(id: number | string): Promise<Product | undefined> {
   try {
@@ -90,15 +74,15 @@ export async function getItemById(id: number | string): Promise<Product | undefi
     );
     if (res?.data) return res.data;
   } catch {
-    // Fallback search
+    // Return undefined if not found or backend fails
   }
 
-  const all = await getItems({ includeOutOfStock: true });
-  return all.find((p) => String(p.id) === String(id));
+  return undefined;
 }
 
 /**
  * Fetches single product by URL slug.
+ * Returns undefined if item is not found or backend fails.
  */
 export async function getItemBySlug(slug: string): Promise<Product | undefined> {
   try {
@@ -108,11 +92,10 @@ export async function getItemBySlug(slug: string): Promise<Product | undefined> 
     );
     if (res?.data) return res.data;
   } catch {
-    // Fallback search
+    // Return undefined if not found or backend fails
   }
 
-  const all = await getItems({ includeOutOfStock: true });
-  return all.find((p) => p.slug === slug);
+  return undefined;
 }
 
 /**

@@ -11,7 +11,7 @@ import { useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import { Search, SlidersHorizontal, Settings, Menu, X } from 'lucide-react';
+import { Search, SlidersHorizontal, Settings, Menu, X, AlertCircle } from 'lucide-react';
 import { useModal } from '@/context/ModalContext';
 import { ProductCard } from '@/components/ui/ProductCard';
 import { getLiveCategories } from '@/config/categories';
@@ -20,6 +20,7 @@ import type { Product } from '@/types';
 
 interface HomeViewProps {
   initialProducts: Product[];
+  catalogError?: string | null;
 }
 
 function matchesColors(productColors: string[], selectedColors: string[]): boolean {
@@ -35,7 +36,7 @@ function matchesColors(productColors: string[], selectedColors: string[]): boole
   });
 }
 
-export function HomeView({ initialProducts }: HomeViewProps) {
+export function HomeView({ initialProducts, catalogError }: HomeViewProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -345,18 +346,60 @@ export function HomeView({ initialProducts }: HomeViewProps) {
               <ProductCard key={product.id} product={product} priority={true} />
             ))}
           </div>
-        ) : (
-          <div className="flex flex-col items-center py-16 gap-3 text-center px-4">
-            <span className="text-3xl">🛍️</span>
-            <p className="text-sm font-bold text-[var(--text-main)]">
-              {products.length === 0
-                ? 'Catalog temporarily unavailable'
-                : 'No items match your filter selection'}
+        ) : catalogError ? (
+          <div id="catalog-error-state" className="flex flex-col items-center py-16 gap-3 text-center px-4 max-w-md mx-auto animate-fade-in">
+            <div className="w-14 h-14 rounded-full bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400 flex items-center justify-center shadow-xs">
+              <AlertCircle size={28} />
+            </div>
+            <p className="text-base font-bold text-[var(--text-main)]">
+              Unable to load catalog
             </p>
-            <p className="text-xs text-[var(--text-muted)] max-w-sm">
-              {products.length === 0
-                ? 'Please check back shortly or connect with our team on WhatsApp.'
-                : 'Try expanding your price range, clearing color/size filters, or selecting All categories.'}
+            <p className="text-xs text-[var(--text-muted)] leading-relaxed">
+              We encountered a connection issue reaching our catalog service. Please refresh or connect with our team on WhatsApp.
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-3 mt-2">
+              <button
+                onClick={() => window.location.reload()}
+                className="rounded-full px-5 py-2 text-xs font-bold text-white bg-[var(--primary)] hover:opacity-90 active:scale-95 transition-all cursor-pointer shadow-xs"
+              >
+                Retry / Refresh
+              </button>
+              <a
+                href="https://wa.me/916282000729"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-primary text-xs py-2 px-4 rounded-full"
+              >
+                Chat on WhatsApp &rarr;
+              </a>
+            </div>
+          </div>
+        ) : products.length === 0 ? (
+          <div id="catalog-empty-state" className="flex flex-col items-center py-16 gap-3 text-center px-4 max-w-md mx-auto animate-fade-in">
+            <span className="text-4xl">🛍️</span>
+            <p className="text-base font-bold text-[var(--text-main)]">
+              Catalog currently empty
+            </p>
+            <p className="text-xs text-[var(--text-muted)] leading-relaxed">
+              New wear drops are being prepared in our workshop. Please check back shortly or connect with our team on WhatsApp for drop updates.
+            </p>
+            <a
+              href="https://wa.me/916282000729"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-primary mt-2 text-xs py-2 px-5 rounded-full"
+            >
+              Chat on WhatsApp &rarr;
+            </a>
+          </div>
+        ) : (
+          <div id="catalog-filter-empty-state" className="flex flex-col items-center py-16 gap-3 text-center px-4 max-w-md mx-auto animate-fade-in">
+            <span className="text-3xl">⚙️</span>
+            <p className="text-sm font-bold text-[var(--text-main)]">
+              No items match your filter selection
+            </p>
+            <p className="text-xs text-[var(--text-muted)] leading-relaxed">
+              Try expanding your price range, clearing color/size filters, or selecting All categories.
             </p>
             {activeFilterCount > 0 && (
               <button
@@ -365,16 +408,6 @@ export function HomeView({ initialProducts }: HomeViewProps) {
               >
                 Reset All Filters
               </button>
-            )}
-            {products.length === 0 && (
-              <a
-                href="https://wa.me/916282000729"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-primary mt-2 text-xs py-2 px-4"
-              >
-                Chat on WhatsApp &rarr;
-              </a>
             )}
           </div>
         )}

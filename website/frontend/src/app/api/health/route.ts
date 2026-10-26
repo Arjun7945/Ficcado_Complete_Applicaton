@@ -4,8 +4,6 @@
 // =============================================================================
 
 import type { NextRequest } from 'next/server';
-import fs from 'node:fs';
-import path from 'node:path';
 import { apiSuccess, apiError } from '../../../lib/apiResponse.ts';
 
 export const dynamic = 'force-dynamic';
@@ -41,15 +39,6 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  // Inspect build-time snapshot file existence
-  let snapshotAvailable = false;
-  try {
-    const snapshotPath = path.resolve(process.cwd(), 'src/generated/products-snapshot.json');
-    snapshotAvailable = fs.existsSync(snapshotPath);
-  } catch {
-    snapshotAvailable = false;
-  }
-
   const gatewayConfigured = Boolean(process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:8000');
   const rateLimitStore = process.env.RATE_LIMIT_STORE || 'memory';
   const privacyEmailConfigured = Boolean(process.env.NEXT_PUBLIC_PRIVACY_EMAIL);
@@ -61,8 +50,9 @@ export async function GET(req: NextRequest) {
       timestamp: Date.now(),
       checks: {
         gatewayConfigured,
+        liveCatalogService: true,
         rateLimitStore,
-        productsSnapshotAvailable: snapshotAvailable,
+        productsSnapshotAvailable: false,
         privacyEmailConfigured,
         whatsappConfigured,
       },

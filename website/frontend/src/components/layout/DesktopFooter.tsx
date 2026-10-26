@@ -134,6 +134,11 @@ export function DesktopFooter() {
                 Hoodies (Coming Soon)
               </Link>
             </li>
+            <li>
+              <Link href="/custom-tshirt" className="hover:text-[var(--primary)] transition-colors text-[var(--text-muted)]">
+                Custom T-Shirt (Coming Soon)
+              </Link>
+            </li>
           </ul>
         </div>
 

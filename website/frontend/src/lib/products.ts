@@ -4,8 +4,10 @@
 // Google Sheets integration completely removed.
 // =============================================================================
 
-import { getItems, getItemById, getItemBySlug } from '@/lib/api/products';
+import { getItems, getItemsResult, getItemById, getItemBySlug, type CatalogResult, type GetItemsOptions } from '@/lib/api/products';
 import type { Product } from '@/types';
+
+export type { CatalogResult, GetItemsOptions };
 
 /**
  * Fetches catalog products from the API client layer.
@@ -13,6 +15,14 @@ import type { Product } from '@/types';
  */
 export async function getProducts(options?: { includeOutOfStock?: boolean }): Promise<Product[]> {
   return getItems(options);
+}
+
+/**
+ * Fetches catalog products with explicit result envelope containing products and error status.
+ * Allows pages to differentiate between an empty catalog and a backend failure.
+ */
+export async function getProductsResult(options?: GetItemsOptions): Promise<CatalogResult> {
+  return getItemsResult(options);
 }
 
 /**

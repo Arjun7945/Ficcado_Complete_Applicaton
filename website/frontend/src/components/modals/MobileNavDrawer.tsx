@@ -29,6 +29,7 @@ import {
   Cookie,
   User,
   LogOut,
+  Shirt,
 } from 'lucide-react';
 import { useModal } from '@/context/ModalContext';
 import { useCart } from '@/context/CartContext';
@@ -221,6 +222,24 @@ export function MobileNavDrawer() {
                 <span>All Categories & Silhouettes</span>
               </div>
               <ChevronRight size={14} className="text-gray-400" />
+            </Link>
+
+            <Link
+              href="/custom-tshirt"
+              onClick={navigateTo}
+              className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-colors ${
+                pathname.startsWith('/custom-tshirt')
+                  ? 'bg-[var(--primary-light)] text-[var(--primary)]'
+                  : 'text-[var(--text-main)] hover:bg-[var(--bg-surface-alt)]'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <Shirt size={16} className="text-[var(--primary)]" />
+                <span>Custom T-Shirt</span>
+              </div>
+              <span className="text-[10px] font-bold text-amber-500 bg-amber-50 px-2 py-0.5 rounded-full">
+                Soon
+              </span>
             </Link>
 
             <Link

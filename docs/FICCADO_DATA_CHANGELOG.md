@@ -44,7 +44,16 @@ Log of all edits to existing files in `crm/backend/ficcado_crm_backend` (Ficcado
 | 2026-10-26 | `crm/ficcado_crm_app/app/(app)/dashboard/items/page.tsx` | Item interface, Create/Edit modals, and table | P2-2 & AUD-09: Color swatch selector (#RRGGBB, max 12), tags input (2-30 chars, max 10), plain-text description (max 2000 chars + counter), table previews, and 409 conflict banner with "Reload Item" action | CRM Items Management Page | Yes (`ItemForm.test.tsx` 4/4 pass, Next.js build clean) |
 | 2026-10-26 | `website/frontend/src/types/index.ts` | `Product` interface | P2-2: Add `tags?: string[]` to storefront `Product` interface | Website TypeScript definitions | Yes (Typecheck passes) |
 | 2026-10-26 | `website/frontend/src/components/modals/ProductModal.tsx` | Description and tags rendering | P2-2: Render plain-text description with `whitespace-pre-line` (escaped, line breaks preserved); render `#tag` badges below description; clean hide when empty | Website Product Modal component | Yes (All 51 website tests pass) |
-| 2026-10-26 | `website/frontend/src/components/ui/ProductCard.tsx` | Card body | P2-2: Render `#tag` badges below color swatches with clean hiding when empty | Website Product Card component | Yes (Device checker 300/300 pass, build clean) |
+| 2026-10-26 | `website/frontend/src/lib/api/products.ts` | `getItems`, `getItemsResult`, `getItemById`, `getItemBySlug` | P2-3 (3A): Removed `products-snapshot.json` and `loadFallbackProducts`; implemented `getItemsResult` and `getItems` to return empty list on empty catalog/backend failure without dummy fallbacks; direct API lookup for ID/slug | Catalog API client layer | Yes (`dummy-data-and-custom-tshirt.test.mjs` passes) |
+| 2026-10-26 | `website/frontend/src/lib/products.ts` | Module exports | P2-3 (3A): Exported `getProductsResult`, `CatalogResult`, and `GetItemsOptions` | Data layer wrapper | Yes (Typecheck & test pass) |
+| 2026-10-26 | `website/frontend/src/app/api/health/route.ts` | GET handler | P2-3 (3A): Removed `products-snapshot.json` filesystem inspection; set `productsSnapshotAvailable: false` and `liveCatalogService: true` | Health check endpoint | Yes (`health-and-api.test.mjs` passes) |
+| 2026-10-26 | `website/frontend/src/app/page.tsx` | `HomePage` | P2-3 (3A): Fetches via `getProductsResult()` and forwards `initialProducts` and `catalogError` to `HomeView` | Storefront home page | Yes (Build 36/36 routes pass) |
+| 2026-10-26 | `website/frontend/src/components/home/HomeView.tsx` | Empty state & error state | P2-3 (3A): Added `catalogError` prop; rendered distinct `#catalog-error-state` (AlertCircle, retry button, WhatsApp link) vs `#catalog-empty-state` (empty message, WhatsApp link) vs `#catalog-filter-empty-state` (reset filters button) | Storefront home view component | Yes (`dummy-data-and-custom-tshirt.test.mjs` passes) |
+| 2026-10-26 | `website/frontend/src/components/category/CategoryProductGrid.tsx` | Empty state | P2-3 (3A): Differentiated `initialProducts.length === 0` (collection empty message) from filter empty state | Category product grid component | Yes (Build & tests pass) |
+| 2026-10-26 | `website/frontend/src/components/layout/DesktopHeader.tsx` | `NAV_LINKS` | P2-3 (3B): Added `/custom-tshirt` link to top navigation bar | Desktop header navigation | Yes (Tests & device checker pass) |
+| 2026-10-26 | `website/frontend/src/components/layout/DesktopFooter.tsx` | Collections section | P2-3 (3B): Added `/custom-tshirt` link to Collections column | Desktop footer navigation | Yes (Tests & device checker pass) |
+| 2026-10-26 | `website/frontend/src/components/modals/MobileNavDrawer.tsx` | Storefront links | P2-3 (3B): Added `/custom-tshirt` link with "Soon" badge | Mobile slide-in navigation drawer | Yes (Tests & device checker pass) |
+| 2026-10-26 | `website/frontend/scripts/device-checker.mjs` | `ROUTES` matrix | P2-3 (3B): Added `/custom-tshirt` route to device checker matrix (now 26 routes x 12 profiles = 312 tests) | Cross-device testing tool | Yes (312/312 pass 100%) |
 
 ---
 
@@ -81,6 +90,9 @@ Log of all edits to existing files in `crm/backend/ficcado_crm_backend` (Ficcado
 | 2026-10-26 | `exception/ItemVersionConflictException.java` | Exception mapped to HTTP 409 Conflict with code `ITEM_VERSION_CONFLICT` when stale version is submitted | Verified by `ItemValidationAndLockingTest` |
 | 2026-10-26 | `ItemValidationAndLockingTest.java` | 18 unit and integration tests covering colors hex validation, tags validation, description validation, optimistic locking, concurrent update simulation, exception handler mapping, and public DTO safety | Passed in `.\mvnw.cmd test` (18/18 pass) |
 | 2026-10-26 | `crm/ficcado_crm_app/test/ItemForm.test.tsx` | Vitest tests verifying item colors and tags in table, edit modal fields, color hex validation, and 409 conflict banner with reload button | Passed in `npm test` (4/4 pass) |
+| 2026-10-26 | `website/frontend/src/app/custom-tshirt/page.tsx` | P2-3 (3B): Dedicated coming-soon notice page ("Design Your Own T-Shirt", notice of customer design submission, Ficcado team printing and delivery, zero forms/uploads/pricing) | Next.js build clean (36/36 routes), device checker passes |
+| 2026-10-26 | `website/frontend/scripts/tests/dummy-data-and-custom-tshirt.test.mjs` | P2-3: Test suite verifying dummy data deletion, products.ts fallback removal, repo-level check against fixture/sample-data imports, distinct empty vs error state rendering, and custom t-shirt notice page specs | Passed in `npm test` (8/8 pass) |
+
 
 
 

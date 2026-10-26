@@ -220,6 +220,7 @@ export const ROUTES = [
   { path: '/orders', name: 'Orders Legacy Route (Redirects to /support)', expectedRole: 'main' },
   { path: '/orders/FC-89241/track', name: 'Track Legacy Route (Redirects to /support)', expectedRole: 'main' },
   { path: '/orders/FC-89241/feedback', name: 'Feedback Legacy Route (Redirects to /support)', expectedRole: 'main' },
+  { path: '/custom-tshirt', name: 'Custom T-Shirt Notice (Coming Soon)', expectedRole: 'main' },
   { path: '/settings', name: 'Brand Hub & Settings', expectedRole: 'main' },
 ];
 

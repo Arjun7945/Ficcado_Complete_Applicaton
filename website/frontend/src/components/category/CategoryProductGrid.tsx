@@ -410,26 +410,40 @@ export function CategoryProductGrid({ initialProducts, categoryName }: CategoryP
         ))}
       </div>
 
-      {/* Helpful Empty State when no items match the filters */}
+      {/* Helpful Empty State when collection is empty or no items match filters */}
       {filteredProducts.length === 0 && (
         <div className="card p-10 md:p-14 text-center rounded-3xl bg-[var(--bg-surface)] border border-[var(--border-light)] shadow-xs space-y-4 max-w-lg mx-auto animate-fade-in my-8">
           <div className="w-14 h-14 rounded-full bg-[var(--primary-light)] text-[var(--primary)] flex items-center justify-center mx-auto">
             <SlidersHorizontal size={24} />
           </div>
           <div className="space-y-1">
-            <h3 className="text-base font-bold text-[var(--text-main)]">No matching items found</h3>
+            <h3 className="text-base font-bold text-[var(--text-main)]">
+              {initialProducts.length === 0 ? 'Collection Currently Empty' : 'No matching items found'}
+            </h3>
             <p className="text-xs text-[var(--text-muted)] leading-relaxed">
-              We couldn’t find any items matching your selected colors or price range in {categoryName}.
-              Try clearing some filters to browse the full drop.
+              {initialProducts.length === 0
+                ? `No live items are currently listed in ${categoryName}. Please check back shortly as our team uploads new batches.`
+                : `We couldn’t find any items matching your selected colors or price range in ${categoryName}. Try clearing some filters to browse the full drop.`}
             </p>
           </div>
-          <button
-            onClick={handleResetFilters}
-            className="btn-primary py-2.5 px-5 text-xs font-bold rounded-xl shadow-xs inline-flex items-center gap-2 cursor-pointer"
-          >
-            <RotateCcw size={14} />
-            <span>Reset All Filters</span>
-          </button>
+          {initialProducts.length === 0 ? (
+            <a
+              href="https://wa.me/916282000729"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-primary py-2.5 px-5 text-xs font-bold rounded-xl shadow-xs inline-flex items-center gap-2 cursor-pointer"
+            >
+              Chat on WhatsApp &rarr;
+            </a>
+          ) : (
+            <button
+              onClick={handleResetFilters}
+              className="btn-primary py-2.5 px-5 text-xs font-bold rounded-xl shadow-xs inline-flex items-center gap-2 cursor-pointer"
+            >
+              <RotateCcw size={14} />
+              <span>Reset All Filters</span>
+            </button>
+          )}
         </div>
       )}
 

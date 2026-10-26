@@ -17,6 +17,7 @@ import { useCustomerAuth } from '@/context/CustomerAuthContext';
 const NAV_LINKS = [
   { href: '/', label: 'Drops' },
   { href: '/categories', label: 'Categories' },
+  { href: '/custom-tshirt', label: 'Custom T-Shirt' },
   { href: '/journal', label: 'Journal' },
   { href: '/about', label: 'About' },
   { href: '/faq', label: 'FAQ' },

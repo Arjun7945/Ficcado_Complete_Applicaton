@@ -12,12 +12,19 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
+import com.aps.ficcado_crm_backend.service.CustomerSessionService;
+import com.aps.ficcado_crm_backend.session.CustomerSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -27,11 +34,18 @@ class PiiLogCaptureTest {
     @Autowired
     private CustomerAuthService customerAuthService;
 
+    @MockBean
+    private CustomerSessionService customerSessionService;
+
     private ListAppender<ILoggingEvent> listAppender;
     private Logger rootLogger;
 
     @BeforeEach
     void setUp() {
+        when(customerSessionService.createSession(any())).thenAnswer(inv -> {
+            Long cid = inv.getArgument(0);
+            return new CustomerSession("mock-session-" + cid, cid, Instant.now(), Instant.now(), null);
+        });
         rootLogger = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
         listAppender = new ListAppender<>();
         listAppender.start();

@@ -31,4 +31,16 @@ app:
     cookie-secure: false
   gateway:
     shared-secret: ${GATEWAY_SHARED_SECRET:ficcado-gateway-internal-secret-2026}
+  delivery:
+    options:
+      - id: "del-standard"
+        name: "Express Surface Logistics"
+        rate: 0
+        delivery-time: "3–5 Business Days"
+        status: "ACTIVE"
+      - id: "del-priority"
+        name: "Priority Air Courier"
+        rate: 99
+        delivery-time: "1–2 Business Days"
+        status: "ACTIVE"
 

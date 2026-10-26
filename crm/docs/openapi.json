@@ -1787,6 +1787,43 @@
         }
       }
     },
+    "/api/internal/orders/quote" : {
+      "post" : {
+        "tags" : [ "Internal Order Handshakes" ],
+        "summary" : "Calculate official server-side quote with verified prices, stock availability, and delivery charges",
+        "operationId" : "calculateQuote",
+        "parameters" : [ {
+          "name" : "X-Internal-Secret",
+          "in" : "header",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/QuoteRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/internal/orders/create-paid-sale" : {
       "post" : {
         "tags" : [ "Internal Order Handshakes" ],
@@ -2043,6 +2080,23 @@
       }
     },
     "/api/customer/profile/addresses" : {
+      "get" : {
+        "tags" : [ "Customer Profile" ],
+        "summary" : "Get all saved addresses for current customer",
+        "operationId" : "getAddresses",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          }
+        }
+      },
       "post" : {
         "tags" : [ "Customer Profile" ],
         "summary" : "Add a new saved address",
@@ -2744,6 +2798,28 @@
         }
       }
     },
+    "/api/public/delivery-options" : {
+      "get" : {
+        "tags" : [ "Public Delivery Options" ],
+        "summary" : "Get active delivery and courier options",
+        "operationId" : "getDeliveryOptions",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/DeliveryOptionResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/public/categories" : {
       "get" : {
         "tags" : [ "Public Catalog (Storefront)" ],
@@ -3258,6 +3334,34 @@
                   "additionalProperties" : {
                     "type" : "string"
                   }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/customer/profile/addresses/{id}" : {
+      "delete" : {
+        "tags" : [ "Customer Profile" ],
+        "summary" : "Delete a saved address",
+        "operationId" : "deleteAddress",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
                 }
               }
             }
@@ -4767,6 +4871,40 @@
           }
         }
       },
+      "QuoteRequest" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/QuoteRequestItem"
+            },
+            "minItems" : 1
+          },
+          "courierId" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "items" ]
+      },
+      "QuoteRequestItem" : {
+        "type" : "object",
+        "properties" : {
+          "itemId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "size" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "quantity" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "itemId", "quantity", "size" ]
+      },
       "CreatePaidSaleRequest" : {
         "type" : "object",
         "properties" : {
@@ -5231,6 +5369,26 @@
             "type" : "boolean"
           },
           "sizeBought" : {
+            "type" : "string"
+          }
+        }
+      },
+      "DeliveryOptionResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "rate" : {
+            "type" : "number"
+          },
+          "deliveryTime" : {
+            "type" : "string"
+          },
+          "status" : {
             "type" : "string"
           }
         }

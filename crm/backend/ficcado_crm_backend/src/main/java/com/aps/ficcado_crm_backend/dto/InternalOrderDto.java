@@ -40,4 +40,37 @@ public class InternalOrderDto {
             String status,
             boolean isDuplicate
     ) {}
+
+    public record QuoteRequestItem(
+            @NotNull Long itemId,
+            @NotBlank String size,
+            @NotNull @Positive Integer quantity
+    ) {}
+
+    public record QuoteRequest(
+            @NotEmpty List<QuoteRequestItem> items,
+            String courierId
+    ) {}
+
+    public record QuoteLineItem(
+            Long itemId,
+            String itemName,
+            String size,
+            Integer quantity,
+            BigDecimal unitPrice,
+            BigDecimal lineTotal,
+            boolean available,
+            String error
+    ) {}
+
+    public record OrderQuoteResponse(
+            boolean valid,
+            String message,
+            List<QuoteLineItem> lineItems,
+            BigDecimal subtotal,
+            BigDecimal deliveryCharge,
+            String courierId,
+            String courierName,
+            BigDecimal totalAmount
+    ) {}
 }

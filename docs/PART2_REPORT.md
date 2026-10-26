@@ -526,13 +526,73 @@ This report records all verified actions, command execution results, test output
 
 ---
 
+### P2-6: Checkout Flow & Saved Addresses (A-2, A-4, C-2, ADD-4, ADD-5)
+
+#### 1. Implementations & Architectural Changes
+- **Courier Delivery Options Configuration & Endpoint (ADD-4):**
+  - Configured delivery options under `app.delivery.options` in `crm/backend/ficcado_crm_backend/src/main/resources/application.yaml` and `src/test/resources/application.yaml`:
+    - `del-standard`: "Express Surface Logistics", rate: ₹0, "3–5 Business Days", status: "ACTIVE"
+    - `del-priority`: "Priority Air Courier", rate: ₹99, "1–2 Business Days", status: "ACTIVE"
+  - Created `DeliveryOptionDto.java` (`DeliveryOptionResponse`).
+  - Created `DeliveryService.java` providing `getActiveDeliveryOptions()`, `calculateDeliveryCharge(courierId)`, and `resolveCourierName(courierId)` to enforce server-computed rates.
+  - Created `PublicDeliveryController.java` (`GET /api/public/delivery-options`) permitting unauthenticated access in `SecurityConfig.java`.
+- **Customer Address Management (A-4, C-2):**
+  - Updated `CustomerProfileController.java`:
+    - `GET /api/customer/profile/addresses`: returns `List<CustomerAddressDto>` for the authenticated customer.
+    - `POST /api/customer/profile/addresses`: validates address text length (5 to 500 characters), enforces a hard cap of maximum 10 saved addresses per customer, and manages default flag.
+    - `DELETE /api/customer/profile/addresses/{id}`: enforces strict customer ownership (returns HTTP 404 if not found or belongs to another customer), promotes remaining address to default if default address is deleted, and returns HTTP 204 No Content.
+  - Invariant strictly preserved: single address column in `CustomerAddress` retained without modifying database schema.
+- **Internal Server-Side Quote Endpoint (Microservices Security Rule):**
+  - Added `POST /api/internal/orders/quote` in `InternalOrderController.java`:
+    - Secured with constant-time `MessageDigest.isEqual` comparison of `X-Internal-Secret`.
+    - Queries database prices (`Item.getPriceOfItem()`), completely ignoring any client-supplied prices.
+    - Verifies active status (`ACTIVE`, `IN_STOCK`) and checks inventory availability in `InventoryRepository`.
+    - Computes server-side delivery charge via `DeliveryService`.
+    - Returns `valid: false` if any requested item is missing, inactive, or out of stock.
+- **Storefront Checkout Refactoring (`website/frontend/src/app/checkout/page.tsx`):**
+  - **Guest Auth Guard (A-2, A-4, C-2):** Unauthenticated users are shown a luxury login gate (`#checkout-auth-guard`) prompting them to sign in via `#checkout-login-trigger-btn` (triggers `AuthModal`) or return to bag.
+  - **Verified Customer Account Card (A-2):** Authenticated customer name, verified phone (`+91 ...`), and email are rendered in read-only card `#checkout-verified-account-card`.
+  - **Saved Address Selector & Inline Form (C-2):**
+    - Saved addresses rendered as selectable radio cards with `Default` badge and delete button.
+    - Inline "Add New Delivery Address" form captures street address, optional landmark, city, state (from `INDIAN_STATES`), and 6-digit PIN code.
+    - Combines fields into standard formatted string `${street}, ${landmark ? landmark + ', ' : ''}${city}, ${state} - ${pincode}` and saves via `POST /api/customer/profile/addresses`.
+  - **Courier Delivery Selector (ADD-4):**
+    - Dynamically loads courier options from `/api/delivery-options`.
+    - Allows selecting Express Surface Logistics (Free) or Priority Air Courier (+₹99).
+    - Dynamically updates grand total in sticky order summary.
+  - **Strict Removal of Simulated Payment Code (ADD-5):**
+    - Completely deleted `createSimulatedPaymentId()`, `createSimulatedSignature()`, `createSimulatedInvoiceNumber()`, and all `pay_sim_` mock fallback paths from `checkout/page.tsx` and all production files in `src/`.
+    - Online payment wired to `createPaymentOrder` and Razorpay Checkout modal with session pausing (`pauseSession(15)`).
+
+#### 2. Test Verification & Results
+- **CRM Backend Tests (`ficcado_crm_backend`):**
+  - `CustomerAddressTest.java`: 8/8 pass (valid address addition, <5 chars rejected, >500 chars rejected, 10 addresses limit, address deletion, unauthorized delete 404, unauthenticated 401).
+  - `InternalQuoteTest.java`: 5/5 pass (missing secret 403, standard quote, priority courier rate, insufficient stock `valid: false`, unknown courier 400).
+  - `PublicDeliveryTest.java`: 1/1 pass (verifying public delivery options endpoint).
+  - Full CRM Backend Suite: 147/147 tests pass (0 failures, 0 errors, 0 skipped).
+- **Website Data Backend Tests (`ficcado_website_data`):**
+  - Full Website Data Backend Suite: 44/44 tests pass (0 failures, 0 errors, 0 skipped).
+- **Website Frontend Tests:**
+  - `scripts/tests/checkout-addresses.test.mjs`: 7/7 pass (unauthenticated access guard, verified customer display, address management APIs, delivery configuration, server quote endpoint, and zero simulated payment code).
+  - Full Website Frontend Suite: 87/87 tests pass across 20 suites (0 failures, 0 errors, 0 skipped).
+- **Brand & Device Verifications:**
+  - `npm run check:brand`: PASS (0 forbidden words, strictly `Ficcado` and `FIC-`).
+  - `npm run check:devices`: 324/324 tests pass (100% clean across all 12 screen profiles and 27 routes).
+- **Code Quality & Production Build:**
+  - `npm run typecheck`: PASS (0 TypeScript errors).
+  - `npm run lint`: PASS (0 ESLint errors, 0 warnings).
+  - `npm run build`: PASS (37/37 static and dynamic routes compiled, `/checkout` optimized).
+
+---
+
 ## Open Questions & Gate Status
 
-### GATE 6: Released — Proceeding to Phase P2-6 (Checkout & Addresses)
-- Phase P2-5 (Wishlist A-1, C-1) is completely implemented, verified, and committed.
-- All 133 CRM backend tests, 44 website-data backend tests, 80 website frontend tests, and 324 device matrix checks pass with 0 skipped and 0 regressions.
+### GATE 7: Released — Proceeding to Phase P2-7 (Razorpay Payment Flow & Order Dispatch)
+- Phase P2-6 (Checkout Flow & Saved Addresses) is completely implemented, verified, and committed.
+- All 147 CRM backend tests, 44 website-data backend tests, 87 website frontend tests, and 324 device matrix checks pass with 0 skipped and 0 regressions.
 - All 5 Docker Compose containers healthy.
-- Next Phase in sequence: **Phase P2-6: Checkout Flow & Saved Addresses (A-2, A-4, C-2)**.
+- Next Phase in sequence: **Phase P2-7: Payment Gateway Service, Webhook Verification & Order Creation (B-1, B-2, B-3)**.
+
 
 
 

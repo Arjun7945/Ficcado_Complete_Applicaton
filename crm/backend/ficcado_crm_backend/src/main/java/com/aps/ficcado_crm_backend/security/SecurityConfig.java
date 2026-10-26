@@ -67,6 +67,7 @@ public class SecurityConfig {
                         // Public storefront (read-only GET) & review endpoints — narrow, explicit matchers only
                         .requestMatchers(HttpMethod.GET, "/api/public/products/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/public/categories/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/public/delivery-options").permitAll()
                         .requestMatchers("/api/public/reviews/**").permitAll()
                         // Customer unauthenticated auth routes & internal service routes
                         .requestMatchers("/api/customer/auth/**").permitAll()

@@ -9,9 +9,11 @@ import com.aps.ficcado_crm_backend.entity.enums.DeliveryStatus;
 import com.aps.ficcado_crm_backend.entity.enums.FulfilmentSource;
 import com.aps.ficcado_crm_backend.entity.enums.PaymentStatus;
 import com.aps.ficcado_crm_backend.entity.enums.SaleStatus;
+import com.aps.ficcado_crm_backend.entity.enums.ItemStatus;
 import com.aps.ficcado_crm_backend.repository.InventoryRepository;
 import com.aps.ficcado_crm_backend.repository.ItemRepository;
 import com.aps.ficcado_crm_backend.repository.SaleRepository;
+import com.aps.ficcado_crm_backend.service.DeliveryService;
 import com.aps.ficcado_crm_backend.service.SaleService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -44,6 +46,7 @@ import java.util.Optional;
  * - Idempotency: Duplicate transactionId returns existing sale without double stock deduction.
  * - Stock safety: Verifies inventory before deducting.
  * - Online-only: Enforces PAID status with online payment mode.
+ * - Server-side quote: Computes unit prices, line totals, delivery charge, and stock availability from database.
  */
 @Slf4j
 @RestController
@@ -56,6 +59,7 @@ public class InternalOrderController {
     private final ItemRepository itemRepository;
     private final InventoryRepository inventoryRepository;
     private final SaleService saleService;
+    private final DeliveryService deliveryService;
 
     @Value("${app.internal.api-key:ficcado-internal-service-secret-key-change-in-prod}")
     private String internalApiKey;
@@ -185,6 +189,95 @@ public class InternalOrderController {
                 saved.getTotalAmount(),
                 saved.getSaleStatus().name(),
                 false
+        ));
+    }
+
+    @PostMapping("/quote")
+    @Operation(summary = "Calculate official server-side quote with verified prices, stock availability, and delivery charges")
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> calculateQuote(
+            @RequestHeader(value = "X-Internal-Secret", required = false) String secretHeader,
+            @Valid @RequestBody QuoteRequest request) {
+
+        if (!validateSecret(secretHeader)) {
+            log.warn("Unauthorized internal quote calculation attempt");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new OrderQuoteResponse(false, "Forbidden: Invalid internal secret", List.of(), BigDecimal.ZERO, BigDecimal.ZERO, null, null, BigDecimal.ZERO));
+        }
+
+        if (request.items() == null || request.items().isEmpty()) {
+            return ResponseEntity.badRequest()
+                    .body(new OrderQuoteResponse(false, "Quote items cannot be empty", List.of(), BigDecimal.ZERO, BigDecimal.ZERO, null, null, BigDecimal.ZERO));
+        }
+
+        boolean allAvailable = true;
+        List<QuoteLineItem> lineItems = new ArrayList<>();
+        BigDecimal subtotal = BigDecimal.ZERO;
+
+        for (QuoteRequestItem reqItem : request.items()) {
+            Optional<Item> itemOpt = itemRepository.findById(reqItem.itemId());
+            if (itemOpt.isEmpty()) {
+                allAvailable = false;
+                lineItems.add(new QuoteLineItem(reqItem.itemId(), "Unknown Item", reqItem.size(), reqItem.quantity(), BigDecimal.ZERO, BigDecimal.ZERO, false, "Item not found in catalog"));
+                continue;
+            }
+
+            Item item = itemOpt.get();
+            if (item.getCurrentStatus() != ItemStatus.ACTIVE && item.getCurrentStatus() != ItemStatus.IN_STOCK) {
+                allAvailable = false;
+                lineItems.add(new QuoteLineItem(item.getId(), item.getItemName(), reqItem.size(), reqItem.quantity(), item.getPriceOfItem(), BigDecimal.ZERO, false, "Item is inactive"));
+                continue;
+            }
+
+            Optional<Inventory> invOpt = inventoryRepository.findByItemIdAndSize(item.getId(), reqItem.size());
+            int availableStock = invOpt.map(Inventory::getTotalQuantity).orElse(0);
+            if (availableStock < reqItem.quantity()) {
+                allAvailable = false;
+                lineItems.add(new QuoteLineItem(item.getId(), item.getItemName(), reqItem.size(), reqItem.quantity(), item.getPriceOfItem(), BigDecimal.ZERO, false, "Insufficient stock. Available: " + availableStock));
+                continue;
+            }
+
+            BigDecimal unitPrice = item.getPriceOfItem() != null ? item.getPriceOfItem() : BigDecimal.ZERO;
+            BigDecimal lineTotal = unitPrice.multiply(BigDecimal.valueOf(reqItem.quantity()));
+            subtotal = subtotal.add(lineTotal);
+
+            lineItems.add(new QuoteLineItem(item.getId(), item.getItemName(), reqItem.size(), reqItem.quantity(), unitPrice, lineTotal, true, null));
+        }
+
+        // Server-side delivery charge computation
+        BigDecimal deliveryCharge = BigDecimal.ZERO;
+        String courierName = "Express Surface Logistics";
+        String courierId = request.courierId() != null && !request.courierId().isBlank() ? request.courierId().trim() : "del-standard";
+
+        try {
+            deliveryCharge = deliveryService.calculateDeliveryCharge(courierId);
+            courierName = deliveryService.resolveCourierName(courierId);
+        } catch (IllegalArgumentException e) {
+            allAvailable = false;
+            return ResponseEntity.badRequest().body(new OrderQuoteResponse(
+                    false,
+                    e.getMessage(),
+                    lineItems,
+                    subtotal,
+                    BigDecimal.ZERO,
+                    courierId,
+                    null,
+                    subtotal
+            ));
+        }
+
+        BigDecimal totalAmount = subtotal.add(deliveryCharge);
+        String message = allAvailable ? "Quote calculated successfully" : "One or more items are unavailable or out of stock";
+
+        return ResponseEntity.ok(new OrderQuoteResponse(
+                allAvailable,
+                message,
+                lineItems,
+                subtotal,
+                deliveryCharge,
+                courierId,
+                courierName,
+                totalAmount
         ));
     }
 

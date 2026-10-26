@@ -160,6 +160,47 @@ export async function updateCustomerProfile(data: { name?: string; phone?: strin
 }
 
 /**
+ * Fetches all saved addresses for the authenticated customer.
+ */
+export async function getCustomerAddresses(): Promise<CustomerAddress[]> {
+  try {
+    return await apiClient<CustomerAddress[]>(`${API_CONFIG.routes.customerProfile}/addresses`, {
+      method: 'GET',
+    });
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Adds a new address for the authenticated customer (max 10 addresses).
+ */
+export async function addCustomerAddress(address: string, isDefault: boolean = false): Promise<CustomerAddress | null> {
+  try {
+    return await apiClient<CustomerAddress>(`${API_CONFIG.routes.customerProfile}/addresses`, {
+      method: 'POST',
+      body: JSON.stringify({ address, isDefault }),
+    });
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Deletes a saved address belonging to the authenticated customer.
+ */
+export async function deleteCustomerAddress(addressId: number): Promise<boolean> {
+  try {
+    await apiClient(`${API_CONFIG.routes.customerProfile}/addresses/${addressId}`, {
+      method: 'DELETE',
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Fetches orders placed by the authenticated customer.
  */
 export async function getCustomerOrders(): Promise<CustomerOrder[]> {

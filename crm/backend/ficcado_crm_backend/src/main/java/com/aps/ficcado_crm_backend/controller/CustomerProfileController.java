@@ -1,5 +1,7 @@
 package com.aps.ficcado_crm_backend.controller;
 
+import com.aps.ficcado_crm_backend.dto.CustomerAuthDto;
+import com.aps.ficcado_crm_backend.dto.CustomerAuthDto.CustomerAddressDto;
 import com.aps.ficcado_crm_backend.dto.CustomerAuthDto.CustomerProfileResponse;
 import com.aps.ficcado_crm_backend.dto.CustomerAuthDto.UpdateProfileRequest;
 import com.aps.ficcado_crm_backend.entity.Customer;
@@ -16,6 +18,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -87,6 +90,25 @@ public class CustomerProfileController {
         return ResponseEntity.ok(customerAuthService.mapToProfileResponse(saved));
     }
 
+    @GetMapping("/addresses")
+    @Operation(summary = "Get all saved addresses for current customer")
+    public ResponseEntity<?> getAddresses(@AuthenticationPrincipal Customer customer) {
+        if (customer == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        Customer fresh = customerRepository.findById(customer.getId()).orElse(customer);
+        var dtos = (fresh.getAddresses() != null)
+                ? fresh.getAddresses().stream().map(a -> new CustomerAuthDto.CustomerAddressDto(
+                        a.getId(),
+                        a.getAddress(),
+                        Boolean.TRUE.equals(a.getIsDefault())
+                )).toList()
+                : Collections.emptyList();
+
+        return ResponseEntity.ok(dtos);
+    }
+
     @PostMapping("/addresses")
     @Transactional
     @Operation(summary = "Add a new saved address")
@@ -102,8 +124,20 @@ public class CustomerProfileController {
             return ResponseEntity.badRequest().body(Map.of("message", "Address is required"));
         }
 
+        String trimmed = rawAddress.trim();
+        if (trimmed.length() < 5) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Address must be at least 5 characters"));
+        }
+        if (trimmed.length() > 500) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Address cannot exceed 500 characters"));
+        }
+
         Customer existing = customerRepository.findById(customer.getId())
                 .orElseThrow(() -> new IllegalStateException("Customer not found"));
+
+        if (existing.getAddresses().size() >= 10) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Maximum 10 saved addresses reached"));
+        }
 
         boolean isDefault = Boolean.TRUE.equals(body.get("isDefault")) || existing.getAddresses().isEmpty();
         if (isDefault) {
@@ -112,13 +146,39 @@ public class CustomerProfileController {
 
         CustomerAddress newAddr = CustomerAddress.builder()
                 .customer(existing)
-                .address(rawAddress.trim())
+                .address(trimmed)
                 .isDefault(isDefault)
                 .build();
         existing.getAddresses().add(newAddr);
 
         Customer saved = customerRepository.save(existing);
         return ResponseEntity.status(HttpStatus.CREATED).body(customerAuthService.mapToProfileResponse(saved));
+    }
+
+    @DeleteMapping("/addresses/{id}")
+    @Transactional
+    @Operation(summary = "Delete a saved address")
+    public ResponseEntity<?> deleteAddress(
+            @AuthenticationPrincipal Customer customer,
+            @PathVariable("id") Long addressId) {
+        if (customer == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        Customer existing = customerRepository.findById(customer.getId())
+                .orElseThrow(() -> new IllegalStateException("Customer not found"));
+
+        boolean removed = existing.getAddresses().removeIf(a -> a.getId().equals(addressId));
+        if (!removed) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "Address not found or does not belong to customer"));
+        }
+
+        if (!existing.getAddresses().isEmpty() && existing.getAddresses().stream().noneMatch(CustomerAddress::getIsDefault)) {
+            existing.getAddresses().get(0).setIsDefault(true);
+        }
+
+        customerRepository.save(existing);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/change-password")

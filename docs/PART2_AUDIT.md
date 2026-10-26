@@ -1,10 +1,9 @@
 # Ficcado Rebuild — Part 2 Technical Audit & Concurrency Review
 
-> **PURPOSE:** This document provides the formal architectural audit, microservices compliance checklist, code quality review, and 10,000 concurrent user scalability analysis as required by Step 5 of Phase P2-0 in `Part2.md`.
+> **PURPOSE:** This document provides the formal architectural audit, microservices compliance checklist, code quality review, 10,000 concurrent user scalability analysis, and addendum review as required by Phase P2-0 in `Part2.md` and `Part2_Addendum.md`.
 >
-> **REVIEW DIRECTIVE (GATE 1):**
-> Items labeled **[REQ]** are scoped and will be implemented in their designated Part 2 phases.
-> Items labeled **[OUT]** are outside the baseline Part 2 requirements and **MUST be reviewed by the developer**. The developer will mark each `[OUT]` item as either **APPROVED** or **REJECTED** in Section 5 below before any Phase P2-1 code execution begins.
+> **GATE 1 STATUS: RELEASED.**
+> Developer decisions on `[OUT]` items have been finalized per [`docs/AUDIT_DECISIONS_PROMPT.md`](file:///e:/A%20FICCADO%20Full%20App/Ficcado_Complete_Applicaton/docs/AUDIT_DECISIONS_PROMPT.md) and recorded in Section 5 below.
 
 ---
 
@@ -75,10 +74,10 @@
 - **Vulnerability:** Non-atomic check-then-act. If two orders arrive within the same millisecond, both check `existsByInvoiceNumber` simultaneously, find `false`, and attempt to insert identical invoice numbers, throwing `DataIntegrityViolationException`.
 - **Impact under 10k Users:** Spurious checkout failures and aborted orders during peak payment spikes.
 
-### 3.3 Customer Session Invalidation on Refresh
+### 3.3 Customer Session Invalidation on Refresh (Hypothesis)
 - **Component:** `website/frontend/src/context/CustomerAuthContext.tsx` & `CustomerAuthController.java`
-- **Mechanism:** The website lacks an active Redis session store. Cookies set across origins (port 3000 to port 8000) fail to persist reliably during SSR hydration and browser refreshes.
-- **Impact under 10k Users:** High customer friction as shoppers find themselves logged out upon navigation.
+- **Mechanism (Hypothesis):** Cross-port origin differences (port 3000 vs 8000), cookie header extraction during Next.js SSR hydration, and absence of a Redis session store are hypothesized to cause customer logout on navigation or page refresh.
+- **Resolution Path:** Per `Part2_Addendum.md` ADD-1 and P2-4A, the exact bug must be reproduced and proved under test before implementing the Redis sliding session solution.
 
 ---
 
@@ -87,42 +86,130 @@
 | ID | Area | Severity | Evidence | Impact | Recommended Fix | Scoping Label |
 |---|---|:---:|---|---|---|:---:|
 | **AUD-01** | Concurrency / Inventory | **Critical** | `InventoryService.java:51-62`, `InventoryRepository.java:15` | Overselling of inventory during concurrent order drops. | Add pessimistic write lock (`@Lock(PESSIMISTIC_WRITE)`) on inventory lookup or atomic conditional decrement query. | **[REQ] (Phase P2-7)** |
-| **AUD-02** | Concurrency / Billing | **High** | `InternalOrderController.java:191-199` | Duplicate invoice numbers and failed checkouts under concurrent orders. | Generate invoice numbers from a dedicated database sequence (`invoice_number_seq`) or atomic Redis counter. | **[REQ] (Phase P2-7)** |
+| **AUD-02** | Concurrency / Billing | **High** | `InternalOrderController.java:191-199` | Duplicate invoice numbers and failed checkouts under concurrent orders. | Retain `FIC-INV-<timestamp>` format; remove race via transactional retry on unique constraint violation (no schema changes / no sequence per ADD-3). | **[REQ] (Phase P2-7)** |
 | **AUD-03** | Resilience / Remote Calls | **High** | `FiccadoDataSyncService.java:32, 86` | Unbounded `RestTemplate` causes thread exhaustion if CRM backend is slow. | Implement configured HTTP client with 3s/5s timeouts and Resilience4j circuit breaker. | **[REQ] (Phase P2-7)** |
-| **AUD-04** | Customer Auth / Sessions | **High** | `CustomerAuthController.java:120`, `CustomerAuthContext.tsx:35` | Customer session lost on page refresh / SSR navigation. | Implement Redis session store (port 6380, `noeviction`) with 10-minute sliding window logout. | **[REQ] (Phase P2-4)** |
+| **AUD-04** | Customer Auth / Sessions | **High** | `CustomerAuthController.java:120`, `CustomerAuthContext.tsx:35` | Customer session lost on page refresh / SSR navigation (Hypothesis to be verified in P2-4A). | Reproduce root cause in P2-4A; implement Redis session store (port 6380, `noeviction`) with 10-minute sliding window logout. | **[REQ] (Phase P2-4)** |
 | **AUD-05** | Customer Features / Wishlist | **Medium** | `next.config.ts:15-20` (redirects `/favorites` to `/`) | Wishlist feature non-functional. | Implement database table, backend service, and frontend wishlist page with optimistic updates. | **[REQ] (Phase P2-5)** |
-| **AUD-06** | Checkout / Couriers | **High** | `checkout/page.tsx:31-41`, `couriers.ts:15` | Simulated payment signatures and mock couriers in checkout. | Implement verified Razorpay SDK modal integration and backend courier rates. | **[REQ] (Phase P2-6 & P2-7)** |
+| **AUD-06** | Checkout / Couriers | **High** | `checkout/page.tsx:31-41`, `couriers.ts:15` | Simulated payment signatures and mock couriers in checkout. | Implement verified Razorpay SDK modal integration and backend courier rates configuration (per ADD-4 & ADD-5). | **[REQ] (Phase P2-6 & P2-7)** |
 | **AUD-07** | Reconciliation / Payments | **Medium** | `payment/backend/ficcado_payment_gateway_data` | Abandoned / missed webhook payments stay unreconciled. | Add 10-minute scheduled job with ShedLock to reconcile Razorpay transactions against local database. | **[REQ] (Phase P2-8)** |
 | **AUD-08** | Observability / Logging | **Medium** | Gateway configuration & backend loggers | Cannot trace requests across microservices. | Inject `X-Request-Id` at NGINX, propagate via MDC, and output structured JSON logs. | **[REQ] (Phase P2-9)** |
-| **AUD-09** | Database / Entity Integrity | **Medium** | `PaymentTransaction.java:18`, `Sale.java`, `Item.java` | Concurrent updates can overwrite without detection (lost updates). | Add `@Version Long version` optimistic locking to entities and Flyway migrations. | **[OUT]** |
-| **AUD-10** | Code Quality / CRM Lint | **Medium** | `crm/ficcado_crm_app`: `npm run lint` (278 errors/warnings) | Blocks automated strict CI lint gate on CRM frontend. | Refactor explicit `any` types to OpenAPI-derived response types in `types/api.ts` and fix React 19 hook rules. | **[OUT]** |
-| **AUD-11** | Scalability / Database Pooling | **High** | `application.yaml` connection pools (max 30 / 15 / 15) | Pool exhaustion during 10,000 concurrent user spikes. | Add Storefront Redis caching (90%+ hit rate for catalog reads) and configure PgBouncer for production scale. | **[OUT]** |
-| **AUD-12** | Database / Query Performance | **Medium** | Foreign keys on `sale_line_items`, `sales`, `inventory_history` | Sequential table scans on large tables during customer/sale lookups. | Add Flyway migration creating explicit B-Tree indexes on all foreign key and filter columns. | **[OUT]** |
-| **AUD-13** | Security / Data Privacy | **Medium** | `SaleService.java:65-68`, `FiccadoDataSyncService.java:85` | Potential logging of customer PII (phone, email) in plain text. | Implement custom Logback converter to mask sensitive customer fields (`******1234`, `ab***@gmail.com`). | **[OUT]** |
+| **AUD-09** | Database / Entity Integrity | **Medium** | `Item.java:21-88` | Simultaneous admin edits to the same item overwrite changes. | Add Flyway migration for `version` column on `items` only and `@Version` on `Item` entity (narrowed to `Item` per developer decision). | **[OUT] ➔ APPROVED (P2-2)** |
+| **AUD-10** | Code Quality / CRM Lint | **Medium** | `crm/ficcado_crm_app`: `npm run lint` (278 errors/warnings) | Blocks automated strict CI lint gate on CRM frontend. | CI handling only: run CRM lint non-blocking with baseline error ratchet; no CRM source edits per developer decision. | **[OUT] ➔ REJECTED (P2-9 CI Ratchet)** |
+| **AUD-11** | Scalability / Database Pooling | **High** | `application.yaml` connection pools (max 30 / 15 / 15) | Pool exhaustion during 10,000 concurrent user spikes. | Verify existing Redis catalog caching (`CacheConfig`), add hit/miss counters, set explicit environment pool/thread settings, and document PgBouncer guidance. | **[OUT] ➔ APPROVED (Post P2-8 / Pre P2-9)** |
+| **AUD-12** | Database / Query Performance | **Medium** | Foreign keys on `sale_line_items`, `sales`, `inventory_history` | Sequential table scans on large tables during customer/sale lookups. | Add Flyway migration in Ficcado-Data creating explicit B-Tree indexes on `sale_line_items.sale_id`, `sales.customer_id`, and `inventory_history.item_id`. | **[OUT] ➔ APPROVED (Post P2-8 / Pre P2-9)** |
+| **AUD-13** | Security / Data Privacy | **Medium** | `SaleService.java:65-68`, `FiccadoDataSyncService.java:85` | Potential logging of customer PII (phone, email) in plain text. | Implement central Logback pattern masking in each backend (`******1234`, `ab***@gmail.com`) at start of P2-4. | **[OUT] ➔ APPROVED (Start of P2-4)** |
+| **AUD-14** | Testing / Environment Parity | **High** | `website/backend/.../application.yaml:9`, `payment/backend/.../application-test.yaml:6` | Website and Payment tests run against in-memory H2 rather than PostgreSQL. | Align test configurations to execute against Compose PostgreSQL test databases (`TEST_DB_URL`). | **[REQ] (Phase P2-0 / CI)** |
+| **AUD-15** | Scalability / Thread Sizing | **High** | Unconfigured Tomcat settings (default 200 max threads) vs HikariCP (15-30 connections) | Thread starvation under concurrent load as 200 threads compete for 15-30 database connections. | Configure explicit environment-driven Tomcat max threads, accept count, and connection timeout in all backends. | **[REQ] (Phase P2-9 / AUD-11)** |
+| **AUD-16** | Performance / N+1 Queries | **Medium** | `Item.java:45, 53` (`sizes`, `images`), `Sale.java:118` (`lineItems`) | Multiple eager collections (`FetchType.EAGER`) cause Cartesian products or multiple secondary queries. | Ensure repository queries utilize explicit join fetches (`JOIN FETCH`) or batch fetching (`@BatchSize`) to avoid N+1 query inflation. | **[REQ] (Phase P2-2)** |
 
 ---
 
-## 5. Developer Action Required: Review of [OUT] Findings (GATE 1)
+## 5. Developer Decisions on [OUT] Findings (GATE 1 Finalized)
 
-> **DEVELOPER REVIEW INSTRUCTIONS:**
-> Please review the five `[OUT]` items below. Mark each item as either **APPROVED** (will be implemented in Phase P2-10) or **REJECTED** (will not be implemented).
+The developer decisions from [`docs/AUDIT_DECISIONS_PROMPT.md`](file:///e:/A%20FICCADO%20Full%20App/Ficcado_Complete_Applicaton/docs/AUDIT_DECISIONS_PROMPT.md) are recorded below:
 
-- [ ] **AUD-09: Add `@Version` Optimistic Locking to Core Entities**
-  - Developer Decision: `PENDING REVIEW` *(Options: APPROVED / REJECTED)*
-  - Notes: Adds version column to `PaymentTransaction`, `Sale`, and `Item` to prevent lost updates.
+| Audit Item | Developer Decision | Implementation Placement | Scope Notes |
+|---|:---:|---|---|
+| **AUD-09** | **APPROVED (Narrowed)** | Inside **Phase P2-2**, immediately after colors, description, and tags | Scoped strictly to `Item` entity. Flyway migration adds `version BIGINT NOT NULL DEFAULT 0` to `items` table. DTO accepts optional `version` and returns 409 `ITEM_VERSION_CONFLICT` on mismatch. Public/website DTOs never expose `version`. CRM edit form handles 409 with reload action. `Sale` and `PaymentTransaction` are excluded. |
+| **AUD-10** | **REJECTED** | Inside **Phase P2-9** (CI Pipeline update) | No CRM frontend source files will be modified. In CI update, CRM lint step runs non-blocking with an error ratchet recording today's baseline (246 errors, 32 warnings) in `.github/lint-baseline/crm.json`. Fails only if error count exceeds baseline. Website lint remains fully blocking. |
+| **AUD-11** | **APPROVED (Scoped)** | After **Phase P2-8** and before load tests in **Phase P2-9** | For all 3 backends, set explicit environment-driven values for HikariCP (`maximumPoolSize`, `minimumIdle`, `connectionTimeout`, `idleTimeout`, `maxLifetime`, `leakDetectionThreshold`) and Tomcat threads (`maxThreads`, `acceptCount`, `connectionTimeout`). Expose Micrometer pool metrics to Prometheus. Verify existing Redis catalog caching and add hit/miss counters. Write PgBouncer guidance in `docs/SCALING_NOTES.md` (no PgBouncer container in Compose). |
+| **AUD-12** | **APPROVED (Scoped)** | After **Phase P2-8** and before load tests in **Phase P2-9** | Add one Flyway migration in Ficcado-Data using `CREATE INDEX IF NOT EXISTS` for exactly `sale_line_items.sale_id`, `sales.customer_id`, and `inventory_history.item_id`. Verify with `EXPLAIN` before and after on test database. |
+| **AUD-13** | **APPROVED** | At the start of **Phase P2-4**, before any new authentication code | Implement central Logback masking pattern in each backend (independent copies, no shared code) masking emails (`ab***@gmail.com`), phone numbers (`******1234`), tokens/cookies, passwords, OTPs, and Razorpay secrets. Redact auth/payment request bodies. Verify website server routes do not log secrets. |
 
-- [ ] **AUD-10: Fix 278 Pre-Existing ESLint Errors in CRM Frontend**
-  - Developer Decision: `PENDING REVIEW` *(Options: APPROVED / REJECTED)*
-  - Notes: Replaces `any` types with OpenAPI types and addresses React 19 hook dependency lint rules.
+---
 
-- [ ] **AUD-11: Database Connection Pool Scalability Tuning & PgBouncer Guidance**
-  - Developer Decision: `PENDING REVIEW` *(Options: APPROVED / REJECTED)*
-  - Notes: Adds HikariCP connection pool metrics, aggressive Redis catalog caching, and PgBouncer architecture documentation.
+## 6. ADD-1 Audit Addendum (Comprehensive Reviews & Baselines)
 
-- [ ] **AUD-12: Add Explicit B-Tree Indexes on Foreign Keys and Filter Columns**
-  - Developer Decision: `PENDING REVIEW` *(Options: APPROVED / REJECTED)*
-  - Notes: Adds Flyway migration with indexes on `sale_line_items.sale_id`, `sales.customer_id`, `inventory_history.item_id`, etc.
+### 6.1 N+1 Queries & Collection Fetch Strategy Review
+- **`Item` Entity ([`Item.java:45, 53`](file:///e:/A%20FICCADO%20Full%20App/Ficcado_Complete_Applicaton/crm/backend/ficcado_crm_backend/src/main/java/com/aps/ficcado_crm_backend/entity/Item.java#L45)):**
+  - Contains two `@OneToMany` collections configured with `fetch = FetchType.EAGER`:
+    - `private List<ItemSize> sizes = new ArrayList<>();`
+    - `private List<ItemImage> images = new ArrayList<>();`
+  - In Hibernate, having multiple eager collections on an entity triggers Cartesian product joins or multiple secondary SELECT statements when querying item collections (`findAll()`). While convenient for single item display, catalog-level queries must use explicit DTO projection or batch fetching to avoid query amplification.
+- **`Sale` Entity ([`Sale.java:118`](file:///e:/A%20FICCADO%20Full%20App/Ficcado_Complete_Applicaton/crm/backend/ficcado_crm_backend/src/main/java/com/aps/ficcado_crm_backend/entity/Sale.java#L118)):**
+  - Contains `lineItems` configured with `fetch = FetchType.EAGER`.
+  - When fetching sales in `SaleRepository.java`, queries that omit `LEFT JOIN FETCH s.lineItems` generate secondary SELECT queries for each sale row. `SaleLineItem.java:23` uses `FetchType.LAZY` for parent `Sale`, which is correct.
 
-- [ ] **AUD-13: Sensitive PII Masking in Application Logs**
-  - Developer Decision: `PENDING REVIEW` *(Options: APPROVED / REJECTED)*
-  - Notes: Adds Logback pattern masking for customer phone numbers, emails, and authorization secrets.
+### 6.2 Caching Correctness & Eviction Audit
+- **Architecture:** Implemented in Part 1 Phase 4 via [`CacheConfig.java`](file:///e:/A%20FICCADO%20Full%20App/Ficcado_Complete_Applicaton/crm/backend/ficcado_crm_backend/src/main/java/com/aps/ficcado_crm_backend/config/CacheConfig.java) with `RedisCacheConfiguration`.
+- **TTL:** Configured to exactly 10 minutes (`Duration.ofMinutes(10)`) via `CacheConfig.DEFAULT_TTL`.
+- **Caches & Keys ([`PublicProductService.java:72-133`](file:///e:/A%20FICCADO%20Full%20App/Ficcado_Complete_Applicaton/crm/backend/ficcado_crm_backend/src/main/java/com/aps/ficcado_crm_backend/service/PublicProductService.java#L72-L133)):**
+  - `public-products`: key: `(#category != null ? #category : 'all') + '-' + #includeOutOfStock + '-' + (#search != null ? #search : 'none')`
+  - `public-product-id`: key: `#id`
+  - `public-product-slug`: key: `#slug`
+  - `public-categories`: default empty key
+- **Eviction Triggers:** Evicted completely on catalog changes via `@CacheEvict(value = {"public-products", "public-product-id", "public-product-slug", "public-categories"}, allEntries = true)` in:
+  - `ItemService.createItem` ([`ItemService.java:46`](file:///e:/A%20FICCADO%20Full%20App/Ficcado_Complete_Applicaton/crm/backend/ficcado_crm_backend/src/main/java/com/aps/ficcado_crm_backend/service/ItemService.java#L46))
+  - `ItemService.updateItem` ([`ItemService.java:83`](file:///e:/A%20FICCADO%20Full%20App/Ficcado_Complete_Applicaton/crm/backend/ficcado_crm_backend/src/main/java/com/aps/ficcado_crm_backend/service/ItemService.java#L83))
+  - `ItemService.deleteItem` ([`ItemService.java:134`](file:///e:/A%20FICCADO%20Full%20App/Ficcado_Complete_Applicaton/crm/backend/ficcado_crm_backend/src/main/java/com/aps/ficcado_crm_backend/service/ItemService.java#L134))
+  - `ItemService.toggleItemStatus` ([`ItemService.java:148`](file:///e:/A%20FICCADO%20Full%20App/Ficcado_Complete_Applicaton/crm/backend/ficcado_crm_backend/src/main/java/com/aps/ficcado_crm_backend/service/ItemService.java#L148))
+  - `PublicProductService.evictProductCaches` ([`PublicProductService.java:191`](file:///e:/A%20FICCADO%20Full%20App/Ficcado_Complete_Applicaton/crm/backend/ficcado_crm_backend/src/main/java/com/aps/ficcado_crm_backend/service/PublicProductService.java#L191))
+- **Graceful Degradation:** `CacheConfig.errorHandler` catches Redis connectivity or timeout exceptions and logs warnings without throwing errors to clients.
+- **Per-User Data Confirmation:** **CONFIRMED.** No customer profile, session, authentication token, cart, order history, or private data is ever cached. Only immutable/read-only public catalog DTOs are cached in Redis cache (port 6379).
+
+### 6.3 Tomcat Thread & Connection Settings per Backend
+- **Audit Findings:** Neither `ficcado_crm_backend`, `ficcado_website_data`, nor `ficcado_payment_gateway_data` configures explicit `server.tomcat.threads.*` properties in `application.yaml`.
+- **Active Defaults:**
+  - `server.tomcat.threads.max`: **200**
+  - `server.tomcat.threads.min-spare`: **10**
+  - `server.tomcat.accept-count`: **100**
+  - `server.tomcat.connection-timeout`: **20000ms** (20s)
+- **HikariCP Database Pools:**
+  - `ficcado_crm_backend`: `maximum-pool-size: 30`, `minimum-idle: 5`
+  - `ficcado_website_data`: `maximum-pool-size: 15`, `minimum-idle: 2`
+  - `ficcado_payment_gateway_data`: `maximum-pool-size: 15`, `minimum-idle: 5`
+- **Sizing Gap:** Under 10,000 concurrent user load, 200 Tomcat threads per service will contend for 15-30 database connections, leading to thread queue buildup. Explicit sizing will be parameterized in AUD-11.
+
+### 6.4 Security Headers, CORS, and Cookie Attributes
+- **Customer Session Cookie ([`CustomerAuthController.java:121-130`](file:///e:/A%20FICCADO%20Full%20App/Ficcado_Complete_Applicaton/crm/backend/ficcado_crm_backend/src/main/java/com/aps/ficcado_crm_backend/controller/CustomerAuthController.java#L121-L130)):**
+  - Name: `ficcado_customer_session`
+  - `HttpOnly`: `true` (enforced)
+  - `Path`: `/`
+  - `Secure`: `httpRequest.isSecure()` (dynamically matches protocol: `true` on HTTPS, `false` on local HTTP)
+  - `SameSite`: `isSecure ? "None" : "Lax"`
+  - `MaxAge`: 86,400 seconds (24h)
+- **CRM Admin Session Cookie ([`AuthController.java:132-140`](file:///e:/A%20FICCADO%20Full%20App/Ficcado_Complete_Applicaton/crm/backend/ficcado_crm_backend/src/main/java/com/aps/ficcado_crm_backend/controller/AuthController.java#L132-L140)):**
+  - Name: `ficcado_session`
+  - `HttpOnly`: `true`
+  - `Path`: `/`
+  - `SameSite`: `Lax`
+  - `Secure`: `httpRequest.isSecure()`
+- **CORS Configuration ([`SecurityConfig.java:90-107`](file:///e:/A%20FICCADO%20Full%20App/Ficcado_Complete_Applicaton/crm/backend/ficcado_crm_backend/src/main/java/com/aps/ficcado_crm_backend/security/SecurityConfig.java#L90-L107)):**
+  - Allowed Origins: driven by `${app.cors.allowed-origins:http://localhost:3000}`.
+  - Allowed Methods: `GET, POST, PUT, DELETE, PATCH, OPTIONS`.
+  - Allowed Headers: `Authorization, Content-Type, Accept, X-Requested-With, Origin, Cookie`.
+  - `allowCredentials`: `true`.
+- **Security Headers:** Spring Security defaults active (`X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-XSS-Protection: 0`). HSTS and CSP are managed at the NGINX Gateway level.
+
+### 6.5 Input Validation on Public and Internal Endpoints
+- **Public Product Endpoints ([`PublicProductController.java:33-75`](file:///e:/A%20FICCADO%20Full%20App/Ficcado_Complete_Applicaton/crm/backend/ficcado_crm_backend/src/main/java/com/aps/ficcado_crm_backend/controller/PublicProductController.java#L33-L75)):**
+  - Read-only GET requests: `category` (optional string), `includeOutOfStock` (boolean), `search` (optional string). No request body accepted.
+- **Public Review Submission ([`ReviewSubmissionController.java:75-90`](file:///e:/A%20FICCADO%20Full%20App/Ficcado_Complete_Applicaton/crm/backend/ficcado_crm_backend/src/main/java/com/aps/ficcado_crm_backend/controller/ReviewSubmissionController.java#L75-L90)):**
+  - Validated with `@Valid @RequestBody SubmitReviewRequest`: rating range 1–5 enforced, review text bounded.
+- **Internal Order Handshake ([`InternalOrderController.java:63-75`](file:///e:/A%20FICCADO%20Full%20App/Ficcado_Complete_Applicaton/crm/backend/ficcado_crm_backend/src/main/java/com/aps/ficcado_crm_backend/controller/InternalOrderController.java#L63-L75)):**
+  - Validates `X-Internal-Secret` using constant-time `MessageDigest.isEqual`.
+  - Validates `@Valid @RequestBody CreatePaidSaleRequest`: transaction ID, customer phone, line items.
+
+### 6.6 JaCoCo Test Coverage Baseline (Generated via CLI without Editing `pom.xml`)
+Executed using `.\mvnw.cmd org.jacoco:jacoco-maven-plugin:0.8.12:prepare-agent test org.jacoco:jacoco-maven-plugin:0.8.12:report`:
+
+| Service Bundle | Instruction Coverage | Line Coverage | Branch Coverage | Strongest Packages | Gaps / Untested Areas |
+|---|:---:|:---:|:---:|---|---|
+| **CRM Backend** (`ficcado_crm_backend`) | **26%** (5,350 / 20,111) | **27.0%** (1,073 / 3,971) | **14%** (296 / 2,027) | Config (69%), Security (43%), Service (35%) | Controllers (21%), DTOs (16%), Mappers (0%), Converters (0%) |
+| **Website Backend** (`ficcado_website_data`) | **63%** (1,092 / 1,726) | **62.8%** (267 / 425) | **25%** (21 / 81) | Config (100%), Enums (100%), DTOs (85%), Service (61%) | Controllers (42%), Entities (0%), Client (18%) |
+| **Payment Backend** (`ficcado_payment_gateway_data`) | **66%** (770 / 1,155) | **63.8%** (155 / 243) | **46%** (31 / 67) | DTOs (98%), Controller (78%), Service (35%) | Remote sync client (`FiccadoDataSyncService`) not exercised in tests |
+
+### 6.7 Database Used by Existing Tests
+- **`ficcado_crm_backend`:**
+  - Configured in [`src/test/resources/application.yaml`](file:///e:/A%20FICCADO%20Full%20App/Ficcado_Complete_Applicaton/crm/backend/ficcado_crm_backend/src/test/resources/application.yaml): uses `org.postgresql.Driver` with fallback `localhost:5432/ficcado_data`.
+  - **Risk:** If environment variables are omitted, tests connect to the local production database. Must be pointed strictly to the Compose test database (`ficcado_data_test` on port 5433).
+- **`ficcado_website_data`:**
+  - Configured in [`src/test/resources/application.yaml:9`](file:///e:/A%20FICCADO%20Full%20App/Ficcado_Complete_Applicaton/website/backend/ficcado_website_data/src/test/resources/application.yaml#L9): uses in-memory **H2** (`jdbc:h2:mem:ficcado_website_data_test;MODE=PostgreSQL`).
+- **`ficcado_payment_gateway_data`:**
+  - Configured in [`src/test/resources/application-test.yaml:6`](file:///e:/A%20FICCADO%20Full%20App/Ficcado_Complete_Applicaton/payment/backend/ficcado_payment_gateway_data/src/test/resources/application-test.yaml#L6): uses in-memory **H2** (`jdbc:h2:mem:ficcado_payment_test;MODE=PostgreSQL`).
+- **Finding (AUD-14):** Website and Payment backends currently run unit tests against in-memory H2. Per `Part2.md` Section 6, all integration tests must run against PostgreSQL Compose services (`*_test` databases on port 5433).
+
+### 6.8 Docker Compose Follow-ups Confirmation
+- **`infra/.env` Git Status:** Confirmed git-ignored and untracked. Tested via `git check-ignore infra/.env` which returned `infra/.env` (matches `.env` rule in `infra/.gitignore`).
+- **Redis Authentication:** Confirmed that both Redis instances are started with `--requirepass ${REDIS_SESSION_PASSWORD}` and `--requirepass ${REDIS_CACHE_PASSWORD}` in `infra/docker-compose.yml`, enforcing password validation.
+- **`infra/.env` Creator:** Confirmed created by the developer in Step 5 of P2-0A using `infra/.env.example` as a template.

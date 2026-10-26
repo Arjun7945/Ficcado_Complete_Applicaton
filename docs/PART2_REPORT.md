@@ -9,8 +9,8 @@ This report records all verified actions, command execution results, test output
 | Phase | Description | Status | Evidence / Notes |
 |---|---|---|---|
 | **P2-0A** | Docker Compose Infrastructure | **Completed & Verified** | All 5 containers up and healthy; connectivity and policies verified with live commands. |
-| **P2-0** | Baseline, Discovery, UI Guide & Audit | **Completed (Gate 1 Pause)** | Full baseline test runs, discovery items located, UI Guide and Audit reports written. Stopped for Gate 1 developer review. |
-| **P2-1** | CRM Fixes (Admin Permissions, Activity Log, Sale Source) | **Blocked at Gate 1** | Awaiting developer review of `docs/PART2_AUDIT.md` [OUT] findings. |
+| **P2-0** | Baseline, Discovery, UI Guide & Audit | **Completed & Verified (Gate 1 Released)** | Full baseline test runs, discovery items located, UI Guide, Audit and Addendum completed. Gate 1 released by developer. |
+| **P2-1** | CRM Fixes (Admin Permissions, Activity Log, Sale Source) | **In Progress** | Starting with ADD-2 (narrow public security rule), then 1A, 1B, 1C. |
 | **P2-2** | Item Colors, Plain-Text Description & Tags | Not Started | |
 | **P2-3** | Remove Dummy Data & Custom T-Shirt Notice Page | Not Started | |
 | **P2-4** | Customer Session Management (Redis 10-Min Sliding Logout) | Not Started | |
@@ -122,14 +122,28 @@ This report records all verified actions, command execution results, test output
 - **UI Guide:** [`docs/PART2_UI_GUIDE.md`](file:///e:/A%20FICCADO%20Full%20App/Ficcado_Complete_Applicaton/docs/PART2_UI_GUIDE.md) — Comprehensive guide with dedicated sections for Website and CRM frontends detailing tokens, typography, layouts, components, and error states with file citations.
 - **Technical Audit:** [`docs/PART2_AUDIT.md`](file:///e:/A%20FICCADO%20Full%20App/Ficcado_Complete_Applicaton/docs/PART2_AUDIT.md) — Full Microservices Compliance Checklist (13 items), Code Quality Review, 10,000 User Scalability Analysis, and Findings Registry with `[REQ]` and `[OUT]` labels.
 
-#### 4. GATE 1 Status: STOPPED FOR DEVELOPER REVIEW
-- Per `Part2.md` Section 7 (P2-0 Step 6), no application code changes have been made in P2-0.
-- Phase P2-1 is paused pending developer review of the five `[OUT]` items in `docs/PART2_AUDIT.md`:
-  - `AUD-09`: Add `@Version` Optimistic Locking to Core Entities
-  - `AUD-10`: Fix 278 Pre-Existing ESLint Errors in CRM Frontend
-  - `AUD-11`: Database Connection Pool Scalability Tuning & PgBouncer Guidance
-  - `AUD-12`: Add Explicit B-Tree Indexes on Foreign Keys and Filter Columns
-  - `AUD-13`: Sensitive PII Masking in Application Logs
+#### 4. GATE 1 Status: RELEASED
+- The developer reviewed `docs/PART2_AUDIT.md` and finalized decisions in `docs/AUDIT_DECISIONS_PROMPT.md`:
+  - **AUD-09 (`Item` Optimistic Locking):** **APPROVED (Narrowed to `Item` only)** ➔ Slated for Phase P2-2.
+  - **AUD-10 (CRM Lint Errors):** **REJECTED** ➔ Handled in CI update (Phase P2-9) with error ratchet baseline; 0 CRM source file modifications.
+  - **AUD-11 (Connection Pools & Redis Verification):** **APPROVED (Scoped)** ➔ Slated post-P2-8 / pre-P2-9.
+  - **AUD-12 (Database Indexes on Foreign Keys):** **APPROVED (Scoped)** ➔ Slated post-P2-8 / pre-P2-9.
+  - **AUD-13 (PII Log Masking):** **APPROVED** ➔ Slated at start of Phase P2-4.
+
+#### 5. ADD-1: Audit Addendum Execution & JaCoCo Baseline
+- **JaCoCo Baseline (Executed via CLI without editing `pom.xml`):**
+  - **CRM Backend (`ficcado_crm_backend`):** Instruction coverage: **26%** (5,350/20,111), Line coverage: **27.0%** (1,073/3,971 lines).
+  - **Website Backend (`ficcado_website_data`):** Instruction coverage: **63%** (1,092/1,726), Line coverage: **62.8%** (267/425 lines).
+  - **Payment Backend (`ficcado_payment_gateway_data`):** Instruction coverage: **66%** (770/1,155), Line coverage: **63.8%** (155/243 lines).
+- **Test Database Audit:**
+  - `ficcado_crm_backend`: Uses PostgreSQL driver (`localhost:5432/ficcado_data`).
+  - `ficcado_website_data`: Uses in-memory H2 (`jdbc:h2:mem:...;MODE=PostgreSQL`).
+  - `ficcado_payment_gateway_data`: Uses in-memory H2 (`jdbc:h2:mem:...;MODE=PostgreSQL`).
+  - Finding logged as `AUD-14` (Website and Payment unit tests run on H2; integration tests must be aligned to Compose PostgreSQL test databases).
+- **Compose Follow-ups Verified:**
+  - `infra/.env` confirmed git-ignored (`git check-ignore infra/.env` returned `infra/.env`).
+  - Both Redis instances configured with `--requirepass` enforcing password authentication.
+  - `infra/.env` created by developer from `infra/.env.example`.
 
 ---
 
@@ -139,5 +153,6 @@ This report records all verified actions, command execution results, test output
 ---
 
 ## Open Questions
-- **Gate 1 Approval:** Awaiting developer decision (`APPROVED` or `REJECTED`) on audit items `AUD-09` through `AUD-13` in `docs/PART2_AUDIT.md`.
+*(All Gate 1 questions resolved. Gate 1 released.)*
+
 

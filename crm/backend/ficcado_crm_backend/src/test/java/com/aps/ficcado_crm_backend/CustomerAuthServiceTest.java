@@ -35,6 +35,9 @@ class CustomerAuthServiceTest {
     @Mock
     private BCryptPasswordEncoder passwordEncoder;
 
+    @Mock
+    private com.aps.ficcado_crm_backend.service.CustomerSessionService customerSessionService;
+
     @InjectMocks
     private CustomerAuthService customerAuthService;
 
@@ -65,6 +68,11 @@ class CustomerAuthServiceTest {
                 .build();
 
         when(customerRepository.save(any(Customer.class))).thenReturn(savedCustomer);
+        when(customerSessionService.createSession(1L)).thenReturn(
+                new com.aps.ficcado_crm_backend.session.CustomerSession(
+                        "a".repeat(64), 1L, java.time.Instant.now(), java.time.Instant.now(), null
+                )
+        );
 
         CustomerAuthResponse response = customerAuthService.registerCustomer(request);
 

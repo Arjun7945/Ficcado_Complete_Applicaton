@@ -238,19 +238,68 @@ http {
             proxy_set_header X-Forwarded-Proto $scheme;
         }
 
-        # ── Ficcado-Payment-Gateway-Data Routes (Port 8083) ───────────────────
+        # ── Customer Auth Subrequest for auth_request ─────────────────────────
+        location = /_auth_customer_session {
+            internal;
+            proxy_pass http://ficcado_data_upstream/api/internal/session/validate;
+            proxy_pass_request_body off;
+            proxy_set_header Content-Length "";
+            proxy_set_header X-Original-URI $request_uri;
+            proxy_set_header Host $host;
+            proxy_set_header Cookie $http_cookie;
+            proxy_set_header Authorization $http_authorization;
+        }
+
+        # ── Customer Wishlist (Ficcado-Website-Data - Protected by auth_request) ───
+        location /api/wishlist {
+            limit_req zone=general_api burst=20 nodelay;
+
+            if ($request_method = 'OPTIONS') {
+                add_header 'Access-Control-Allow-Origin' $cors_origin always;
+                add_header 'Access-Control-Allow-Methods' 'GET, PUT, DELETE, OPTIONS' always;
+                add_header 'Access-Control-Allow-Headers' 'Authorization, Content-Type, Accept, Origin, Cookie, X-Ficcado-Background' always;
+                add_header 'Access-Control-Allow-Credentials' 'true' always;
+                add_header 'Content-Length' 0;
+                add_header 'Content-Type' 'text/plain charset=UTF-8';
+                return 204;
+            }
+
+            # Strip client-supplied X-Customer-Id to prevent spoofing
+            proxy_set_header X-Customer-Id "";
+
+            auth_request /_auth_customer_session;
+            auth_request_set $auth_customer_id $upstream_http_x_customer_id;
+
+            proxy_pass http://ficcado_website_data_upstream;
+            proxy_http_version 1.1;
+            proxy_set_header Connection "";
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header X-Customer-Id $auth_customer_id;
+            proxy_set_header X-Gateway-Secret "${FICCADO_GATEWAY_SHARED_SECRET}";
+        }
+
+        # ── Ficcado-Payment-Gateway-Data Routes (Port 8083 - Protected by auth_request) ───
         location /api/v1/payments {
             limit_req zone=general_api burst=20 nodelay;
 
             if ($request_method = 'OPTIONS') {
                 add_header 'Access-Control-Allow-Origin' $cors_origin always;
                 add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
-                add_header 'Access-Control-Allow-Headers' 'Authorization, Content-Type, Accept, Origin' always;
+                add_header 'Access-Control-Allow-Headers' 'Authorization, Content-Type, Accept, Origin, Cookie, X-Ficcado-Background' always;
                 add_header 'Access-Control-Allow-Credentials' 'true' always;
                 add_header 'Content-Length' 0;
                 add_header 'Content-Type' 'text/plain charset=UTF-8';
                 return 204;
             }
+
+            # Strip client-supplied X-Customer-Id to prevent spoofing
+            proxy_set_header X-Customer-Id "";
+
+            auth_request /_auth_customer_session;
+            auth_request_set $auth_customer_id $upstream_http_x_customer_id;
 
             proxy_pass http://ficcado_payment_gateway_data_upstream;
             proxy_http_version 1.1;
@@ -259,6 +308,8 @@ http {
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header X-Customer-Id $auth_customer_id;
+            proxy_set_header X-Gateway-Secret "${FICCADO_GATEWAY_SHARED_SECRET}";
         }
 
         location /api/v1/webhooks/razorpay {
@@ -274,8 +325,85 @@ http {
             proxy_set_header X-Forwarded-Proto $scheme;
         }
 
-        # ── Ficcado-Data Authentication Routes (Port 8081 - Strict Rate Limits) ─
-        location ~ ^/api/(customer/auth/(login|register)|v1/auth/(login|customer/login|admin/login))$ {
+        # ── Customer session read-only check (Permits guests to inspect session state) ─
+        location = /api/customer/session {
+            limit_req zone=general_api burst=20 nodelay;
+
+            if ($request_method = 'OPTIONS') {
+                add_header 'Access-Control-Allow-Origin' $cors_origin always;
+                add_header 'Access-Control-Allow-Methods' 'GET, OPTIONS' always;
+                add_header 'Access-Control-Allow-Headers' 'Authorization, Content-Type, Accept, Origin, Cookie, X-Ficcado-Background' always;
+                add_header 'Access-Control-Allow-Credentials' 'true' always;
+                add_header 'Content-Length' 0;
+                add_header 'Content-Type' 'text/plain charset=UTF-8';
+                return 204;
+            }
+
+            proxy_pass http://ficcado_data_upstream;
+            proxy_http_version 1.1;
+            proxy_set_header Connection "";
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        # ── Customer public auth routes (login, register, logout) ─────────────
+        location /api/customer/auth/ {
+            limit_req zone=auth_limit burst=5 nodelay;
+
+            if ($request_method = 'OPTIONS') {
+                add_header 'Access-Control-Allow-Origin' $cors_origin always;
+                add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
+                add_header 'Access-Control-Allow-Headers' 'Authorization, Content-Type, Accept, Origin, Cookie' always;
+                add_header 'Access-Control-Allow-Credentials' 'true' always;
+                add_header 'Content-Length' 0;
+                add_header 'Content-Type' 'text/plain charset=UTF-8';
+                return 204;
+            }
+
+            proxy_pass http://ficcado_data_upstream;
+            proxy_http_version 1.1;
+            proxy_set_header Connection "";
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        # ── Ficcado-Data Protected Customer Endpoints (Port 8081 - Protected by auth_request) ─
+        location /api/customer/ {
+            limit_req zone=general_api burst=25 nodelay;
+
+            if ($request_method = 'OPTIONS') {
+                add_header 'Access-Control-Allow-Origin' $cors_origin always;
+                add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, PATCH, DELETE, OPTIONS' always;
+                add_header 'Access-Control-Allow-Headers' 'Authorization, Content-Type, Accept, Origin, Cookie, X-Ficcado-Background' always;
+                add_header 'Access-Control-Allow-Credentials' 'true' always;
+                add_header 'Content-Length' 0;
+                add_header 'Content-Type' 'text/plain charset=UTF-8';
+                return 204;
+            }
+
+            # Strip client-supplied X-Customer-Id to prevent spoofing
+            proxy_set_header X-Customer-Id "";
+
+            auth_request /_auth_customer_session;
+            auth_request_set $auth_customer_id $upstream_http_x_customer_id;
+
+            proxy_pass http://ficcado_data_upstream;
+            proxy_http_version 1.1;
+            proxy_set_header Connection "";
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header X-Customer-Id $auth_customer_id;
+            proxy_set_header X-Gateway-Secret "${FICCADO_GATEWAY_SHARED_SECRET}";
+        }
+
+        # ── Ficcado-Data Admin & Legacy Authentication Routes (Port 8081 - Strict Rate Limits) ─
+        location ~ ^/api/(v1/auth/(login|customer/login|admin/login))$ {
             limit_req zone=auth_limit burst=3 nodelay;
 
             if ($request_method = 'OPTIONS') {

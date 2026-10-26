@@ -71,7 +71,9 @@ public class SecurityConfig {
                         // Customer unauthenticated auth routes & internal service routes
                         .requestMatchers("/api/customer/auth/**").permitAll()
                         .requestMatchers("/api/internal/**").permitAll()
-                        // Customer authenticated profile & orders
+                        // Customer session read-only check (permits guests to inspect session state)
+                        .requestMatchers(HttpMethod.GET, "/api/customer/session").permitAll()
+                        // Customer authenticated profile, orders & session touch/pause
                         .requestMatchers("/api/customer/**").hasAuthority("ROLE_CUSTOMER")
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**",
                                 "/swagger-ui.html", "/actuator/health").permitAll()

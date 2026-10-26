@@ -22,3 +22,13 @@ app:
     secret: ficcado-jwt-secret-key-32-bytes-minimum-length-for-hs256!
   cors:
     allowed-origins: http://localhost:3000
+  session:
+    redis:
+      host: ${REDIS_SESSION_HOST:localhost}
+      port: ${REDIS_SESSION_PORT:6380}
+      password: ${REDIS_SESSION_PASSWORD:fic_redisSession_aj}
+    idle-timeout-seconds: ${SESSION_IDLE_TIMEOUT:600}
+    cookie-secure: false
+  gateway:
+    shared-secret: ${GATEWAY_SHARED_SECRET:ficcado-gateway-internal-secret-2026}
+

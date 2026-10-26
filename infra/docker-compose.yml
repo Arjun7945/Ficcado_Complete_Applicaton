@@ -129,6 +129,7 @@ services:
       FICCADO_DATA_UPSTREAM: ${FICCADO_DATA_UPSTREAM:-host.docker.internal:8081}
       FICCADO_WEBSITE_DATA_UPSTREAM: ${WEBSITE_DATA_UPSTREAM:-host.docker.internal:8082}
       FICCADO_PAYMENT_DATA_UPSTREAM: ${PAYMENT_DATA_UPSTREAM:-host.docker.internal:8083}
+      FICCADO_GATEWAY_SHARED_SECRET: ${GATEWAY_SHARED_SECRET:-ficcado-gateway-internal-secret-2026}
     volumes:
       - ./gateway/nginx.conf.template:/etc/nginx/templates/nginx.conf.template:ro
     healthcheck:

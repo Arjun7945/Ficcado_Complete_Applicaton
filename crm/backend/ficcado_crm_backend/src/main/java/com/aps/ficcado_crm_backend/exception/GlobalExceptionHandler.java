@@ -27,6 +27,19 @@ import java.util.UUID;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(SessionServiceUnavailableException.class)
+    public ProblemDetail handleSessionServiceUnavailable(SessionServiceUnavailableException ex) {
+        log.error("SessionServiceUnavailableException: {}", ex.getMessage());
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
+        pd.setType(URI.create("urn:ficcado:session-store-unavailable"));
+        pd.setTitle("SESSION_STORE_UNAVAILABLE");
+        pd.setProperty("errorCode", SessionServiceUnavailableException.ERROR_CODE);
+        pd.setProperty("code", SessionServiceUnavailableException.ERROR_CODE);
+        pd.setProperty("error", SessionServiceUnavailableException.ERROR_CODE);
+        pd.setProperty("timestamp", Instant.now());
+        return pd;
+    }
+
     @ExceptionHandler(ItemVersionConflictException.class)
     public ProblemDetail handleItemVersionConflict(ItemVersionConflictException ex) {
         log.warn("ItemVersionConflictException: {}", ex.getMessage());

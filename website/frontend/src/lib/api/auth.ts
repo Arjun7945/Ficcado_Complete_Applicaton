@@ -174,9 +174,6 @@ export async function getCustomerOrders(): Promise<CustomerOrder[]> {
   }
 }
 
-/**
- * Logs out the customer and invalidates the session cookie.
- */
 export async function logoutCustomer(): Promise<boolean> {
   try {
     await apiClient(`${API_CONFIG.routes.customerAuth}/logout`, { method: 'POST' });
@@ -185,3 +182,57 @@ export async function logoutCustomer(): Promise<boolean> {
     return false;
   }
 }
+
+export interface CustomerSessionStatus {
+  active: boolean;
+  remainingSeconds: number;
+  customerId?: number;
+  paused?: boolean;
+}
+
+/**
+ * Checks server-side customer session validity and remaining seconds.
+ * Read-only: does NOT refresh the sliding idle window.
+ */
+export async function checkCustomerSession(): Promise<CustomerSessionStatus> {
+  try {
+    return await apiClient<CustomerSessionStatus>('/api/customer/session', {
+      method: 'GET',
+      headers: {
+        'X-Ficcado-Background': '1',
+      },
+      timeoutMs: 3000,
+    });
+  } catch {
+    return { active: false, remainingSeconds: 0 };
+  }
+}
+
+/**
+ * Touches the server-side customer session to extend the sliding idle timeout to 600 seconds.
+ */
+export async function touchCustomerSession(): Promise<{ active: boolean; remainingSeconds: number }> {
+  try {
+    return await apiClient<{ active: boolean; remainingSeconds: number }>('/api/customer/session/touch', {
+      method: 'POST',
+      timeoutMs: 3000,
+    });
+  } catch {
+    return { active: false, remainingSeconds: 0 };
+  }
+}
+
+/**
+ * Pauses the customer session timer during payment checkout (up to 15 minutes).
+ */
+export async function pauseCustomerSession(minutes: number = 15): Promise<{ active: boolean; paused: boolean }> {
+  try {
+    return await apiClient<{ active: boolean; paused: boolean }>(`/api/customer/session/pause?minutes=${minutes}`, {
+      method: 'POST',
+      timeoutMs: 3000,
+    });
+  } catch {
+    return { active: false, paused: false };
+  }
+}
+

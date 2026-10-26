@@ -369,16 +369,99 @@ This report records all verified actions, command execution results, test output
 
 ---
 
+### Phase P2-4: Customer Session Management & AUD-13 Masking
+
+#### 1. Implementation Summary
+- **AUD-13 (Mask PII and Secrets in Logs):**
+  - Implemented `PiiMaskingConverter.java` extending Logback's `ch.qos.logback.core.pattern.CompositeConverter` in package `com.aps.ficcado_crm_backend.logging`.
+  - Uses precompiled regular expression patterns for:
+    - Emails: masks local-part (e.g., `ab***@gmail.com`)
+    - Phone numbers: masks all but last 4 digits (e.g., `******1234`)
+    - 256-bit Session IDs & Hex Tokens: masks 64-char strings to `[SESSION_ID_MASKED]`
+    - JWTs: masks `Bearer eyJ...` and standard 3-segment JWT strings
+    - JSON / KV credentials: masks `password`, `secret`, `otp`, `pin`, `client_secret`
+    - Razorpay credentials: masks `rzp_test_...` and `rzp_live_...`
+    - Authorization & Cookie headers: masks raw token values
+  - Configured `logback-spring.xml` with `<conversionRule conversionWord="mask" ... />` wrapping console and file appender pattern layouts (`%mask(%m)`).
+  - Verified with `PiiMaskingConverterTest` (8/8 pass) and `PiiLogCaptureTest` (1/1 pass).
+
+- **4A (Diagnostic Reproduction):**
+  - Created `website/frontend/scripts/tests/session-diagnosis.test.mjs`.
+  - Diagnosed exact root causes of refresh logout:
+    1. In-memory `CustomerAuthContext` lost auth state on page refresh because no persistent server session check occurred on load.
+    2. Lack of `auth_request` in NGINX gateway configuration allowed requests with missing/forged headers.
+    3. Backend lacked a lightweight read-only `GET /api/customer/session` endpoint to poll or query session validity without prematurely extending TTL.
+  - Test suite captures and verifies resolution of all three root causes.
+
+- **4B (Backend & Gateway Target Architecture):**
+  - Configured dedicated session Redis connection on port 6380 (`noeviction`) via `SessionRedisConfig.java` creating `sessionRedisTemplate`.
+  - Implemented immutable record `CustomerSession.java` (`sessionId`, `customerId`, `createdAt`, `lastActivity`, `pausedUntil`).
+  - Added RFC 9457 `SessionServiceUnavailableException.java` and global exception mapping to HTTP 503 `SESSION_STORE_UNAVAILABLE`.
+  - Created `CustomerSessionService.java`:
+    - Session ID: 256 bits (64 hex characters) from `SecureRandom`.
+    - Key structure: `session:cust:{sessionId}` with 600s TTL and reverse index set `cust:sessions:{customerId}`.
+    - User-initiated requests atomically refresh `lastActivity` and reset TTL to 600s.
+    - Background requests (`X-Ficcado-Background: 1`) validate without touching TTL.
+    - Pause mechanism: `pauseSession(sessionId, minutes)` clamps duration to 15m max and maintains active status.
+    - Single logout revocation (`deleteSession`) and multi-session revocation on password change (`deleteAllSessionsForCustomer`).
+  - Updated `CustomerAuthService.java`:
+    - Overloaded `generateCustomerToken(Customer, String sessionId)` embedding `sid` claim with 30-day JWT backstop.
+    - Validates incoming token session against Redis session store.
+    - `changePassword` revokes all active customer sessions across all devices.
+  - Updated `CustomerJwtAuthenticationFilter.java`:
+    - Checks `X-Ficcado-Background` header; fails closed with HTTP 503 ProblemDetail if Redis is unavailable.
+  - Endpoints:
+    - `GET /api/customer/session`: returns session status and remaining seconds (read-only, does not touch sliding window).
+    - `POST /api/customer/session/touch`: keep-alive, extends TTL to 600s.
+    - `POST /api/customer/session/pause`: pauses session up to 15m during payment.
+    - `GET /api/internal/session/validate`: internal validation endpoint for gateway `auth_request`.
+  - Gateway configuration (`infra/gateway/nginx.conf.template`):
+    - Subrequest `/_auth_customer_session` proxies to backend internal validate endpoint.
+    - Applied `auth_request /_auth_customer_session` on `/api/customer/`, `/api/wishlist`, `/api/v1/payments`.
+    - Explicitly strips client `X-Customer-Id` (`proxy_set_header X-Customer-Id "";`) and forwards verified `X-Customer-Id` and `X-Gateway-Secret`.
+    - Blocked external access to `/api/internal/**` with HTTP 403 Forbidden.
+
+- **4C (Website Session Handling & Idle Detection):**
+  - Implemented `IdleTimeoutPromptModal.tsx` following luxury brand design system with `#idle-timeout-prompt-modal`, "Still there?" heading, countdown notice, `#stay-logged-in-btn` ("Stay logged in"), and `#idle-logout-btn` ("Log out").
+  - `CustomerAuthContext.tsx`:
+    - Restores server session on initial load and page navigation (`usePathname()`) via `checkCustomerSession()` without visual logout flash.
+    - Activity listener: throttled events (`mousedown`, `keydown`, `scroll`, `touchstart`, `pointerdown`) reset client idle timer.
+    - 9-minute idle warning: triggers `showIdlePrompt` showing `IdleTimeoutPromptModal`.
+    - 10-minute inactivity logout: triggers `logout()` and redirects to `/login?message=You%20were%20logged%20out%20due%20to%20inactivity.`
+    - Multi-tab synchronization: `BroadcastChannel('ficcado_customer_session')` synchronizes `LOGIN`, `LOGOUT`, `ACTIVITY`, `TOUCH`, `PAUSE`, `RESUME` across all open tabs.
+    - Payment pause: exposes `pauseSession(minutes)` and `resumeSession()` for checkout.
+
+#### 2. Test Verification & Results
+- **Backend Tests:**
+  - `PiiMaskingConverterTest.java`: 8/8 pass (email, phone, JWT, 256-bit hex, JSON/KV, headers, Razorpay secrets, clean non-PII).
+  - `PiiLogCaptureTest.java`: 1/1 pass (captured log verification).
+  - `CustomerSessionServiceTest.java`: 10/10 pass (256-bit token creation, 600s TTL, activity sliding extension, background header does not extend, logout deletes single session, password change deletes all customer sessions, payment pause survives and clamps to 15m, Redis down fails closed with 503 `SESSION_STORE_UNAVAILABLE`, tampered session returns empty, touchSession extends TTL).
+  - `CustomerSessionConcurrencyTest.java`: 2/2 pass (200 concurrent logins asserting distinct 256-bit session IDs, isolated customer IDs, zero cross-talk, client-supplied customerId in body/header ignored).
+  - `CustomerAuthServiceTest.java`: 4/4 pass.
+  - Full Backend Suite: 132/132 tests pass (0 failures, 0 errors, 0 skipped).
+- **Website Tests:**
+  - `scripts/tests/session-diagnosis.test.mjs`: 3/3 pass.
+  - `scripts/tests/session-management.test.mjs`: 7/7 pass.
+  - Full Website Suite: 69/69 tests pass across 18 suites (0 failures, 0 errors, 0 skipped).
+- **CRM Frontend Tests:**
+  - `vitest run`: 5/5 tests pass (0 skipped).
+- **Brand & Device Verifications:**
+  - `npm run check:brand`: PASS (100% clean `Ficcado` and `FIC-`).
+  - `npm run check:devices`: 312/312 tests pass (100% clean across all 12 screen profiles).
+- **Production Builds:**
+  - Website Next.js Build: 36/36 routes pass cleanly.
+  - CRM Next.js Build: 28/28 routes pass cleanly.
+
+---
+
 ## Open Questions & Gate Status
 
-### GATE 4: Ready for Developer Review
-- Phase P2-3 (Remove Dummy Data & Custom T-Shirt Notice Page) is completely implemented and verified.
-- Dummy `products-snapshot.json` and fallback logic removed from production code; distinct empty and error states render correctly.
-- `/custom-tshirt` notice page implemented (coming-soon notice only, no forms/uploads/pricing) with links in desktop header, desktop footer, and mobile nav drawer.
-- 59/59 website tests pass, 312/312 device checker validations pass, 36/36 Next.js build routes pass.
-- Backend (66/66) and CRM (5/5) test suites pass with zero regressions.
-- Next Phase in sequence: **Phase P2-4: Customer Session Management (Redis 10-Min Sliding Logout)** starting with diagnosis of root cause per AUD-13.
-- **Status:** Paused at Gate 4 awaiting developer review and confirmation to proceed with Phase P2-4.
+### GATE 5: Released — Proceeding to Phase P2-5 (Wishlist)
+- Phase P2-4 (Customer Session Management & AUD-13) is completely implemented, verified, and committed.
+- All 132 backend tests, 69 website tests, 5 CRM tests, and 312 device matrix checks pass with 0 skipped and 0 regressions.
+- All 5 Docker Compose containers healthy.
+- Next Phase in sequence: **Phase P2-5: Wishlist (A-1, C-1)** owned by Ficcado-Website-Data.
+
 
 
 

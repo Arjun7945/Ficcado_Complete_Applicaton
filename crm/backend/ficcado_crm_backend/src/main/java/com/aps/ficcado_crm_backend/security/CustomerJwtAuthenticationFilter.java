@@ -35,6 +35,8 @@ public class CustomerJwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final CustomerAuthService customerAuthService;
 
+    public static final String BACKGROUND_HEADER = "X-Ficcado-Background";
+
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
@@ -46,19 +48,40 @@ public class CustomerJwtAuthenticationFilter extends OncePerRequestFilter {
             String token = extractCustomerToken(request);
 
             if (token != null) {
-                customerAuthService.getCustomerFromToken(token).ifPresent(customer -> {
-                    var auth = new UsernamePasswordAuthenticationToken(
-                            customer,
-                            null,
-                            List.of(new SimpleGrantedAuthority(CustomerAuthService.CUSTOMER_ROLE))
-                    );
-                    SecurityContextHolder.getContext().setAuthentication(auth);
-                    log.debug("Authenticated customer [id={}, email={}]", customer.getId(), customer.getEmailId());
-                });
+                try {
+                    String uri = request.getRequestURI();
+                    boolean isBackground = "1".equals(request.getHeader(BACKGROUND_HEADER))
+                            || uri.endsWith("/api/customer/session")
+                            || uri.startsWith("/api/internal/");
+
+                    customerAuthService.getCustomerFromToken(token, !isBackground).ifPresent(customer -> {
+                        var auth = new UsernamePasswordAuthenticationToken(
+                                customer,
+                                null,
+                                List.of(new SimpleGrantedAuthority(CustomerAuthService.CUSTOMER_ROLE))
+                        );
+                        SecurityContextHolder.getContext().setAuthentication(auth);
+                        log.debug("Authenticated customer [id={}, email={}]", customer.getId(), customer.getEmailId());
+                    });
+                } catch (com.aps.ficcado_crm_backend.exception.SessionServiceUnavailableException e) {
+                    log.error("Session store unavailable during customer authentication: {}", e.getMessage());
+                    writeSessionUnavailableResponse(response, e.getMessage());
+                    return; // Fail closed! Do not proceed to protected endpoints.
+                }
             }
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private void writeSessionUnavailableResponse(HttpServletResponse response, String message) throws IOException {
+        response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+        response.setContentType("application/problem+json");
+        response.setCharacterEncoding("UTF-8");
+        String json = """
+                {"type":"urn:ficcado:session-store-unavailable","title":"SESSION_STORE_UNAVAILABLE","status":503,"detail":"%s","code":"SESSION_STORE_UNAVAILABLE"}
+                """.formatted(message != null ? message : "Session service temporarily unavailable").trim();
+        response.getWriter().write(json);
     }
 
     private String extractCustomerToken(HttpServletRequest request) {

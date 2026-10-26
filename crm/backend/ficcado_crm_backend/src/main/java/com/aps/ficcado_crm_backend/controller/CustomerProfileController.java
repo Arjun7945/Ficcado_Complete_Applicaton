@@ -120,4 +120,22 @@ public class CustomerProfileController {
         Customer saved = customerRepository.save(existing);
         return ResponseEntity.status(HttpStatus.CREATED).body(customerAuthService.mapToProfileResponse(saved));
     }
+
+    @PostMapping("/change-password")
+    @Operation(summary = "Change customer password and invalidate all active sessions")
+    public ResponseEntity<?> changePassword(
+            @AuthenticationPrincipal Customer customer,
+            @RequestBody Map<String, String> body) {
+        if (customer == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        String newPassword = body.get("newPassword");
+        if (newPassword == null || newPassword.length() < 6) {
+            return ResponseEntity.badRequest().body(Map.of("message", "New password must be at least 6 characters"));
+        }
+
+        customerAuthService.changePassword(customer.getId(), newPassword);
+        return ResponseEntity.ok(Map.of("success", true, "message", "Password changed successfully. All sessions invalidated."));
+    }
 }

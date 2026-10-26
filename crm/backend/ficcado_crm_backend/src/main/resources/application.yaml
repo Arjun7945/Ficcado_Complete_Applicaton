@@ -92,6 +92,19 @@ app:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
 
+  # ── Customer Session Management (Port 6380, noeviction) ────────────────────
+  session:
+    redis:
+      host: ${REDIS_SESSION_HOST:localhost}
+      port: ${REDIS_SESSION_PORT:6380}
+      password: ${REDIS_SESSION_PASSWORD:fic_redisSession_aj}
+      url: ${REDIS_SESSION_URL:}
+    idle-timeout-seconds: ${SESSION_IDLE_TIMEOUT:600}
+    cookie-secure: ${SESSION_COOKIE_SECURE:false}
+
+  gateway:
+    shared-secret: ${GATEWAY_SHARED_SECRET:ficcado-gateway-internal-secret-2026}
+
   # ── Cloudflare R2 Media Storage (item images) ─────────────────────────────
   # R2 exposes the S3-compatible API — no AWS account needed.
   # Leave blank locally; set via environment variables in production.

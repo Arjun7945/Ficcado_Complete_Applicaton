@@ -45,10 +45,12 @@ public class CustomerAuthService {
 
     public static final String CUSTOMER_ROLE = "ROLE_CUSTOMER";
     public static final String CUSTOMER_AUDIENCE = "ficcado-customer";
+    public static final long CUSTOMER_JWT_BACKSTOP_MS = 30L * 24 * 60 * 60 * 1000L; // 30-day backstop
 
     private final CustomerRepository customerRepository;
     private final RevokedTokenRepository revokedTokenRepository;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final CustomerSessionService customerSessionService;
 
     @Value("${app.jwt.secret}")
     private String jwtSecret;
@@ -168,7 +170,7 @@ public class CustomerAuthService {
 
     // ── JWT Management ────────────────────────────────────────────────────────
 
-    public String generateCustomerToken(Customer customer) {
+    public String generateCustomerToken(Customer customer, String sessionId) {
         SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
         return Jwts.builder()
                 .subject(customer.getId().toString())
@@ -176,10 +178,16 @@ public class CustomerAuthService {
                 .claim("email", customer.getEmailId())
                 .claim("role", CUSTOMER_ROLE)
                 .claim("customerName", customer.getCustomerName())
+                .claim("sid", sessionId)
                 .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
+                .expiration(new Date(System.currentTimeMillis() + CUSTOMER_JWT_BACKSTOP_MS))
                 .signWith(key)
                 .compact();
+    }
+
+    public String generateCustomerToken(Customer customer) {
+        var session = customerSessionService.createSession(customer.getId());
+        return generateCustomerToken(customer, session.sessionId());
     }
 
     public Claims validateCustomerToken(String token) {
@@ -201,7 +209,7 @@ public class CustomerAuthService {
     }
 
     @Transactional(readOnly = true)
-    public Optional<Customer> getCustomerFromToken(String token) {
+    public Optional<Customer> getCustomerFromToken(String token, boolean isUserInitiated) {
         try {
             if (isTokenRevoked(token)) {
                 log.debug("Customer token is revoked");
@@ -210,11 +218,30 @@ public class CustomerAuthService {
 
             Claims claims = validateCustomerToken(token);
             Long customerId = Long.parseLong(claims.getSubject());
+            String sid = claims.get("sid", String.class);
+
+            if (sid != null) {
+                // Redis session store is the true authority
+                var maybeSession = customerSessionService.validateSession(sid, isUserInitiated);
+                if (maybeSession.isEmpty()) {
+                    log.debug("Customer session in Redis is expired or missing [sid={}]", sid);
+                    return Optional.empty();
+                }
+            }
+
             return customerRepository.findById(customerId);
+        } catch (com.aps.ficcado_crm_backend.exception.SessionServiceUnavailableException e) {
+            // Re-throw so caller can fail closed with 503
+            throw e;
         } catch (Exception e) {
             log.warn("Invalid customer token: {}", e.getMessage());
             return Optional.empty();
         }
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<Customer> getCustomerFromToken(String token) {
+        return getCustomerFromToken(token, true);
     }
 
     @Transactional
@@ -223,6 +250,10 @@ public class CustomerAuthService {
 
         try {
             Claims claims = validateCustomerToken(rawToken);
+            String sid = claims.get("sid", String.class);
+            if (sid != null) {
+                customerSessionService.deleteSession(sid);
+            }
             String hash = hashToken(rawToken);
             if (!revokedTokenRepository.existsByTokenHash(hash)) {
                 RevokedToken revoked = RevokedToken.builder()
@@ -230,11 +261,21 @@ public class CustomerAuthService {
                         .expiresAt(claims.getExpiration().toInstant())
                         .build();
                 revokedTokenRepository.save(revoked);
-                log.info("Customer token revoked successfully on logout");
+                log.info("Customer token and Redis session revoked successfully on logout");
             }
         } catch (Exception e) {
             log.warn("Could not parse token during customer logout revocation: {}", e.getMessage());
         }
+    }
+
+    @Transactional
+    public void changePassword(Long customerId, String newPassword) {
+        Customer customer = customerRepository.findById(customerId)
+                .orElseThrow(() -> new IllegalArgumentException("Customer not found"));
+        customer.setPasswordHash(passwordEncoder.encode(newPassword));
+        customerRepository.save(customer);
+        customerSessionService.deleteAllSessionsForCustomer(customerId);
+        log.info("Customer password updated and all active sessions invalidated [customerId={}]", customerId);
     }
 
     public boolean isTokenRevoked(String rawToken) {

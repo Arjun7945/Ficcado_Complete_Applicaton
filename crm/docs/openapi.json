@@ -1962,6 +1962,86 @@
         }
       }
     },
+    "/api/customer/session/touch" : {
+      "post" : {
+        "tags" : [ "Customer Session" ],
+        "summary" : "Touch customer session to extend sliding idle timeout to 600s",
+        "operationId" : "touchSession",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/customer/session/pause" : {
+      "post" : {
+        "tags" : [ "Customer Session" ],
+        "summary" : "Pause customer session for payment (up to 15 minutes)",
+        "operationId" : "pauseSession",
+        "parameters" : [ {
+          "name" : "minutes",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 15
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/customer/profile/change-password" : {
+      "post" : {
+        "tags" : [ "Customer Profile" ],
+        "summary" : "Change customer password and invalidate all active sessions",
+        "operationId" : "changePassword",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "object",
+                "additionalProperties" : {
+                  "type" : "string"
+                }
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/customer/profile/addresses" : {
       "post" : {
         "tags" : [ "Customer Profile" ],
@@ -2938,6 +3018,25 @@
         }
       }
     },
+    "/api/internal/session/validate" : {
+      "get" : {
+        "tags" : [ "Internal Gateway Session Validation" ],
+        "summary" : "Internal session validation endpoint for NGINX auth_request",
+        "operationId" : "validateSession",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/customers/{id}" : {
       "get" : {
         "tags" : [ "Customers" ],
@@ -2986,6 +3085,25 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/CustomerResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/customer/session" : {
+      "get" : {
+        "tags" : [ "Customer Session" ],
+        "summary" : "Check current customer session (read-only, does not refresh sliding window)",
+        "operationId" : "getSession",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
                 }
               }
             }

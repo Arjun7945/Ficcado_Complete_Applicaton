@@ -13,6 +13,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -116,28 +117,48 @@ public class CustomerAuthController {
         ));
     }
 
+    @Value("${app.session.cookie-secure:false}")
+    private boolean cookieSecureConfig;
+
     // ── Cookie Helpers ────────────────────────────────────────────────────────
 
     private Cookie buildSessionCookie(HttpServletRequest httpRequest, String value, int maxAgeSecs) {
         Cookie cookie = new Cookie(COOKIE_NAME, value);
         cookie.setHttpOnly(true);
-        boolean isSecure = httpRequest.isSecure();
+        boolean isSecure = httpRequest.isSecure() || cookieSecureConfig;
         cookie.setSecure(isSecure);
         cookie.setPath("/");
         cookie.setMaxAge(maxAgeSecs);
-        cookie.setAttribute("SameSite", isSecure ? "None" : "Lax");
+        cookie.setAttribute("SameSite", "Lax");
         return cookie;
     }
 
     private String extractTokenFromRequest(HttpServletRequest request) {
         if (request.getCookies() != null) {
-            return Arrays.stream(request.getCookies())
+            var cookie = Arrays.stream(request.getCookies())
                     .filter(c -> COOKIE_NAME.equals(c.getName()))
                     .map(Cookie::getValue)
                     .filter(v -> !v.isBlank())
+                    .findFirst();
+            if (cookie.isPresent()) return cookie.get();
+        }
+
+        String rawCookie = request.getHeader("Cookie");
+        if (rawCookie != null && !rawCookie.isBlank()) {
+            String token = Arrays.stream(rawCookie.split(";"))
+                    .map(pair -> pair.trim().split("=", 2))
+                    .filter(parts -> parts.length == 2 && COOKIE_NAME.equals(parts[0].trim()))
+                    .map(parts -> parts[1].trim())
                     .findFirst()
                     .orElse(null);
+            if (token != null && !token.isBlank()) return token;
         }
+
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return authHeader.substring(7).trim();
+        }
+
         return null;
     }
 }

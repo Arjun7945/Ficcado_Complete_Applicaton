@@ -8,9 +8,10 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { X, Maximize2 } from 'lucide-react';
+import { X, Maximize2, Heart } from 'lucide-react';
 import { useModal, getProductModalPayload } from '@/context/ModalContext';
 import { useCart } from '@/context/CartContext';
+import { useWishlist } from '@/context/WishlistContext';
 import { useToast } from '@/context/ToastContext';
 import { RatingStars } from '@/components/ui/RatingStars';
 import { getItemImages, PLACEHOLDER_IMAGE } from '@/lib/itemImages';
@@ -37,7 +38,10 @@ export function ProductModal() {
 function ProductModalDialog({ product }: { product: Product }) {
   const { closeModal, openModal } = useModal();
   const { addToCart } = useCart();
+  const { isInWishlist, toggleWishlist } = useWishlist();
   const { showToast } = useToast();
+
+  const isFavorited = isInWishlist(product.id);
 
   const [userSize, setUserSize] = useState<SizeOption | null>(null);
   const [userColor, setUserColor] = useState<string | null>(null);
@@ -391,16 +395,30 @@ function ProductModalDialog({ product }: { product: Product }) {
             </div>
 
             {/* CTA in Right Column (Tablet & Desktop Only) */}
-            <div className="hidden md:block pt-4 mt-4 border-t border-[var(--border-light)]">
+            <div className="hidden md:flex items-center gap-2.5 pt-4 mt-4 border-t border-[var(--border-light)]">
               <button
                 id="add-to-cart-btn"
                 onClick={handleAddToCart}
                 disabled={!isLive}
-                className={`btn-primary w-full py-3.5 text-sm font-bold shadow-md rounded-2xl cursor-pointer ${
+                className={`btn-primary flex-1 py-3.5 text-sm font-bold shadow-md rounded-2xl cursor-pointer ${
                   !isLive ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
               >
                 {isLive ? `Add To Bag — ₹${product.price.toLocaleString('en-IN')}` : 'Collection Coming Soon'}
+              </button>
+
+              <button
+                type="button"
+                id="modal-wishlist-btn"
+                onClick={() => toggleWishlist(product.id)}
+                className={`h-12 w-12 flex items-center justify-center rounded-2xl border transition-all active:scale-95 cursor-pointer shrink-0 shadow-xs ${
+                  isFavorited
+                    ? 'bg-red-50 dark:bg-red-950/30 border-red-200 text-red-500'
+                    : 'bg-[var(--bg-surface-alt)] hover:bg-[var(--border-light)] border-[var(--border-light)] text-[var(--text-muted)] hover:text-red-500'
+                }`}
+                aria-label={isFavorited ? 'Remove from wishlist' : 'Add to wishlist'}
+              >
+                <Heart size={20} className={isFavorited ? 'fill-red-500 text-red-500' : ''} />
               </button>
             </div>
           </div>
@@ -421,6 +439,20 @@ function ProductModalDialog({ product }: { product: Product }) {
               ₹{product.price.toLocaleString('en-IN')}
             </span>
           </div>
+
+          <button
+            type="button"
+            id="mobile-modal-wishlist-btn"
+            onClick={() => toggleWishlist(product.id)}
+            className={`h-11 w-11 flex items-center justify-center rounded-2xl border transition-all active:scale-95 cursor-pointer shrink-0 shadow-xs ${
+              isFavorited
+                ? 'bg-red-50 dark:bg-red-950/30 border-red-200 text-red-500'
+                : 'bg-[var(--bg-surface-alt)] hover:bg-[var(--border-light)] border-[var(--border-light)] text-[var(--text-muted)] hover:text-red-500'
+            }`}
+            aria-label={isFavorited ? 'Remove from wishlist' : 'Add to wishlist'}
+          >
+            <Heart size={18} className={isFavorited ? 'fill-red-500 text-red-500' : ''} />
+          </button>
 
           <button
             id="mobile-add-to-cart-btn"

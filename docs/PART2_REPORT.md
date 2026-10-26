@@ -454,13 +454,85 @@ This report records all verified actions, command execution results, test output
 
 ---
 
+### Phase P2-5: Wishlist Service & Storefront Integration (A-1, C-1) — COMPLETE & VERIFIED
+
+#### 1. Architectural Implementation & Deliverables
+- **Microservices Ownership & Database Boundaries:**
+  - Owner: `Ficcado-Website-Data` (Port 8082, Docker DB port 5433).
+  - Strict isolation: Foreign keys from `ficcado_website_data` to `ficcado_data` (products/customers) are strictly forbidden. The table stores `customer_id` and `item_id` as raw BIGINTs.
+  - Applied Flyway migration `V2__wishlist_items.sql` creating `wishlist_items` with unique constraint `(customer_id, item_id)` and lookup indexes.
+- **Ficcado-Website-Data Backend Implementation:**
+  - Entity `WishlistItem.java` mapping `wishlist_items`.
+  - Repository `WishlistRepository.java` with custom transactional deletion and customer count.
+  - Exceptions `WishlistLimitExceededException` (HTTP 400 ProblemDetail, max 200 items cap) and `UnauthorizedGatewayException` (HTTP 401 ProblemDetail).
+  - `WishlistService.java`:
+    - Enforces hard limit of 200 items per customer.
+    - Idempotent `addToWishlist`: uses JPA `saveAndFlush` recovering from concurrent unique constraint violations to prevent duplicate errors.
+    - Idempotent `removeFromWishlist`: returns HTTP 204/success even if item was already absent.
+    - Strict customer isolation: queries strictly filter by `customerId`.
+  - `WishlistController.java`:
+    - Endpoints: `GET /api/wishlist`, `PUT /api/wishlist/{itemId}`, `DELETE /api/wishlist/{itemId}`.
+    - Identity: Reads `X-Customer-Id` and `X-Gateway-Secret` injected by NGINX gateway `auth_request`. Any client-supplied customer ID in body/query is strictly ignored.
+  - Masking & Logging: Registered `PiiMaskingConverter.java` and `logback-spring.xml` in `ficcado_website_data`.
+- **Ficcado-Data (Port 8081) Batch Product Lookup:**
+  - Added `getPublicProductsByIds(List<Long> ids)` to `PublicProductService.java` filtering only active and in-stock items (`item.getCurrentStatus() == ItemStatus.ACTIVE || item.getCurrentStatus() == ItemStatus.IN_STOCK`).
+  - Added endpoint `@GetMapping("/products/by-ids")` to `PublicProductController.java` returning `List<PublicProductResponse>`.
+- **Storefront Frontend Integration:**
+  - Central types: Added `'guestWishlistModal'` to `ModalId` and exported `WishlistItem`.
+  - API Client (`src/lib/api/wishlist.ts`): Implemented `getWishlistItems()`, `addToWishlistApi()`, `removeFromWishlistApi()`, and `getBatchProducts(ids)`.
+  - State Management (`src/context/WishlistContext.tsx`):
+    - Server-backed state for authenticated customers with optimistic updates and rollback on error.
+    - Guest handling: clicking heart stores pending item `{ itemId, returnPath }` in `sessionStorage` and opens guest prompt modal.
+    - Open redirect protection: validates `returnPath` strictly starts with `/` and contains no `//`, `:`, or `http`.
+    - Auto-add: upon authentication (login or register), automatically executes `addToWishlist(pending.itemId)` and clears storage.
+  - UI Components:
+    - `GuestWishlistPromptModal.tsx`: Accessible dialog with `#guest-wishlist-modal`, `#guest-wishlist-login-btn`, and `#guest-wishlist-signup-btn`.
+    - `ProductCard.tsx`: Wishlist heart toggle button with `#wishlist-btn-{id}`, `aria-label`, filled red heart state, and event propagation stopping.
+    - `ProductModal.tsx`: Added `#modal-wishlist-btn` (desktop) and `#mobile-modal-wishlist-btn` (mobile sticky bar).
+    - `DesktopHeader.tsx`: Added `#desktop-header-wishlist-btn` with dynamic counter badge linking to `/wishlist`.
+    - `DesktopFooter.tsx`: Added "Saved Wishlist" link under Collections.
+    - `MobileNavDrawer.tsx`: Added Saved Wishlist navigation link with live counter badge.
+    - `AppShell.tsx`: Mounted `<GuestWishlistPromptModal />` in universal modal layer.
+    - `layout.tsx`: Wrapped tree with `<WishlistProvider>`.
+    - `RouteTitleSync.tsx`: Registered `'/wishlist': 'Ficcado Clothing | Saved Wishlist'`.
+  - Dedicated Wishlist Page (`src/app/wishlist/page.tsx` & `WishlistClient.tsx`):
+    - Route: `/wishlist`.
+    - Server SEO metadata (`title: 'Saved Wishlist | Ficcado'`, OpenGraph).
+    - Hydrates product details via `getBatchProducts`.
+    - Inactive / deleted products are automatically excluded.
+    - Distinct states: Skeleton loading, unauthenticated guest banner with sign-in trigger, empty wishlist curation state with CTA to drops, and populated responsive product grid.
+    - Registered in `device-checker.mjs` matrix.
+
+#### 2. Test Verification & Results
+- **Website Data Backend Tests (`ficcado_website_data`):**
+  - `WishlistServiceTest.java`: 9/9 pass (add, duplicate idempotent add, remove, duplicate idempotent remove, 200 items limit exceeded, get items ordered by created_at, customer isolation).
+  - `WishlistControllerTest.java`: 8/8 pass (missing gateway secret returns 401, missing customer header returns 401, GET items, PUT item, DELETE item, limit exceeded returns 400 ProblemDetail, client customerId in query ignored).
+  - `WishlistConcurrencyTest.java`: 2/2 pass (50 concurrent thread stress test proving zero deadlocks, race condition recovery, and strict customer isolation).
+  - `PiiMaskingConverterTest.java`: 5/5 pass (masking emails, phones, JWTs, hex tokens).
+  - Full Website Data Backend Suite: 44/44 tests pass (0 failures, 0 errors, 0 skipped).
+- **CRM Backend Tests (`ficcado_crm_backend`):**
+  - `PublicProductControllerTest.java`: 7/7 pass (including batch product lookup).
+  - Full CRM Backend Suite: 133/133 tests pass (0 failures, 0 errors, 0 skipped).
+- **Website Frontend Tests:**
+  - `scripts/tests/wishlist.test.mjs`: 11/11 pass (guest modal structure, sessionStorage safety with open redirect guard, auto-add upon auth, API client, microservice isolation, inactive filtering, ProductCard/ProductModal IDs, header/footer/drawer links, dedicated /wishlist page, AppShell mounting, device matrix registration).
+  - Full Website Frontend Suite: 80/80 tests pass across 19 suites (0 failures, 0 errors, 0 skipped).
+- **Brand & Device Verifications:**
+  - `npm run check:brand`: PASS (0 forbidden words, strictly `Ficcado` and `FIC-`).
+  - `npm run check:devices`: 324/324 tests pass (100% clean across all 12 screen profiles and 27 routes).
+- **Code Quality & Production Build:**
+  - `npm run typecheck`: PASS (0 TypeScript errors).
+  - `npm run lint`: PASS (0 ESLint errors).
+  - `npm run build`: PASS (37/37 static and dynamic routes compiled, `/wishlist` statically generated).
+
+---
+
 ## Open Questions & Gate Status
 
-### GATE 5: Released — Proceeding to Phase P2-5 (Wishlist)
-- Phase P2-4 (Customer Session Management & AUD-13) is completely implemented, verified, and committed.
-- All 132 backend tests, 69 website tests, 5 CRM tests, and 312 device matrix checks pass with 0 skipped and 0 regressions.
+### GATE 6: Released — Proceeding to Phase P2-6 (Checkout & Addresses)
+- Phase P2-5 (Wishlist A-1, C-1) is completely implemented, verified, and committed.
+- All 133 CRM backend tests, 44 website-data backend tests, 80 website frontend tests, and 324 device matrix checks pass with 0 skipped and 0 regressions.
 - All 5 Docker Compose containers healthy.
-- Next Phase in sequence: **Phase P2-5: Wishlist (A-1, C-1)** owned by Ficcado-Website-Data.
+- Next Phase in sequence: **Phase P2-6: Checkout Flow & Saved Addresses (A-2, A-4, C-2)**.
 
 
 

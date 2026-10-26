@@ -55,9 +55,48 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
 
-  const lastActivityRef = useRef<number>(Date.now());
+  const lastActivityRef = useRef<number>(0);
   const lastBroadcastRef = useRef<number>(0);
   const channelRef = useRef<BroadcastChannel | null>(null);
+
+  useEffect(() => {
+    lastActivityRef.current = Date.now();
+  }, []);
+
+  const broadcast = useCallback((msg: Record<string, unknown>) => {
+    try {
+      channelRef.current?.postMessage(msg);
+    } catch {
+      // Ignored
+    }
+  }, []);
+
+  const refreshProfile = useCallback(async () => {
+    try {
+      const sessionStatus = await checkCustomerSession();
+      if (sessionStatus.active) {
+        const profile = await getCurrentCustomer();
+        setCustomer(profile);
+        lastActivityRef.current = Date.now();
+      } else {
+        setCustomer(null);
+      }
+    } catch {
+      setCustomer(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const logout = useCallback(async () => {
+    try {
+      await apiLogout();
+      broadcast({ type: 'LOGOUT' });
+    } finally {
+      setCustomer(null);
+      setShowIdlePrompt(false);
+    }
+  }, [broadcast]);
 
   // Cross-tab sync via BroadcastChannel
   useEffect(() => {
@@ -101,32 +140,7 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
         // Fallback if BroadcastChannel unavailable
       }
     }
-  }, []);
-
-  const broadcast = useCallback((msg: Record<string, unknown>) => {
-    try {
-      channelRef.current?.postMessage(msg);
-    } catch {
-      // Ignored
-    }
-  }, []);
-
-  const refreshProfile = useCallback(async () => {
-    try {
-      const sessionStatus = await checkCustomerSession();
-      if (sessionStatus.active) {
-        const profile = await getCurrentCustomer();
-        setCustomer(profile);
-        lastActivityRef.current = Date.now();
-      } else {
-        setCustomer(null);
-      }
-    } catch {
-      setCustomer(null);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  }, [refreshProfile]);
 
   // Restore session on mount and on route navigation
   useEffect(() => {
@@ -178,7 +192,7 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [customer, isSessionPaused, router]);
+  }, [customer, isSessionPaused, router, logout]);
 
   const stayLoggedIn = async () => {
     setShowIdlePrompt(false);
@@ -258,16 +272,6 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
       return { success: false, message: res.message || 'Registration failed' };
     } catch (err) {
       return { success: false, message: (err as Error).message || 'Registration error' };
-    }
-  };
-
-  const logout = async () => {
-    try {
-      await apiLogout();
-      broadcast({ type: 'LOGOUT' });
-    } finally {
-      setCustomer(null);
-      setShowIdlePrompt(false);
     }
   };
 

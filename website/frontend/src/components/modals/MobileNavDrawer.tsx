@@ -30,11 +30,13 @@ import {
   User,
   LogOut,
   Shirt,
+  Heart,
 } from 'lucide-react';
 import { useModal } from '@/context/ModalContext';
 import { useCart } from '@/context/CartContext';
 import { useConsent } from '@/context/ConsentContext';
 import { useCustomerAuth } from '@/context/CustomerAuthContext';
+import { useWishlist } from '@/context/WishlistContext';
 import { BRAND } from '@/config/site';
 
 export function MobileNavDrawer() {
@@ -43,6 +45,7 @@ export function MobileNavDrawer() {
   const pathname = usePathname();
   const { totalItemsCount, subtotalAmount } = useCart();
   const { customer, isAuthenticated, logout } = useCustomerAuth();
+  const { wishlistCount } = useWishlist();
   const [isClosing, setIsClosing] = useState(false);
 
   const isOpen = activeModal === 'mobileMenuDrawer';
@@ -240,6 +243,28 @@ export function MobileNavDrawer() {
               <span className="text-[10px] font-bold text-amber-500 bg-amber-50 px-2 py-0.5 rounded-full">
                 Soon
               </span>
+            </Link>
+
+            <Link
+              href="/wishlist"
+              onClick={navigateTo}
+              className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-colors ${
+                pathname.startsWith('/wishlist')
+                  ? 'bg-[var(--primary-light)] text-[var(--primary)]'
+                  : 'text-[var(--text-main)] hover:bg-[var(--bg-surface-alt)]'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <Heart size={16} className="text-[var(--primary)]" />
+                <span>Saved Wishlist</span>
+              </div>
+              {wishlistCount > 0 ? (
+                <span className="text-[10px] font-bold text-white bg-[var(--primary)] px-2 py-0.5 rounded-full">
+                  {wishlistCount}
+                </span>
+              ) : (
+                <ChevronRight size={14} className="text-gray-400" />
+              )}
             </Link>
 
             <Link

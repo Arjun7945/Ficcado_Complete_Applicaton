@@ -9,10 +9,11 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { Search, ShoppingBag, Menu, Settings, User } from 'lucide-react';
+import { Search, ShoppingBag, Menu, Settings, User, Heart } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useModal } from '@/context/ModalContext';
 import { useCustomerAuth } from '@/context/CustomerAuthContext';
+import { useWishlist } from '@/context/WishlistContext';
 
 const NAV_LINKS = [
   { href: '/', label: 'Drops' },
@@ -30,6 +31,7 @@ export function DesktopHeader() {
   const { totalItemsCount, subtotalAmount } = useCart();
   const { openModal } = useModal();
   const { customer, isAuthenticated } = useCustomerAuth();
+  const { wishlistCount } = useWishlist();
 
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -152,6 +154,26 @@ export function DesktopHeader() {
               <span className="hidden lg:inline">Sign In</span>
             </button>
           )}
+
+          {/* Wishlist Link */}
+          <Link
+            href="/wishlist"
+            id="desktop-header-wishlist-btn"
+            className={`relative flex items-center justify-center h-9 w-9 rounded-full border transition-all active:scale-90 cursor-pointer ${
+              pathname.startsWith('/wishlist')
+                ? 'bg-[var(--primary-light)] text-[var(--primary)] border-[var(--primary)]/40 shadow-xs'
+                : 'bg-[var(--bg-surface-alt)] hover:bg-[var(--border-light)] text-[var(--text-main)] hover:text-red-500 border-[var(--border-light)]'
+            }`}
+            title={`Wishlist (${wishlistCount})`}
+            aria-label={`Wishlist, ${wishlistCount} item${wishlistCount !== 1 ? 's' : ''}`}
+          >
+            <Heart size={16} className={wishlistCount > 0 ? 'fill-red-500 text-red-500' : ''} />
+            {wishlistCount > 0 && (
+              <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--primary)] text-white text-[9px] font-black px-0.5 shadow-xs">
+                {wishlistCount}
+              </span>
+            )}
+          </Link>
 
           {/* Settings Icon Only */}
           <Link

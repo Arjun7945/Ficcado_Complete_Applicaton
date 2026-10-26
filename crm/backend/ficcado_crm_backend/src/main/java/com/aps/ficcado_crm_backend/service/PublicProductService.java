@@ -129,6 +129,22 @@ public class PublicProductService {
     }
 
     /**
+     * Batch lookup active products by ID list.
+     * Inactive or missing items are filtered out.
+     */
+    @Transactional(readOnly = true)
+    public List<PublicProductResponse> getPublicProductsByIds(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Collections.emptyList();
+        }
+        Set<Long> idSet = new HashSet<>(ids);
+        return itemRepository.findAllById(idSet).stream()
+                .filter(item -> item.getCurrentStatus() == ItemStatus.ACTIVE || item.getCurrentStatus() == ItemStatus.IN_STOCK)
+                .map(this::toPublicProduct)
+                .toList();
+    }
+
+    /**
      * Fetches public categories with live product counts.
      */
     @Transactional(readOnly = true)

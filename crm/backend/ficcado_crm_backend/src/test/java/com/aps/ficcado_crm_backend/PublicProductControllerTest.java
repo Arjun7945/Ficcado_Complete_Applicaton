@@ -175,4 +175,18 @@ class PublicProductControllerTest {
                 .andExpect(jsonPath("$.data[0].slug").value("t-shirts"))
                 .andExpect(jsonPath("$.data[0].productCount").value(5));
     }
+
+    @Test
+    @DisplayName("GET /api/public/products/by-ids returns batch products with 200")
+    void getProductsByIds_returnsBatchSuccess() throws Exception {
+        when(publicProductService.getPublicProductsByIds(List.of(1L, 2L)))
+                .thenReturn(List.of(sampleProduct));
+
+        mockMvc.perform(get("/api/public/products/by-ids?ids=1,2")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].id").value(1))
+                .andExpect(jsonPath("$.data[0].name").value("CHOSEN"));
+    }
 }

@@ -154,6 +154,11 @@ export function DesktopFooter() {
               </Link>
             </li>
             <li>
+              <Link href="/wishlist" className="hover:text-[var(--primary)] transition-colors font-semibold">
+                Saved Wishlist
+              </Link>
+            </li>
+            <li>
               <Link href="/journal" className="hover:text-[var(--primary)] transition-colors">
                 The Journal & Chronicles
               </Link>

@@ -55,6 +55,10 @@ spring:
             enable: true
 
 # ── Ficcado Custom Configuration ──────────────────────────────────────────────
+app:
+  gateway:
+    shared-secret: ${GATEWAY_SHARED_SECRET:ficcado-gateway-internal-secret-2026}
+
 ficcado:
   mail:
     from: ${MAIL_FROM:support@ficcado.in}

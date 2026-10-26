@@ -161,4 +161,10 @@
 3. **For Phase P2-3 (Custom T-Shirt Notice):**
    - Implement the custom t-shirt notice page using the website's `AppShell`, `DesktopHeader`, and `DesktopFooter`.
 4. **For Phase P2-5 (Wishlist) & P2-6 (Addresses):**
-   - Use the website's `ProductCard.tsx` for wishlist items and the `.card` / `.input-field` patterns for saved shipping addresses.
+   - **Guest Wishlist Prompt Modal:** Follows the website's modal pattern ([`ModalContext.tsx`](file:///e:/A%20FICCADO%20Full%20App/Ficcado_Complete_Applicaton/website/frontend/src/context/ModalContext.tsx)) and [`AuthModal.tsx`](file:///e:/A%20FICCADO%20Full%20App/Ficcado_Complete_Applicaton/website/frontend/src/components/modals/AuthModal.tsx). Provides "Log In" and "Sign Up" actions that transition seamlessly into `AuthModal` tab flows.
+   - **Feedback & Notifications:** Use [`ToastContext.tsx`](file:///e:/A%20FICCADO%20Full%20App/Ficcado_Complete_Applicaton/website/frontend/src/context/ToastContext.tsx) (`showToast`) for wishlist add/remove confirmations and guest resume notices.
+   - **Wishlist Grid & Page:** Dedicated route `/wishlist` using [`AppShell.tsx`](file:///e:/A%20FICCADO%20Full%20App/Ficcado_Complete_Applicaton/website/frontend/src/components/layout/AppShell.tsx) and reusing [`ProductCard.tsx`](file:///e:/A%20FICCADO%20Full%20App/Ficcado_Complete_Applicaton/website/frontend/src/components/ui/ProductCard.tsx) for items. Inactive or deleted items are hidden. Empty state renders luxury brand shopping bag/heart icon with a direct CTA to explore drops.
+   - **Heart Toggle Action:** Render heart toggle button on `ProductCard.tsx` (top-right of image) and inside `ProductModal.tsx`. Displays active filled red/primary heart when in wishlist, stroke outline when not.
+   - **Header & Navigation:** Header link with dynamic counter badge in [`DesktopHeader.tsx`](file:///e:/A%20FICCADO%20Full%20App/Ficcado_Complete_Applicaton/website/frontend/src/components/layout/DesktopHeader.tsx) and navigation drawers.
+   - **Addresses (P2-6):** Use `.card` and `.input-field` styling with standard luxury brand border radius and typography tokens.
+

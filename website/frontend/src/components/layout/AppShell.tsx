@@ -22,6 +22,7 @@ import { FilterModal } from '@/components/modals/FilterModal';
 import { AboutModal } from '@/components/modals/AboutModal';
 import { MobileNavDrawer } from '@/components/modals/MobileNavDrawer';
 import { AuthModal } from '@/components/modals/AuthModal';
+import { GuestWishlistPromptModal } from '@/components/modals/GuestWishlistPromptModal';
 
 // ---------------------------------------------------------------------------
 // ModalLayer — transparent container for modal sheets & dialogs
@@ -53,6 +54,7 @@ function ModalLayer() {
       <AboutModal />
       <MobileNavDrawer />
       <AuthModal />
+      <GuestWishlistPromptModal />
     </div>
   );
 }

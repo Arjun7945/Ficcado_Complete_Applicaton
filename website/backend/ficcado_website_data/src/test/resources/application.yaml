@@ -32,3 +32,8 @@ ficcado:
     expiry-minutes: 10
     max-attempts: 5
     resend-cooldown-seconds: 60
+
+app:
+  gateway:
+    shared-secret: ficcado-gateway-internal-secret-2026
+

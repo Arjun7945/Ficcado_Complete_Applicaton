@@ -63,6 +63,15 @@ public class PublicProductController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @GetMapping("/products/by-ids")
+    @Operation(summary = "Batch fetch active products by a list of IDs for wishlist and checkout quotes")
+    public ResponseEntity<ApiResponse<List<PublicProductResponse>>> getProductsByIds(
+            @RequestParam(name = "ids") List<Long> ids) {
+        log.info("Public REST request for batch products [ids={}]", ids);
+        List<PublicProductResponse> products = publicProductService.getPublicProductsByIds(ids);
+        return ResponseEntity.ok(ApiResponse.ok(products));
+    }
+
     @GetMapping("/products/{id}/reviews")
     @Operation(summary = "Get public verified reviews for a product")
     public ResponseEntity<ApiResponse<List<PublicReviewResponse>>> getProductReviews(@PathVariable Long id) {

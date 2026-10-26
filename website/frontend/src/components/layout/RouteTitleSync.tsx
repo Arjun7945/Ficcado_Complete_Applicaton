@@ -25,6 +25,7 @@ const ROUTE_TITLES: Record<string, string> = {
   '/categories/combos': 'Ficcado Clothing | Streetwear Combos',
   '/checkout': 'Ficcado Clothing | Checkout',
   '/checkout/whatsapp-continue': 'Ficcado Clothing | WhatsApp Continue',
+  '/wishlist': 'Ficcado Clothing | Saved Wishlist',
   '/terms': 'Ficcado Clothing | Terms & Conditions',
   '/privacy': 'Ficcado Clothing | Privacy Policy',
   '/shipping-delivery': 'Ficcado Clothing | Shipping & Delivery',

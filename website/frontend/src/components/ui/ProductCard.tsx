@@ -7,7 +7,9 @@
 
 import { useState } from 'react';
 import { useModal } from '@/context/ModalContext';
+import { useWishlist } from '@/context/WishlistContext';
 import Image from 'next/image';
+import { Heart } from 'lucide-react';
 import { RatingStars } from './RatingStars';
 import { getProductMainImage, PLACEHOLDER_PRODUCT_IMAGE } from '@/lib/images';
 import type { Product } from '@/types';
@@ -19,10 +21,12 @@ interface ProductCardProps {
 
 export function ProductCard({ product, priority = false }: ProductCardProps) {
   const { openProductModal } = useModal();
+  const { isInWishlist, toggleWishlist } = useWishlist();
   const [imageError, setImageError] = useState(false);
   const imageSrc = product.img || product.image_main || getProductMainImage(product.slug);
   const isPriority = priority || Number(product.id) <= 8;
   const displaySrc = imageError ? PLACEHOLDER_PRODUCT_IMAGE : (imageSrc || PLACEHOLDER_PRODUCT_IMAGE);
+  const isFavorited = isInWishlist(product.id);
 
   return (
     <article
@@ -69,6 +73,27 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
             </span>
           </div>
         )}
+
+        {/* Wishlist Heart Button */}
+        <button
+          type="button"
+          id={`wishlist-btn-${product.id}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleWishlist(product.id);
+          }}
+          className="absolute top-2.5 right-2.5 z-20 flex h-8 w-8 items-center justify-center rounded-full bg-black/45 backdrop-blur-md hover:bg-black/65 transition-all active:scale-85 cursor-pointer shadow-xs border border-white/20"
+          aria-label={isFavorited ? `Remove ${product.name} from wishlist` : `Add ${product.name} to wishlist`}
+        >
+          <Heart
+            size={16}
+            className={`transition-all ${
+              isFavorited
+                ? 'fill-red-500 text-red-500 scale-110'
+                : 'text-white hover:text-red-300'
+            }`}
+          />
+        </button>
 
         {/* Price tag */}
         <div

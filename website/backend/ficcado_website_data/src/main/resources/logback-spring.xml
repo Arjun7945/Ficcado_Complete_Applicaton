@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- Conversion rule to mask PII and credentials using PiiMaskingConverter (AUD-13) -->
+    <conversionRule conversionWord="mask" converterClass="com.aps.ficcado_website_data.logging.PiiMaskingConverter" />
+
+    <!-- Console Appender with Masking Layout -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %mask(%m)%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- Root Logger -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE" />
+    </root>
+
+    <!-- Ficcado Website Data Logger -->
+    <logger name="com.aps.ficcado_website_data" level="DEBUG" />
+</configuration>

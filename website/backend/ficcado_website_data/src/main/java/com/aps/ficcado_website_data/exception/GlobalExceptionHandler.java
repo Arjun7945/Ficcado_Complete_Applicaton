@@ -63,6 +63,18 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.failure(ex.getMessage()));
     }
 
+    @ExceptionHandler(WishlistLimitExceededException.class)
+    public ResponseEntity<ApiResponse<Void>> handleWishlistLimit(WishlistLimitExceededException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.failure(ex.getMessage()));
+    }
+
+    @ExceptionHandler(UnauthorizedGatewayException.class)
+    public ResponseEntity<ApiResponse<Void>> handleUnauthorizedGateway(UnauthorizedGatewayException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.failure(ex.getMessage()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGeneralException(Exception ex) {
         log.error("Unhandled exception caught in GlobalExceptionHandler", ex);

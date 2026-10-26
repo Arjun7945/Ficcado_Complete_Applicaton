@@ -2713,6 +2713,37 @@
         }
       }
     },
+    "/api/public/products/by-ids" : {
+      "get" : {
+        "tags" : [ "Public Catalog (Storefront)" ],
+        "summary" : "Batch fetch active products by a list of IDs for wishlist and checkout quotes",
+        "operationId" : "getProductsByIds",
+        "parameters" : [ {
+          "name" : "ids",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int64"
+            }
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListPublicProductResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/public/categories" : {
       "get" : {
         "tags" : [ "Public Catalog (Storefront)" ],

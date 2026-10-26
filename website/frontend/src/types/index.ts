@@ -27,7 +27,13 @@ export type ModalId =
   | 'aboutModal'
   | 'mobileMenuDrawer'
   | 'authModal'
+  | 'guestWishlistModal'
   | null;
+
+export interface WishlistItem {
+  itemId: number;
+  createdAt: string;
+}
 
 export type ToastType = 'success' | 'error' | 'info';
 

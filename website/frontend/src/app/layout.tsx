@@ -9,6 +9,7 @@ import { ModalProvider } from '@/context/ModalContext';
 import { ViewportProvider } from '@/context/ViewportContext';
 import { ConsentProvider } from '@/context/ConsentContext';
 import { CustomerAuthProvider } from '@/context/CustomerAuthContext';
+import { WishlistProvider } from '@/context/WishlistContext';
 import { CookieConsentBanner } from '@/components/ui/CookieConsentBanner';
 import { CacheInvalidator } from '@/components/providers/CacheInvalidator';
 
@@ -236,8 +237,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <CustomerAuthProvider>
                 <CartProvider>
                   <ModalProvider>
-                    <AppShell>{children}</AppShell>
-                    <CookieConsentBanner />
+                    <WishlistProvider>
+                      <AppShell>{children}</AppShell>
+                      <CookieConsentBanner />
+                    </WishlistProvider>
                   </ModalProvider>
                 </CartProvider>
               </CustomerAuthProvider>

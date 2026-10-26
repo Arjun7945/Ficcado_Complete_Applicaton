@@ -81,12 +81,12 @@ http {
     }
 
     upstream ficcado_website_data_upstream {
-        server ${WEBSITE_DATA_UPSTREAM} max_fails=3 fail_timeout=10s;
+        server ${FICCADO_WEBSITE_DATA_UPSTREAM} max_fails=3 fail_timeout=10s;
         keepalive 32;
     }
 
     upstream ficcado_payment_gateway_data_upstream {
-        server ${PAYMENT_DATA_UPSTREAM} max_fails=3 fail_timeout=10s;
+        server ${FICCADO_PAYMENT_DATA_UPSTREAM} max_fails=3 fail_timeout=10s;
         keepalive 32;
     }
 

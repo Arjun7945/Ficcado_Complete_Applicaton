@@ -24,7 +24,7 @@ services:
       TEST_DB_USER: ${TEST_DB_USER:-ficcado_test_user}
       TEST_DB_PASSWORD: ${TEST_DB_PASSWORD}
     volumes:
-      - ficcado_postgres_data:/var/lib/postgresql/data
+      - ficcado_postgres_data:/var/lib/postgresql
       - ./postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-postgres}"]

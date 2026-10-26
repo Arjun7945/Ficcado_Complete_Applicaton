@@ -8,9 +8,9 @@ This report records all verified actions, command execution results, test output
 
 | Phase | Description | Status | Evidence / Notes |
 |---|---|---|---|
-| **P2-0A** | Docker Compose Infrastructure | **In Progress (Paused at Step 5)** | Files created, syntax validated, awaiting developer confirmation of Docker Desktop & `infra/.env` |
-| **P2-0** | Baseline, Discovery, UI Guide & Audit | Not Started (Requires P2-0A completion) | Pending Gate 1 |
-| **P2-1** | CRM Fixes (Admin Permissions, Activity Log, Sale Source) | Not Started | Pending Gate 1 approval |
+| **P2-0A** | Docker Compose Infrastructure | **Completed & Verified** | All 5 containers up and healthy; connectivity and policies verified with live commands. |
+| **P2-0** | Baseline, Discovery, UI Guide & Audit | **In Progress** | Baseline test run, discovery, UI guide and audit underway. |
+| **P2-1** | CRM Fixes (Admin Permissions, Activity Log, Sale Source) | Not Started | Pending Gate 1 approval. |
 | **P2-2** | Item Colors, Plain-Text Description & Tags | Not Started | |
 | **P2-3** | Remove Dummy Data & Custom T-Shirt Notice Page | Not Started | |
 | **P2-4** | Customer Session Management (Redis 10-Min Sliding Logout) | Not Started | |
@@ -41,46 +41,58 @@ This report records all verified actions, command execution results, test output
 
 #### 2. Infrastructure Artifacts Created
 - `infra/docker-compose.yml`:
-  - Compose v2 specification pinning images to explicit version tags:
-    - `postgres`: `postgres:18.6-alpine` (Host port: `127.0.0.1:5433:5432`, volume: `ficcado_postgres_data`)
-    - `redis-session`: `redis:7.4.2-alpine` (Host port: `127.0.0.1:6380:6379`, `noeviction` policy, volume: `ficcado_redis_session_data`)
-    - `redis-cache`: `redis:7.4.2-alpine` (Host port: `127.0.0.1:6379:6379`, `allkeys-lru` policy, 256MB cap, volume: `ficcado_redis_cache_data`)
-    - `rabbitmq`: `rabbitmq:4.0.5-management-alpine` (Host ports: `127.0.0.1:5672:5672`, `127.0.0.1:15672:15672`, volume: `ficcado_rabbitmq_data`)
-    - `gateway`: `nginx:1.27.4-alpine` (Host port: `127.0.0.1:8000:8000`, routes traffic to host services via `host.docker.internal`)
-    - `prometheus`: `prom/prometheus:v2.54.1` (Host port: `127.0.0.1:9090:9090`, profile: `monitoring`)
-    - `grafana`: `grafana/grafana:11.2.2` (Host port: `127.0.0.1:3002:3000`, profile: `monitoring`)
+  - Pinned images: `postgres:18.6-alpine`, `redis:7.4.2-alpine`, `rabbitmq:4.0.5-management-alpine`, `nginx:1.27.4-alpine`, `prom/prometheus:v2.54.1`, `grafana/grafana:11.2.2`.
+  - Ports bound to `127.0.0.1` (`5433`, `6380`, `6379`, `5672`, `15672`, `8000`).
+  - Named volumes: `ficcado_postgres_data`, `ficcado_redis_session_data`, `ficcado_redis_cache_data`, `ficcado_rabbitmq_data`, `ficcado_prometheus_data`, `ficcado_grafana_data`.
+  - Health checks defined for every active service.
 - `infra/postgres/init/01-create-databases.sh`:
-  - Automated provisioning script with LF line endings.
-  - Creates dedicated logins and databases:
-    - Application: `ficcado_website_data` (owner: `ficcado_website_user`), `ficcado_payment_gateway_data` (owner: `ficcado_payment_user`)
-    - Integration Tests: `ficcado_data_test`, `ficcado_website_data_test`, `ficcado_payment_gateway_data_test` (owner: `ficcado_test_user`)
-  - Configures schema public permissions for PostgreSQL 18+ Flyway migration compatibility.
+  - Auto-creates `ficcado_website_data`, `ficcado_payment_gateway_data`, and test databases `ficcado_data_test`, `ficcado_website_data_test`, `ficcado_payment_gateway_data_test` with least-privilege logins.
+  - Grants schema public ownership for Flyway migration compatibility.
 - `infra/gateway/nginx.conf.template`:
-  - Upstream template using `host.docker.internal` and environment variable substitution via `NGINX_ENVSUBST_FILTER=^FICCADO_`.
-  - Enforces 403 Forbidden on `/api/internal/**`.
-- `infra/monitoring/prometheus.yml`: Scrapes Spring Boot actuator prometheus endpoints on host ports 8081, 8082, 8083.
-- `infra/.env.example`: Complete environment variable template without hardcoded secrets.
-- `infra/.gitattributes`: Enforces `*.sh text eol=lf`.
-- `infra/.gitignore`: Ignores `.env`, `.env.local`, `*.env`.
-- `docs/LOCAL_SETUP.md`: Fully updated to document Docker Compose infrastructure commands, host/container port mappings, and service environment variables.
+  - Enforces 403 on `/api/internal/**`.
+  - Upstream configuration templated with `host.docker.internal`.
+- `infra/.env.example`: Safe environment template with variable placeholders.
+- `infra/.gitattributes`: Enforces LF line endings for shell scripts.
+- `infra/.gitignore`: Ignores `.env` and `*.env`.
+- `docs/LOCAL_SETUP.md`: Comprehensive local setup and operations guide.
 
-#### 3. Compose Specification Validation
-- **Command:** `docker compose -f infra/docker-compose.yml --env-file infra/.env.example config`
-- **Result:** Successfully validated the entire compose specification without errors (Exit code: 0).
-- **Brand Check:**
-  - **Command:** `node scripts/check-brand.mjs` (in `website/frontend`)
-  - **Result:** Zero forbidden brand spellings found. Passed.
+#### 3. Container Startup & Health Status
+- **Command:** `docker compose -f infra/docker-compose.yml ps`
+- **Output:**
+  ```text
+  NAME                    IMAGE                              COMMAND                  SERVICE         CREATED         STATUS                   PORTS
+  ficcado-gateway         nginx:1.27.4-alpine                "/docker-entrypoint.…"   gateway         2 minutes ago   Up 2 minutes (healthy)   127.0.0.1:8000->8000/tcp
+  ficcado-postgres        postgres:18.6-alpine               "docker-entrypoint.s…"   postgres        2 minutes ago   Up 2 minutes (healthy)   127.0.0.1:5433->5432/tcp
+  ficcado-rabbitmq        rabbitmq:4.0.5-management-alpine   "docker-entrypoint.s…"   rabbitmq        2 minutes ago   Up 2 minutes (healthy)   127.0.0.1:5672->5672/tcp, 127.0.0.1:15672->15672/tcp
+  ficcado-redis-cache     redis:7.4.2-alpine                 "docker-entrypoint.s…"   redis-cache     2 minutes ago   Up 2 minutes (healthy)   127.0.0.1:6379->6379/tcp
+  ficcado-redis-session   redis:7.4.2-alpine                 "docker-entrypoint.s…"   redis-session   2 minutes ago   Up 2 minutes (healthy)   127.0.0.1:6380->6379/tcp
+  ```
 
-#### 4. Current Checkpoint (P2-0A Step 5 Pause)
-- Waiting for the developer to:
-  1. Ensure Docker Desktop is launched and running.
-  2. Copy `infra/.env.example` to `infra/.env` and specify their local passwords.
-  3. Confirm ready so the agent can execute `docker compose up -d` and verify service health and connectivity.
+#### 4. Live Connectivity & Configuration Verification
+- **PostgreSQL Databases (Port 5433):**
+  - `ficcado_website_data` connected as `ficcado_website_user`: **PASS** (`SELECT current_database(), current_user;` returned `ficcado_website_data | ficcado_website_user`)
+  - `ficcado_payment_gateway_data` connected as `ficcado_payment_user`: **PASS** (`ficcado_payment_gateway_data | ficcado_payment_user`)
+  - `ficcado_data_test` connected as `ficcado_test_user`: **PASS** (`ficcado_data_test | ficcado_test_user`)
+  - `ficcado_website_data_test` connected as `ficcado_test_user`: **PASS** (`ficcado_website_data_test | ficcado_test_user`)
+  - `ficcado_payment_gateway_data_test` connected as `ficcado_test_user`: **PASS** (`ficcado_payment_gateway_data_test | ficcado_test_user`)
+  - Untouched native database `ficcado_data` (Port 5432): **PASS** (1 row in items table)
+- **Redis Instances:**
+  - `ficcado-redis-session` (Port 6380): `PING` ➔ `PONG` (**PASS**)
+  - `ficcado-redis-cache` (Port 6379): `PING` ➔ `PONG` (**PASS**)
+- **Redis Eviction Policies:**
+  - `ficcado-redis-session`: `config get maxmemory-policy` ➔ `noeviction` (**PASS**, rejects evictions)
+  - `ficcado-redis-cache`: `config get maxmemory-policy` ➔ `allkeys-lru` (**PASS**, evicts by LRU)
+- **RabbitMQ Management API (Port 15672):**
+  - `http://localhost:15672/api/overview` via HTTP Basic Auth: **PASS** (Version `4.0.5`, cluster `rabbit@89b2dcf1a632`)
+- **Gateway (Port 8000):**
+  - `GET http://localhost:8000/health`: `HTTP/1.1 200 OK` ➔ `{"status":"UP","gateway":"Ficcado API Gateway","port":8000,"version":"1.0.0"}` (**PASS**)
+  - `GET http://localhost:8000/api/internal/test`: `HTTP/1.1 403 Forbidden` ➔ `{"success":false,"message":"Access forbidden: internal endpoints cannot be invoked through the public gateway."}` (**PASS**)
+  - Upstream health checks (`/health/ficcado-data`, `/health/website-data`, `/health/payment-gateway`): `HTTP/1.1 502 Bad Gateway` (**EXPECTED**, backend applications not yet running on host)
 
 ---
 
 ## Dependencies Added Log
-*(No new dependencies added yet)*
+*(No new dependencies added)*
 
 ---
 

@@ -1,0 +1,4 @@
+# Local Docker infrastructure secrets
+.env
+.env.local
+*.env

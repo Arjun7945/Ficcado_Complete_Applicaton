@@ -1,0 +1,323 @@
+# =============================================================================
+# Ficcado API Gateway — NGINX Configuration Template (Port 8000)
+# Microservices connected via Docker host gateway (host.docker.internal):
+#   - Ficcado-Data:                    http://${FICCADO_DATA_UPSTREAM}
+#   - Ficcado-Website-Data:            http://${WEBSITE_DATA_UPSTREAM}
+#   - Ficcado-Payment-Gateway-Data:    http://${PAYMENT_DATA_UPSTREAM}
+# =============================================================================
+
+worker_processes auto;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+
+    sendfile        on;
+    tcp_nopush      on;
+    tcp_nodelay     on;
+    keepalive_timeout  65;
+    types_hash_max_size 2048;
+    server_tokens off;
+
+    # ── Gzip Compression ──────────────────────────────────────────────────────
+    gzip on;
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_comp_level 6;
+    gzip_min_length 256;
+    gzip_types
+        application/atom+xml
+        application/geo+json
+        application/javascript
+        application/x-javascript
+        application/json
+        application/ld+json
+        application/manifest+json
+        application/rdf+xml
+        application/rss+xml
+        application/vnd.ms-fontobject
+        application/wasm
+        application/x-web-app-manifest+json
+        application/xhtml+xml
+        application/xml
+        font/eot
+        font/otf
+        font/ttf
+        image/bmp
+        image/svg+xml
+        text/cache-manifest
+        text/calendar
+        text/css
+        text/javascript
+        text/markdown
+        text/plain
+        text/xml
+        text/vcard
+        text/vnd.rim.location.xloc
+        text/vtt
+        text/x-component
+        text/x-cross-domain-policy;
+
+    # ── Rate Limiting Zones ───────────────────────────────────────────────────
+    # General API limit: 30 requests per second
+    limit_req_zone $binary_remote_addr zone=general_api:10m rate=30r/s;
+
+    # Sensitive Auth limits: 5 requests per minute
+    limit_req_zone $binary_remote_addr zone=auth_limit:10m rate=5r/m;
+
+    # OTP limits: 3 requests per minute
+    limit_req_zone $binary_remote_addr zone=otp_limit:10m rate=3r/m;
+
+    limit_req_status 429;
+
+    # ── Upstreams ─────────────────────────────────────────────────────────────
+    upstream ficcado_data_upstream {
+        server ${FICCADO_DATA_UPSTREAM} max_fails=3 fail_timeout=10s;
+        keepalive 32;
+    }
+
+    upstream ficcado_website_data_upstream {
+        server ${WEBSITE_DATA_UPSTREAM} max_fails=3 fail_timeout=10s;
+        keepalive 32;
+    }
+
+    upstream ficcado_payment_gateway_data_upstream {
+        server ${PAYMENT_DATA_UPSTREAM} max_fails=3 fail_timeout=10s;
+        keepalive 32;
+    }
+
+    # ── Gateway Server ────────────────────────────────────────────────────────
+    server {
+        listen 8000;
+        server_name localhost;
+
+        # Client body limit
+        client_max_body_size 10M;
+
+        # ── Global Security Headers ───────────────────────────────────────────
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-XSS-Protection "1; mode=block" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+
+        # ── CORS Preflight & Headers ──────────────────────────────────────────
+        set $cors_origin "";
+        if ($http_origin ~* "^https?://(localhost:3000|localhost:3001|ficcado\.in|.*\.ficcado\.in)$") {
+            set $cors_origin $http_origin;
+        }
+
+        # ── Gateway Self Health Check ─────────────────────────────────────────
+        location = /health {
+            default_type application/json;
+            return 200 '{"status":"UP","gateway":"Ficcado API Gateway","port":8000,"version":"1.0.0"}';
+        }
+
+        # ── Microservice Upstream Health Checks ───────────────────────────────
+        location = /health/ficcado-data {
+            proxy_pass http://ficcado_data_upstream/actuator/health;
+            proxy_set_header Host $host;
+            proxy_connect_timeout 2s;
+            proxy_read_timeout 3s;
+        }
+
+        location = /health/website-data {
+            proxy_pass http://ficcado_website_data_upstream/actuator/health;
+            proxy_set_header Host $host;
+            proxy_connect_timeout 2s;
+            proxy_read_timeout 3s;
+        }
+
+        location = /health/payment-gateway {
+            proxy_pass http://ficcado_payment_gateway_data_upstream/actuator/health;
+            proxy_set_header Host $host;
+            proxy_connect_timeout 2s;
+            proxy_read_timeout 3s;
+        }
+
+        # ── SECURITY GUARD: Block Internal Endpoints ─────────────────────────
+        location /api/internal/ {
+            default_type application/json;
+            return 403 '{"success":false,"message":"Access forbidden: internal endpoints cannot be invoked through the public gateway."}';
+        }
+
+        # ── Ficcado-Website-Data Routes (Port 8082) ───────────────────────────
+        # 1. Customer Enquiries
+        location /api/v1/enquiries {
+            limit_req zone=general_api burst=10 nodelay;
+
+            if ($request_method = 'OPTIONS') {
+                add_header 'Access-Control-Allow-Origin' $cors_origin always;
+                add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
+                add_header 'Access-Control-Allow-Headers' 'Authorization, Content-Type, Accept, Origin' always;
+                add_header 'Access-Control-Allow-Credentials' 'true' always;
+                add_header 'Content-Length' 0;
+                add_header 'Content-Type' 'text/plain charset=UTF-8';
+                return 204;
+            }
+
+            proxy_pass http://ficcado_website_data_upstream;
+            proxy_http_version 1.1;
+            proxy_set_header Connection "";
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        # 2. Customer Complaints
+        location /api/v1/complaints {
+            limit_req zone=general_api burst=10 nodelay;
+
+            if ($request_method = 'OPTIONS') {
+                add_header 'Access-Control-Allow-Origin' $cors_origin always;
+                add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
+                add_header 'Access-Control-Allow-Headers' 'Authorization, Content-Type, Accept, Origin' always;
+                add_header 'Access-Control-Allow-Credentials' 'true' always;
+                add_header 'Content-Length' 0;
+                add_header 'Content-Type' 'text/plain charset=UTF-8';
+                return 204;
+            }
+
+            proxy_pass http://ficcado_website_data_upstream;
+            proxy_http_version 1.1;
+            proxy_set_header Connection "";
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        # 3. Drop & Restock Notifications
+        location /api/v1/notifications {
+            limit_req zone=general_api burst=10 nodelay;
+
+            if ($request_method = 'OPTIONS') {
+                add_header 'Access-Control-Allow-Origin' $cors_origin always;
+                add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
+                add_header 'Access-Control-Allow-Headers' 'Authorization, Content-Type, Accept, Origin' always;
+                add_header 'Access-Control-Allow-Credentials' 'true' always;
+                add_header 'Content-Length' 0;
+                add_header 'Content-Type' 'text/plain charset=UTF-8';
+                return 204;
+            }
+
+            proxy_pass http://ficcado_website_data_upstream;
+            proxy_http_version 1.1;
+            proxy_set_header Connection "";
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        # 4. OTP Verification & Generation (Strict Rate Limiting)
+        location /api/v1/otp {
+            limit_req zone=otp_limit burst=2 nodelay;
+
+            if ($request_method = 'OPTIONS') {
+                add_header 'Access-Control-Allow-Origin' $cors_origin always;
+                add_header 'Access-Control-Allow-Methods' 'POST, OPTIONS' always;
+                add_header 'Access-Control-Allow-Headers' 'Authorization, Content-Type, Accept, Origin' always;
+                add_header 'Access-Control-Allow-Credentials' 'true' always;
+                add_header 'Content-Length' 0;
+                add_header 'Content-Type' 'text/plain charset=UTF-8';
+                return 204;
+            }
+
+            proxy_pass http://ficcado_website_data_upstream;
+            proxy_http_version 1.1;
+            proxy_set_header Connection "";
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        # ── Ficcado-Payment-Gateway-Data Routes (Port 8083) ───────────────────
+        location /api/v1/payments {
+            limit_req zone=general_api burst=20 nodelay;
+
+            if ($request_method = 'OPTIONS') {
+                add_header 'Access-Control-Allow-Origin' $cors_origin always;
+                add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
+                add_header 'Access-Control-Allow-Headers' 'Authorization, Content-Type, Accept, Origin' always;
+                add_header 'Access-Control-Allow-Credentials' 'true' always;
+                add_header 'Content-Length' 0;
+                add_header 'Content-Type' 'text/plain charset=UTF-8';
+                return 204;
+            }
+
+            proxy_pass http://ficcado_payment_gateway_data_upstream;
+            proxy_http_version 1.1;
+            proxy_set_header Connection "";
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        location /api/v1/webhooks/razorpay {
+            # Webhook endpoint: no origin check, rate limited by IP
+            limit_req zone=general_api burst=30 nodelay;
+
+            proxy_pass http://ficcado_payment_gateway_data_upstream;
+            proxy_http_version 1.1;
+            proxy_set_header Connection "";
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        # ── Ficcado-Data Authentication Routes (Port 8081 - Strict Rate Limits) ─
+        location ~ ^/api/(customer/auth/(login|register)|v1/auth/(login|customer/login|admin/login))$ {
+            limit_req zone=auth_limit burst=3 nodelay;
+
+            if ($request_method = 'OPTIONS') {
+                add_header 'Access-Control-Allow-Origin' $cors_origin always;
+                add_header 'Access-Control-Allow-Methods' 'POST, OPTIONS' always;
+                add_header 'Access-Control-Allow-Headers' 'Authorization, Content-Type, Accept, Origin' always;
+                add_header 'Access-Control-Allow-Credentials' 'true' always;
+                add_header 'Content-Length' 0;
+                add_header 'Content-Type' 'text/plain charset=UTF-8';
+                return 204;
+            }
+
+            proxy_pass http://ficcado_data_upstream;
+            proxy_http_version 1.1;
+            proxy_set_header Connection "";
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        # ── Ficcado-Data Primary Catalog, Sales & Management API (Port 8081) ──
+        location /api/ {
+            limit_req zone=general_api burst=25 nodelay;
+
+            if ($request_method = 'OPTIONS') {
+                add_header 'Access-Control-Allow-Origin' $cors_origin always;
+                add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, PATCH, DELETE, OPTIONS' always;
+                add_header 'Access-Control-Allow-Headers' 'Authorization, Content-Type, Accept, Origin' always;
+                add_header 'Access-Control-Allow-Credentials' 'true' always;
+                add_header 'Content-Length' 0;
+                add_header 'Content-Type' 'text/plain charset=UTF-8';
+                return 204;
+            }
+
+            proxy_pass http://ficcado_data_upstream;
+            proxy_http_version 1.1;
+            proxy_set_header Connection "";
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+    }
+}

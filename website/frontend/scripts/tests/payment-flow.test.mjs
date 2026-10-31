@@ -114,6 +114,10 @@ describe('P2-7: Backend State Machine & Concurrency Contracts', () => {
     rootDir,
     '../crm/backend/ficcado_crm_backend/src/main/java/com/aps/ficcado_crm_backend/controller/InternalOrderController.java',
   );
+  const crmWebsiteOrderService = path.resolve(
+    rootDir,
+    '../crm/backend/ficcado_crm_backend/src/main/java/com/aps/ficcado_crm_backend/service/WebsiteOrderService.java',
+  );
   const paymentTransactionEntity = path.resolve(
     rootDir,
     '../payment/backend/ficcado_payment_gateway_data/src/main/java/com/aps/ficcado_payment_gateway_data/entity/PaymentTransaction.java',
@@ -133,19 +137,20 @@ describe('P2-7: Backend State Machine & Concurrency Contracts', () => {
 
   test('Ficcado-Data enforces WEBSITE SALE remarks and pessimistic locking', () => {
     assert.ok(fs.existsSync(crmInternalOrderController), 'InternalOrderController.java must exist');
-    const content = fs.readFileSync(crmInternalOrderController, 'utf8');
+    assert.ok(fs.existsSync(crmWebsiteOrderService), 'WebsiteOrderService.java must exist');
+    const content = fs.readFileSync(crmInternalOrderController, 'utf8') + '\n' + fs.readFileSync(crmWebsiteOrderService, 'utf8');
 
     assert.ok(
       content.includes('remarks("WEBSITE SALE")'),
-      'InternalOrderController must strictly set remarks to WEBSITE SALE',
+      'InternalOrderController/WebsiteOrderService must strictly set remarks to WEBSITE SALE',
     );
     assert.ok(
       content.includes('findByItemIdAndSizeForUpdate'),
-      'InternalOrderController must use pessimistic write lock findByItemIdAndSizeForUpdate',
+      'InternalOrderController/WebsiteOrderService must use pessimistic write lock findByItemIdAndSizeForUpdate',
     );
     assert.ok(
       content.includes('AMOUNT_MISMATCH'),
-      'InternalOrderController must reject client price spoofing with AMOUNT_MISMATCH',
+      'InternalOrderController/WebsiteOrderService must reject client price spoofing with AMOUNT_MISMATCH',
     );
   });
 

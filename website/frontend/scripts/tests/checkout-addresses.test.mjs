@@ -21,6 +21,10 @@ describe('Phase P2-6: Checkout Flow & Saved Addresses (A-2, A-4, C-2, ADD-4, ADD
     repoRoot,
     'crm/backend/ficcado_crm_backend/src/main/java/com/aps/ficcado_crm_backend/controller/InternalOrderController.java'
   );
+  const crmWebsiteOrderServicePath = path.join(
+    repoRoot,
+    'crm/backend/ficcado_crm_backend/src/main/java/com/aps/ficcado_crm_backend/service/WebsiteOrderService.java'
+  );
   const crmPublicDeliveryControllerPath = path.join(
     repoRoot,
     'crm/backend/ficcado_crm_backend/src/main/java/com/aps/ficcado_crm_backend/controller/PublicDeliveryController.java'
@@ -112,14 +116,17 @@ describe('Phase P2-6: Checkout Flow & Saved Addresses (A-2, A-4, C-2, ADD-4, ADD
 
   test('P2-6.6: Server-side quote endpoint protects pricing and validates inventory', () => {
     assert.ok(fs.existsSync(crmInternalOrderControllerPath), 'InternalOrderController must exist');
-    const content = fs.readFileSync(crmInternalOrderControllerPath, 'utf8');
+    assert.ok(fs.existsSync(crmWebsiteOrderServicePath), 'WebsiteOrderService must exist');
+    const controllerContent = fs.readFileSync(crmInternalOrderControllerPath, 'utf8');
+    const serviceContent = fs.readFileSync(crmWebsiteOrderServicePath, 'utf8');
+    const combinedContent = controllerContent + '\n' + serviceContent;
 
-    assert.match(content, /@PostMapping\(["']\/quote["']\)/, 'must expose POST /api/internal/orders/quote');
-    assert.match(content, /X-Internal-Secret/, 'must require X-Internal-Secret');
-    assert.match(content, /MessageDigest\.isEqual/, 'must use constant-time secret comparison');
-    assert.match(content, /item\.getPriceOfItem\(\)/, 'must look up item price strictly from database');
-    assert.match(content, /inventoryRepository\.findByItemIdAndSize/, 'must check stock in InventoryRepository');
-    assert.match(content, /calculateDeliveryCharge/, 'must calculate delivery charge from DeliveryService');
+    assert.match(controllerContent, /@PostMapping\(["']\/quote["']\)/, 'must expose POST /api/internal/orders/quote');
+    assert.match(controllerContent, /X-Internal-Secret/, 'must require X-Internal-Secret');
+    assert.match(controllerContent, /MessageDigest\.isEqual/, 'must use constant-time secret comparison');
+    assert.match(combinedContent, /item\.getPriceOfItem\(\)/, 'must look up item price strictly from database');
+    assert.match(combinedContent, /inventoryRepository\.findByItemIdAndSize/, 'must check stock in InventoryRepository');
+    assert.match(combinedContent, /calculateDeliveryCharge/, 'must calculate delivery charge from DeliveryService');
   });
 
   test('P2-6.7: Strict elimination of simulated payment tokens and dummy functions per ADD-5', () => {

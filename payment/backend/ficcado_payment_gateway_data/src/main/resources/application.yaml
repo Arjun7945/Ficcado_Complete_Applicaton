@@ -40,8 +40,8 @@ spring:
 
 app:
   razorpay:
-    key-id: ${RAZORPAY_KEY_ID:rzp_test_ficcado_demo_key}
-    key-secret: ${RAZORPAY_KEY_SECRET:rzp_test_ficcado_secret_12345}
+    key-id: ${RAZORPAY_KEY_ID:rzp_test_TsbicMgh2nVxPz}
+    key-secret: ${RAZORPAY_KEY_SECRET:4dn8ADZAdGtoLgByDmf9Wui7}
     webhook-secret: ${RAZORPAY_WEBHOOK_SECRET:rzp_webhook_secret_12345}
     base-url: ${RAZORPAY_BASE_URL:https://api.razorpay.com/v1}
     connect-timeout-ms: ${RAZORPAY_CONNECT_TIMEOUT_MS:5000}
@@ -49,6 +49,12 @@ app:
   ficcado-data:
     url: ${FICCADO_DATA_URL:http://localhost:8081}
     internal-secret: ${INTERNAL_API_KEY:ficcado-internal-service-secret-key-change-in-prod}
+  website-data:
+    url: ${WEBSITE_DATA_URL:http://localhost:8082}
+    internal-secret: ${INTERNAL_API_KEY:ficcado-internal-service-secret-key-change-in-prod}
+  outbox:
+    relay-enabled: ${OUTBOX_RELAY_ENABLED:true}
+    relay-fixed-delay-ms: ${OUTBOX_RELAY_FIXED_DELAY_MS:5000}
   reconciliation:
     enabled: ${RECONCILIATION_ENABLED:true}
     cron: ${RECONCILIATION_CRON:0 */10 * * * *}

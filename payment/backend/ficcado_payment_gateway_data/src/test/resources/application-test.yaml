@@ -29,6 +29,12 @@ app:
   ficcado-data:
     url: http://localhost:8081
     internal-secret: ficcado-internal-service-secret-key-change-in-prod
+  website-data:
+    url: http://localhost:8082
+    internal-secret: ficcado-internal-service-secret-key-change-in-prod
+  outbox:
+    relay-enabled: false
+    relay-fixed-delay-ms: 5000
   reconciliation:
     enabled: false
     cron: "0 */10 * * * *"

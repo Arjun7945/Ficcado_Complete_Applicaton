@@ -53,7 +53,7 @@ public class CustomerAuthController {
         }
 
         if (response.token() != null) {
-            Cookie cookie = buildSessionCookie(httpRequest, response.token(), 86400);
+            Cookie cookie = buildSessionCookie(httpRequest, response.token(), -1);
             httpResponse.addCookie(cookie);
         }
 
@@ -78,7 +78,7 @@ public class CustomerAuthController {
 
         Customer customer = maybeCustomer.get();
         String token = customerAuthService.generateCustomerToken(customer);
-        Cookie cookie = buildSessionCookie(httpRequest, token, 86400);
+        Cookie cookie = buildSessionCookie(httpRequest, token, -1);
         httpResponse.addCookie(cookie);
 
         log.info("Customer login successful [id={}, email={}]", customer.getId(), customer.getEmailId());

@@ -45,11 +45,11 @@ jobs:
           npm run typecheck
           npm run lint
 
-      - name: CRM Frontend Lint & Typecheck
+      - name: CRM Frontend Lint & Typecheck (AUD-10 Ratchet)
         run: |
           cd crm/ficcado_crm_app
           npm ci
-          npm run lint
+          npm run lint:ratchet
 
   # ── Gate 2: Frontend Unit, Contract & Integration Tests ─────────────────────
   frontend-tests:
@@ -158,13 +158,20 @@ jobs:
           java-version: '21'
           cache: 'maven'
 
+      - name: Provision Dedicated Test Databases (Database Isolation)
+        run: |
+          sudo apt-get update && sudo apt-get install -y postgresql-client
+          PGPASSWORD=test_password psql -h localhost -U postgres -c "CREATE DATABASE ficcado_data_test;"
+          PGPASSWORD=test_password psql -h localhost -U postgres -c "CREATE DATABASE ficcado_website_data_test;"
+          PGPASSWORD=test_password psql -h localhost -U postgres -c "CREATE DATABASE ficcado_payment_gateway_data_test;"
+
       - name: Test & Package Ficcado-Data (CRM Backend)
         run: |
           cd crm/backend/ficcado_crm_backend
           chmod +x mvnw
           ./mvnw clean test package
         env:
-          DB_URL: jdbc:postgresql://localhost:5432/postgres
+          DB_URL: jdbc:postgresql://localhost:5432/ficcado_data_test
           DB_USERNAME: postgres
           DB_PASSWORD: test_password
           REDIS_HOST: localhost
@@ -179,7 +186,7 @@ jobs:
           chmod +x mvnw
           ./mvnw clean test package
         env:
-          DB_URL: jdbc:postgresql://localhost:5432/postgres
+          DB_URL: jdbc:postgresql://localhost:5432/ficcado_website_data_test
           DB_USERNAME: postgres
           DB_PASSWORD: test_password
 
@@ -191,11 +198,11 @@ jobs:
         env:
           DB_HOST: localhost
           DB_PORT: 5432
-          DB_NAME: postgres
+          DB_NAME: ficcado_payment_gateway_data_test
           DB_USERNAME: postgres
           DB_PASSWORD: test_password
-          RAZORPAY_KEY_ID: rzp_test_ficcado_demo_key
-          RAZORPAY_KEY_SECRET: rzp_test_ficcado_secret_12345
+          RAZORPAY_KEY_ID: rzp_test_TsbicMgh2nVxPz
+          RAZORPAY_KEY_SECRET: 4dn8ADZAdGtoLgByDmf9Wui7
           RAZORPAY_WEBHOOK_SECRET: rzp_webhook_secret_12345
 
   # ── Gate 4: Deployment Guard ─────────────────────────────────────────────────

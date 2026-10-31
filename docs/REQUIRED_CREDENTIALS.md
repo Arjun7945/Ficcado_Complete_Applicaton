@@ -14,9 +14,9 @@ This document lists every credential, secret, API key, and environment configura
 
 | Category | Missing / Action Required from Developer | Dev Default Available? | Target Service / Component |
 |---|---|:---:|---|
-| **Razorpay Test Credentials** | **MISSING** (Key ID, Secret, Webhook Secret) | No (mocked in tests) | Payment Gateway Backend |
-| **Razorpay Auto-Capture** | **CONFIRMATION REQUIRED** (Confirm enabled) | Default: True | Payment Gateway Backend |
-| **Cloudflare R2 Media Storage** | Optional for dev / Required for real media uploads | Yes (local fallback) | CRM Backend (`ficcado_crm_backend`) |
+| **Razorpay Test Credentials** | **PROVIDED** (`rzp_test_TsbicMgh2nVxPz`, test secret active) | Yes (configured in `application.yaml`) | Payment Gateway Backend |
+| **Razorpay Auto-Capture** | **CONFIRMED** (Default: True) | Default: True | Payment Gateway Backend |
+| **Cloudflare R2 Media Storage** | Deferred to production per developer direction; local DB Base64 active in dev | Yes (local DB storage fallback) | CRM Backend (`ficcado_crm_backend`) |
 | **SMTP Mail Server** | Optional for dev / Required for real customer emails | Yes (mail simulation) | Website Data & CRM Backends |
 | **Customer JWT & Admin Secrets** | Needs high-entropy generation for prod | Yes (safe dev secret) | CRM Backend & CRM Frontend |
 | **Inter-Service & Gateway Secrets**| Needs high-entropy generation for prod | Yes (safe dev secret) | Gateway & All Backends |
@@ -31,10 +31,10 @@ This document lists every credential, secret, API key, and environment configura
 
 | Variable Name | Target Service | Purpose | Expected Format | Status | Where to Obtain |
 |---|---|---|---|:---:|---|
-| `RAZORPAY_KEY_ID` | `ficcado_payment_gateway_data` | Public key identifier for Razorpay API requests & checkout | String starting with `rzp_test_` (e.g., `rzp_test_1DP5mmOlF5G5ag`). **Live keys (`rzp_live_`) are forbidden.** | **MISSING** | Razorpay Dashboard ➔ Settings ➔ API Keys ➔ Generate Test Key |
-| `RAZORPAY_KEY_SECRET` | `ficcado_payment_gateway_data` | Secret key used to sign orders & verify HMAC payment signatures | High-entropy string (e.g., 20–40 alphanumeric characters) | **MISSING** | Razorpay Dashboard ➔ Settings ➔ API Keys ➔ Generate Test Key |
-| `RAZORPAY_WEBHOOK_SECRET` | `ficcado_payment_gateway_data` | Secret used to verify Razorpay webhook raw body HMAC-SHA256 signatures | High-entropy secret string configured in webhook settings | **MISSING** | Razorpay Dashboard ➔ Settings ➔ Webhooks ➔ Add New Webhook |
-| `RAZORPAY_PAYMENT_CAPTURE` | Razorpay Dashboard Account Setting | Automatic capture of authorized payments without secondary manual capture API call | Account flag: **Automatic Capture** enabled | **CONFIRM** | Razorpay Dashboard ➔ Settings ➔ Configuration ➔ Payment Capture: Set to "Automatically capture all payments" |
+| `RAZORPAY_KEY_ID` | `ficcado_payment_gateway_data` | Public key identifier for Razorpay API requests & checkout | String starting with `rzp_test_` (e.g., `rzp_test_TsbicMgh2nVxPz`). **Live keys (`rzp_live_`) are forbidden.** | **PROVIDED** (`rzp_test_TsbicMgh2nVxPz`) | Razorpay Dashboard ➔ Settings ➔ API Keys |
+| `RAZORPAY_KEY_SECRET` | `ficcado_payment_gateway_data` | Secret key used to sign orders & verify HMAC payment signatures | High-entropy string (`4dn8ADZAdGtoLgByDmf9Wui7`) | **PROVIDED** (Active in dev profile) | Razorpay Dashboard ➔ Settings ➔ API Keys |
+| `RAZORPAY_WEBHOOK_SECRET` | `ficcado_payment_gateway_data` | Secret used to verify Razorpay webhook raw body HMAC-SHA256 signatures | High-entropy secret string configured in webhook settings | **CONFIGURED** (`rzp_webhook_secret_12345`) | Razorpay Dashboard ➔ Settings ➔ Webhooks |
+| `RAZORPAY_PAYMENT_CAPTURE` | Razorpay Dashboard Account Setting | Automatic capture of authorized payments without secondary manual capture API call | Account flag: **Automatic Capture** enabled | **CONFIRMED** | Razorpay Dashboard ➔ Settings ➔ Configuration: Automatic |
 
 > [!NOTE]
 > **Local Webhook Delivery Notice:**
@@ -89,14 +89,19 @@ This document lists every credential, secret, API key, and environment configura
 ---
 
 ### 2.6 Cloudflare R2 Media Storage (Product Images)
+*(Deferred to Production: In current development stage, local PostgreSQL database Base64 storage is actively used)*
+
+> [!NOTE]
+> **Developer Decision & Storage Strategy:**
+> Cloudflare R2 credentials will be configured in production. For this development stage, the CRM backend (`ficcado_crm_backend`) uses its local database Base64 storage fallback (`item_images` / `item_thumbnails` tables) to store and serve product images without requiring external S3/R2 endpoints.
 
 | Variable Name | Target Service | Purpose | Expected Format | Status | Where to Obtain |
 |---|---|---|---|:---:|---|
-| `R2_ACCOUNT_ID` | `ficcado_crm_backend` | Cloudflare account identifier | 32-character hexadecimal string | Optional in Dev | Cloudflare Dashboard ➔ R2 ➔ Account ID |
-| `R2_ACCESS_KEY_ID` | `ficcado_crm_backend` | S3-compatible R2 API Access Key ID | 32-character hexadecimal string | Optional in Dev | Cloudflare Dashboard ➔ R2 ➔ Manage R2 API Tokens |
-| `R2_SECRET_ACCESS_KEY` | `ficcado_crm_backend` | S3-compatible R2 API Secret Access Key | 64-character hexadecimal string | Optional in Dev | Cloudflare Dashboard ➔ R2 ➔ Manage R2 API Tokens |
-| `R2_BUCKET_NAME` | `ficcado_crm_backend` | R2 bucket name | String (default: `ficcado-media`) | Default | Cloudflare Dashboard ➔ R2 ➔ Create Bucket |
-| `R2_PUBLIC_URL` | `ficcado_crm_backend` | Custom domain or R2 dev subdomain for public image URLs | HTTPS URL (e.g., `https://media.ficcado.store`) | Default | Cloudflare Dashboard ➔ R2 ➔ Custom Domains |
+| `R2_ACCOUNT_ID` | `ficcado_crm_backend` | Cloudflare account identifier | 32-character hexadecimal string | Production Only | Cloudflare Dashboard ➔ R2 ➔ Account ID |
+| `R2_ACCESS_KEY_ID` | `ficcado_crm_backend` | S3-compatible R2 API Access Key ID | 32-character hexadecimal string | Production Only | Cloudflare Dashboard ➔ R2 ➔ Manage R2 API Tokens |
+| `R2_SECRET_ACCESS_KEY` | `ficcado_crm_backend` | S3-compatible R2 API Secret Access Key | 64-character hexadecimal string | Production Only | Cloudflare Dashboard ➔ R2 ➔ Manage R2 API Tokens |
+| `R2_BUCKET_NAME` | `ficcado_crm_backend` | R2 bucket name | String (default: `ficcado-media`) | Production Only | Cloudflare Dashboard ➔ R2 ➔ Create Bucket |
+| `R2_PUBLIC_URL` | `ficcado_crm_backend` | Custom domain or R2 dev subdomain for public image URLs | HTTPS URL (e.g., `https://media.ficcado.store`) | Production Only | Cloudflare Dashboard ➔ R2 ➔ Custom Domains |
 
 ---
 

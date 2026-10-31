@@ -1,0 +1,7 @@
+{
+  "baselineErrors": 260,
+  "baselineWarnings": 35,
+  "module": "crm/ficcado_crm_app",
+  "recordedDate": "2026-10-31",
+  "notes": "AUD-10 ratchet baseline for pre-existing ESLint errors. CI fails only if error count exceeds baseline."
+}

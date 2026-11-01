@@ -20,11 +20,12 @@ import {
   Plus,
   Loader2,
   ChevronRight,
+  Trash2,
 } from 'lucide-react';
 import { useCustomerAuth } from '@/context/CustomerAuthContext';
 import { useModal } from '@/context/ModalContext';
 import { useToast } from '@/context/ToastContext';
-import { CustomerOrder, getCustomerOrders, updateCustomerProfile } from '@/lib/api/auth';
+import { CustomerOrder, getCustomerOrders, updateCustomerProfile, addCustomerAddress, deleteCustomerAddress } from '@/lib/api/auth';
 import { normalizePhone, isValidIndianPhone } from '@/lib/phone';
 
 type AccountTab = 'orders' | 'addresses' | 'profile';
@@ -79,18 +80,32 @@ export default function AccountPage() {
 
     setSavingAddress(true);
     try {
-      const updated = await updateCustomerProfile({ address: newAddress.trim() });
-      if (updated) {
+      const added = await addCustomerAddress(newAddress.trim());
+      if (added) {
         await refreshProfile();
         setNewAddress('');
         showToast('Address saved successfully', 'success');
       } else {
-        showToast('Could not save address', 'error');
+        showToast('Could not save address. Please verify your details.', 'error');
       }
-    } catch {
-      showToast('Error saving address', 'error');
+    } catch (err) {
+      showToast((err as Error).message || 'Error saving address', 'error');
     } finally {
       setSavingAddress(false);
+    }
+  };
+
+  const handleDeleteAddress = async (addressId: number) => {
+    try {
+      const ok = await deleteCustomerAddress(addressId);
+      if (ok) {
+        await refreshProfile();
+        showToast('Address removed', 'info');
+      } else {
+        showToast('Could not remove address', 'error');
+      }
+    } catch (err) {
+      showToast((err as Error).message || 'Error removing address', 'error');
     }
   };
 
@@ -119,8 +134,8 @@ export default function AccountPage() {
       } else {
         showToast('Could not update profile', 'error');
       }
-    } catch {
-      showToast('Error updating profile', 'error');
+    } catch (err) {
+      showToast((err as Error).message || 'Error updating profile', 'error');
     } finally {
       setSavingProfile(false);
     }
@@ -418,11 +433,22 @@ export default function AccountPage() {
                       <MapPin size={14} className="text-[var(--primary)]" />
                       <span>Address #{addr.id}</span>
                     </span>
-                    {addr.isDefault && (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
-                        Default
-                      </span>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {addr.isDefault && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
+                          Default
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteAddress(addr.id)}
+                        className="p-1 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer"
+                        title="Delete address"
+                        aria-label={`Delete address ${addr.id}`}
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
                   </div>
                   <p className="text-xs text-[var(--text-secondary)] whitespace-pre-line leading-relaxed">
                     {addr.address}

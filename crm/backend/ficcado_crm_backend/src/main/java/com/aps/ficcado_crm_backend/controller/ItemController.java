@@ -35,27 +35,21 @@ public class ItemController {
     @Operation(summary = "List all items")
     public List<ItemResponse> getAll() {
         log.info("REST request to list all catalog items");
-        return itemService.getAll().stream()
-                .map(ItemMapper::toResponse)
-                .toList();
+        return itemService.getAllResponses();
     }
 
     @GetMapping("/active")
     @Operation(summary = "List active items with sizes (for sale dropdowns)")
     public List<ItemResponse> getActive() {
         log.info("REST request to list active catalog items");
-        return itemService.getActiveItemsWithSizes()
-                .stream()
-                .map(ItemMapper::toResponse)
-                .toList();
+        return itemService.getActiveResponses();
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "Get item by ID")
     public ResponseEntity<ItemResponse> getById(@PathVariable Long id) {
         log.info("REST request to get item [id={}]", id);
-        return itemService.getById(id)
-                .map(ItemMapper::toResponse)
+        return itemService.getResponseById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }

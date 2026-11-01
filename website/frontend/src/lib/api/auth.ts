@@ -160,8 +160,9 @@ export async function updateCustomerProfile(data: { name?: string; phone?: strin
       method: 'PUT',
       body: JSON.stringify(data),
     });
-  } catch {
-    return null;
+  } catch (err) {
+    console.error('[auth] updateCustomerProfile failed:', err);
+    throw err;
   }
 }
 
@@ -180,15 +181,44 @@ export async function getCustomerAddresses(): Promise<CustomerAddress[]> {
 
 /**
  * Adds a new address for the authenticated customer (max 10 addresses).
+ * Gracefully normalizes both CustomerProfileResponse and direct CustomerAddressDto returns
+ * so that callers receive the genuine address ID.
  */
 export async function addCustomerAddress(address: string, isDefault: boolean = false): Promise<CustomerAddress | null> {
   try {
-    return await apiClient<CustomerAddress>(`${API_CONFIG.routes.customerProfile}/addresses`, {
+    const raw = await apiClient<any>(`${API_CONFIG.routes.customerProfile}/addresses`, {
       method: 'POST',
       body: JSON.stringify({ address, isDefault }),
     });
-  } catch {
+
+    if (!raw) return null;
+
+    // 1. Handle CustomerProfileResponse return format ({ id: customerId, addresses: [ ... ] })
+    if (raw && Array.isArray(raw.addresses)) {
+      const addrs = raw.addresses as CustomerAddress[];
+      const match = addrs.find((a) => a.address === address) || addrs[addrs.length - 1];
+      if (match) {
+        return {
+          id: match.id,
+          address: match.address,
+          isDefault: Boolean(match.isDefault),
+        };
+      }
+    }
+
+    // 2. Handle direct CustomerAddressDto return format ({ id: addressId, address: '...', isDefault: true })
+    if (raw && typeof raw.id === 'number' && typeof raw.address === 'string') {
+      return {
+        id: raw.id,
+        address: raw.address,
+        isDefault: Boolean(raw.isDefault),
+      };
+    }
+
     return null;
+  } catch (err) {
+    console.error('[auth] addCustomerAddress failed:', err);
+    throw err;
   }
 }
 

@@ -328,6 +328,13 @@ export default function CheckoutPage() {
         setNewPincode('');
         setNewIsDefault(false);
         setIsAddingNewAddress(false);
+        setAddresses((prev) => {
+          const updated = [saved, ...prev.filter((a) => a.id !== saved.id)];
+          return newIsDefault || updated.length === 1
+            ? updated.map((a) => ({ ...a, isDefault: a.id === saved.id }))
+            : updated;
+        });
+        setSelectedAddressId(saved.id);
         await refreshProfile();
         await loadAddresses();
         setSelectedAddressId(saved.id);

@@ -50,13 +50,23 @@ public final class ItemMapper {
                 ? item.getSizes().stream().map(ItemSize::getSize).sorted().toList()
                 : Collections.emptyList();
 
-        List<String> colors = item.getColors() != null
-                ? item.getColors().stream().map(ItemColor::getColorHex).toList()
-                : Collections.emptyList();
+        List<String> colors;
+        try {
+            colors = item.getColors() != null
+                    ? item.getColors().stream().map(ItemColor::getColorHex).toList()
+                    : Collections.emptyList();
+        } catch (org.hibernate.LazyInitializationException e) {
+            colors = Collections.emptyList();
+        }
 
-        List<String> tags = item.getTags() != null
-                ? item.getTags().stream().map(ItemTag::getTag).toList()
-                : Collections.emptyList();
+        List<String> tags;
+        try {
+            tags = item.getTags() != null
+                    ? item.getTags().stream().map(ItemTag::getTag).toList()
+                    : Collections.emptyList();
+        } catch (org.hibernate.LazyInitializationException e) {
+            tags = Collections.emptyList();
+        }
 
         return new ItemResponse(
                 item.getId(),

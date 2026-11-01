@@ -8,6 +8,8 @@ import com.aps.ficcado_crm_backend.entity.ItemSize;
 import com.aps.ficcado_crm_backend.entity.ItemTag;
 import com.aps.ficcado_crm_backend.entity.enums.ItemStatus;
 import com.aps.ficcado_crm_backend.exception.ItemVersionConflictException;
+import com.aps.ficcado_crm_backend.dto.ItemDto.ItemResponse;
+import com.aps.ficcado_crm_backend.mapper.ItemMapper;
 import com.aps.ficcado_crm_backend.repository.ItemRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,13 +41,32 @@ public class ItemService {
     }
 
     @Transactional(readOnly = true)
+    public List<ItemResponse> getAllResponses() {
+        return itemRepository.findAll().stream()
+                .map(ItemMapper::toResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
     public List<Item> getActiveItemsWithSizes() {
         return itemRepository.findActiveItemsWithSizes();
     }
 
     @Transactional(readOnly = true)
+    public List<ItemResponse> getActiveResponses() {
+        return itemRepository.findActiveItemsWithSizes().stream()
+                .map(ItemMapper::toResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
     public Optional<Item> getById(Long id) {
         return itemRepository.findById(id);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<ItemResponse> getResponseById(Long id) {
+        return itemRepository.findById(id).map(ItemMapper::toResponse);
     }
 
     @Transactional

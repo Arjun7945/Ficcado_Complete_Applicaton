@@ -106,7 +106,12 @@ export function DesktopHeader() {
     }
   }
 
-  const isAboutActive = ABOUT_DROPDOWN_LINKS.some((link) => pathname.startsWith(link.href));
+  // Find which about link is currently active based on pathname
+  const activeAboutLink = ABOUT_DROPDOWN_LINKS.find(
+    (link) => pathname === link.href || pathname.startsWith(`${link.href}/`)
+  );
+  const isAboutActive = Boolean(activeAboutLink);
+  const dropdownLabel = activeAboutLink ? activeAboutLink.label : 'About';
 
   return (
     <header
@@ -114,7 +119,7 @@ export function DesktopHeader() {
       className="hidden md:block w-full sticky top-0 z-40 bg-[var(--bg-surface)]/95 backdrop-blur-md border-b border-[var(--border-light)] shadow-xs"
     >
       {/* Main Navigation Bar */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 h-16 flex items-center justify-between gap-2 lg:gap-4">
+      <div className="max-w-7xl mx-auto px-2 lg:px-6 h-16 flex items-center justify-between gap-1 lg:gap-4">
         {/* Left: Brand Logo & Unisex Subtitle */}
         <div className="flex items-center gap-2 lg:gap-3 shrink-0">
           <Link href="/" className="flex items-center gap-2 lg:gap-2.5 group">
@@ -153,7 +158,8 @@ export function DesktopHeader() {
               <Link
                 key={href}
                 href={href}
-                className={`px-2.5 lg:px-3 py-1.5 rounded-xl text-xs uppercase tracking-wider font-bold whitespace-nowrap transition-all ${
+                aria-current={isActive ? 'page' : undefined}
+                className={`px-2 md:px-2.5 lg:px-3 py-1.5 rounded-xl text-xs uppercase tracking-wider font-bold whitespace-nowrap transition-all ${
                   isActive
                     ? 'text-[var(--primary)] bg-[var(--primary-light)]'
                     : 'text-[var(--text-secondary)] hover:text-[var(--text-main)] hover:bg-[var(--bg-surface-alt)]'
@@ -176,17 +182,18 @@ export function DesktopHeader() {
               id="desktop-header-about-dropdown"
               aria-haspopup="menu"
               aria-expanded={isAboutOpen}
+              aria-current={isAboutActive ? 'page' : undefined}
               onClick={() => {
                 if (aboutTimeoutRef.current) clearTimeout(aboutTimeoutRef.current);
                 setIsAboutOpen(true);
               }}
-              className={`flex items-center gap-1 px-2.5 lg:px-3 py-1.5 rounded-xl text-xs uppercase tracking-wider font-bold whitespace-nowrap transition-all cursor-pointer ${
+              className={`flex items-center gap-1 px-2 md:px-2.5 lg:px-3 py-1.5 rounded-xl text-xs uppercase tracking-wider font-bold whitespace-nowrap transition-all cursor-pointer ${
                 isAboutActive || isAboutOpen
                   ? 'text-[var(--primary)] bg-[var(--primary-light)]'
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-main)] hover:bg-[var(--bg-surface-alt)]'
               }`}
             >
-              <span>About</span>
+              <span>{dropdownLabel}</span>
               <ChevronDown
                 size={13}
                 className={`transition-transform duration-200 ${isAboutOpen ? 'rotate-180' : ''}`}
@@ -203,12 +210,13 @@ export function DesktopHeader() {
                 className="absolute top-full left-0 mt-1.5 w-40 rounded-2xl bg-[var(--bg-surface)]/95 backdrop-blur-xl border border-[var(--border-light)] shadow-xl p-1.5 z-50 animate-fade-in before:content-[''] before:absolute before:-top-3 before:left-0 before:right-0 before:h-3 before:bg-transparent"
               >
                 {ABOUT_DROPDOWN_LINKS.map(({ href, label }) => {
-                  const isActive = pathname.startsWith(href);
+                  const isActive = pathname === href || pathname.startsWith(`${href}/`);
                   return (
                     <Link
                       key={href}
                       role="menuitem"
                       href={href}
+                      aria-current={isActive ? 'page' : undefined}
                       onClick={() => setIsAboutOpen(false)}
                       className={`block px-3 py-2 rounded-xl text-xs font-bold transition-all ${
                         isActive
@@ -257,7 +265,7 @@ export function DesktopHeader() {
         </div>
 
         {/* Right: Actions (Account, Wishlist, Settings, Bag, Menu) */}
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-1 lg:gap-1.5 shrink-0">
           {/* Customer Account Button */}
           {isAuthenticated ? (
             <Link

@@ -91,7 +91,7 @@ export async function apiFetch<T = any>(
     } catch {
       // ignore json parse error
     }
-    logger.error('API request failed', { url, status: response.status, detail: errorDetail });
+    logger.error(`API request failed: ${url} (status ${response.status})`, { url, status: response.status, detail: errorDetail });
     const err = new Error(errorDetail);
     (err as any).status = response.status;
     (err as any).data = errJson;

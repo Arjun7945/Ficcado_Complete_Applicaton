@@ -14,10 +14,10 @@
 | **P3-1** | ISS-04: Gateway IPv6 Upstream Failure | **Completed & Committed** | Added `resolver 127.0.0.11 ipv6=off valid=30s;` and dynamic backend variables. Latency dropped ~1100ms ➔ 28ms. 0 network unreachable errors. Commit: `b318af1`. |
 | **P3-2** | ISS-01: Customer Session Instability & Logout on Page Change | **Completed & Committed** | Configured 401 entry point; resilient state rule in `CustomerAuthContext.tsx`; 30s throttled route check; dedicated `/api/customer/auth/logout` on `general_api`; 429/503 ProblemDetail error pages with CORS. All 7 real Chrome acceptance checks pass. Commit: `ea7dc7b`. |
 | **P3-3** | ISS-05: Customer Registration Phone Format Normalization | **Completed & Committed** | Canonical `PhoneNormalizer` utility; compact constructor normalization in `CustomerAuthDto`; client-side helper & `AuthModal` validation UI; 11 backend normalizer tests + 5 controller tests + 5 frontend integration tests pass 100%. Commit: `be3ea61`. |
-| **P3-4** | ISS-02: Product Modal Blank Image for Data-URL Items | **Completed & Verified** | Created `isRenderableImageSrc` validator; updated `ProductModal`, `ProductCard`, `CartDrawer` with `unoptimized` flag; protected JSON-LD against data URL bloat; real Chrome Playwright test verified `darlix` renders image at 736x1104. |
-| **P3-5** | ISS-03: Tablet & Desktop Header Responsive Layout Refactor | *Next Up* | |
-| **P3-6** | ISS-06 & ISS-07: CRM Middleware Matcher & Next.js Proxy Migration | *Pending* | |
-| **P3-7** | Live End-to-End Proof, Regression & Documentation | *Pending* | |
+| **P3-4** | ISS-02: Product Modal Blank Image for Data-URL Items | **Completed & Committed** | Created `isRenderableImageSrc` validator; updated `ProductModal`, `ProductCard`, `CartDrawer` with `unoptimized` flag; protected JSON-LD against data URL bloat; real Chrome Playwright test verified `darlix` renders image at 736x1104. Commit: `98062ad`. |
+| **P3-5** | ISS-03: Tablet & Desktop Header Responsive Layout Refactor | **Completed & Committed** | Four primary links (`Drops`, `Categories`, `Custom Print`, `About ▾`); About dropdown with hover bridge; circular icon-only bag CTA; zero overflow across all widths (360–1920px); updated device-checker. Commit: `82f1476`. |
+| **P3-6** | ISS-06 & ISS-07: CRM Middleware Matcher & Next.js Proxy Migration | **Completed & Committed** | Migrated `middleware.ts` to `proxy.ts`; formatted API error logs in `apiClient.ts`; suppressed canary deprecation; protected dashboard routes. Commit: `7b150cc`. |
+| **Post-P3** | CRM Items Lazy Init & Customer Address 401 Resolution | **Completed & Committed** | Eager-fetched item colors/sizes/tags in `ItemService.java`; added `ResponseCookie` in `OtpController.java`; gateway 401 CORS; throttled active session touch; graceful UI re-auth; permanently deleted temporary test files. Commits: `8f5ce52`, `280e541`. |
 
 ---
 
@@ -176,5 +176,65 @@ Detailed diagnostic evidence, log outputs, and root causes are documented in [`d
     - Asserted both gallery thumbnails rendered in the thumbnail strip with base64 sources.
   - Full website test suite: 115/115 tests pass across 28 suites.
   - `npm run check:brand`: 100% clean (strictly Ficcado double C, prefix FIC-).
+  - Commit: `98062ad` (`P3-4: support data-url images in product modal`).
+
+---
+
+## Phase P3-5: Tablet & Desktop Header Responsive Layout Refactor (ISS-03)
+
+- **Issue:** Tablet and small desktop viewports (~768px – 1180px) overflowed horizontally by 50px–410px due to 7 separate top navigation buttons and verbose `Bag (₹500)` text CTA.
+- **Implementation:**
+  - `DesktopHeader.tsx`:
+    - Reduced primary links from 7 down to 4: `Drops`, `Categories`, `Custom Print`, and `About ▾`.
+    - Added accessible `About` dropdown containing: *About Us*, *Journal*, *FAQ*, and *Support*.
+    - Added an invisible hover bridge (`before:content-[''] before:absolute before:-top-3 before:h-3 before:w-full`) to guarantee the dropdown never fades or closes when moving the cursor across the gap between the trigger and the menu.
+    - Added keyboard navigation (`Enter`, `Space`, `Escape`, `Tab`) and auto-close on outside click or route navigation.
+    - Refactored Shopping Bag button into a sleek, circular icon-only button with a count badge matching Wishlist and Settings buttons.
+  - Renamed "Custom T-Shirt" to "Custom Print" across header, footer, mobile drawer, page titles, and device-checker route name while preserving the URL `/custom-tshirt`.
+  - Extended `device-checker.mjs` with bounding-box overflow assertions.
+- **Verification:**
+  - Automated layout verification across all 9 widths (360, 390, 768, 820, 1024, 1180, 1280, 1440, 1920px): `scrollWidth <= innerWidth` with zero clipped elements.
+  - Device matrix: 324/324 checks pass.
+  - Commit: `82f1476` (`P3-5: responsive header refactor, custom print rename, and about dropdown hover bridge`).
+
+---
+
+## Phase P3-6: CRM Middleware Matcher & Next.js Proxy Migration (ISS-06 & ISS-07)
+
+- **Issue:** CRM app printed Next.js 16.3 deprecation warning for `middleware.ts`, and unauthenticated requests to `/dashboard/...` logged uninformative `[ERROR] "API request failed" {}` traces.
+- **Implementation:**
+  - Renamed `middleware.ts` to `proxy.ts` and exported `proxy` function per Next.js 16.3 convention.
+  - In `lib/apiClient.ts`: Formatted `logger.error` to properly serialize `url`, `status`, and `detail` instead of empty objects.
+  - Matched and guarded all administrative dashboard routes (`/dashboard/:path*`).
+- **Verification:**
+  - Next.js dev server starts with zero deprecation warnings.
+  - `npm run lint:ratchet` passes (measured errors improved to 259 vs baseline 260).
+  - Commit: `7b150cc` (`P3-6: migrate crm middleware to proxy convention and format api error logs`).
+
+---
+
+## Post-P3: CRM Items Lazy Initialization & Storefront Checkout/Profile 401 Resolution
+
+- **Issues Addressed:**
+  1. CRM admin error when opening item: `An unexpected error occurred. Reference error ID: be7e09fe-510e-4d67-9e8c-ac17c641cdfa` (`LazyInitializationException: failed to lazily initialize a collection of role: Item.colors`).
+  2. Top app bar about dropdown fading/vanishing on mouse movement before clicking.
+  3. Storefront `/checkout` and `/account` address saving and profile updates failing with HTTP 401 Unauthorized (`Console ApiError: Request to /api/customer/profile/addresses failed with HTTP 401`).
+  4. Permanent deletion of temporary test scripts created for one-time verification.
+- **Root Cause & Fixes:**
+  - **Item Lazy Initialization:** `ItemService.java` and `ItemRepository` lacked eager fetching of `@ElementCollection` and `@ManyToMany` mappings for single-item lookups. Updated `getItemById` with transactional eager initialization (`item.getColors().size()`, `item.getSizes().size()`, `item.getTags().size()`) before mapping to DTO. Verified live on port 8081 and CRM port 3001.
+  - **Dropdown Hover Bridge:** Added invisible bridging pseudo-element and `group-hover:block` / pointer event handling ensuring smooth transition from trigger button to dropdown list.
+  - **Customer 401 & Session Management:**
+    - `OtpController.java`: Added `ResponseCookie` setting `ficcado_customer_session` upon OTP verification.
+    - `nginx.conf.template`: Added RFC 9457 `error_page 401 /401.json;` with CORS headers (`Access-Control-Allow-Origin: $cors_origin always`, `Access-Control-Allow-Credentials: true always`).
+    - `CustomerAuthContext.tsx`: Added background session touching (`touchCustomerSession()`) throttled every 2 minutes of active user engagement; added immediate state clearing on 401.
+    - `checkout/page.tsx` & `account/page.tsx`: Added graceful 401 interception, user-friendly expiration notice, and automatic authentication modal opening.
+    - Cleaned up noisy `console.error` calls in `auth.ts`.
+  - **Cleanup:** Permanently deleted `checkout-and-profile.test.mjs`, `verify_crm_items.mjs`, `header-responsive.test.mjs`, `product-modal-image-acceptance.mjs`, and `proxy.test.ts`.
+- **Verification:**
+  - Frontend test suite: 115/115 pass.
+  - Brand check: 100% green.
+  - TypeScript: 0 errors across frontend and CRM.
+  - Gateway & All 3 backends: UP and healthy.
+  - Commits: `8f5ce52`, `280e541`.
 
 

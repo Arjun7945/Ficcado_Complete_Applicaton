@@ -314,3 +314,39 @@ If running locally without a tunnel:
 - **Cause:** Docker Desktop on Windows injects both IPv4 (`192.168.65.254`) and IPv6 ULA (`fdc4:f303:9324::254`) addresses for `host.docker.internal` into the container `/etc/hosts`. Static NGINX `upstream` blocks resolve this via glibc/musl `getaddrinfo`, which prioritizes IPv6 per RFC 6724. Because Docker's bridge network does not route host IPv6, connection attempts to IPv6 stall and timeout before falling back to IPv4.
 - **Fix:** In `infra/gateway/nginx.conf.template`, the API Gateway server defines Docker internal DNS resolver `resolver 127.0.0.11 ipv6=off valid=30s;` and dynamic backend variables (`$ficcado_data_backend`, `$ficcado_website_data_backend`, `$ficcado_payment_data_backend`). Docker's DNS server `127.0.0.11` resolves `host.docker.internal` exclusively to IPv4, eliminating upstream connect timeouts and reducing gateway latency from ~1100ms to ~28ms.
 
+---
+
+## 9. Website Quality & Verification Commands (Part 4)
+
+From `website/frontend/`, the following validation commands enforce brand, code quality, design tokens, accessibility, and responsiveness:
+
+```powershell
+cd website/frontend
+
+# 1. Verify Brand Integrity (Double 'C' Ficcado and FIC- prefix)
+npm run check:brand
+
+# 2. Verify Design Token Compliance (Zero raw hex codes or hardcoded Tailwind palettes)
+npm run check:colors
+
+# 3. Verify WCAG 2.1 AA Contrast Ratios (Normal >= 4.5:1, Large/Bold >= 3.0:1)
+npm run check:contrast
+
+# 4. Verify Responsive Device Matrix (12 profiles across 27 routes)
+npm run check:devices
+
+# 5. Run Full Test Suite (128 automated unit, e2e, and contract tests)
+npm test
+
+# 6. Typecheck
+npx tsc --noEmit
+```
+
+All 5 backend and frontend test commands can be executed across services:
+- CRM Backend: `cd crm/backend/ficcado_crm_backend && .\mvnw.cmd test` (188 tests)
+- Website Backend: `cd website/backend/ficcado_website_data && .\mvnw.cmd test` (56 tests)
+- Payment Backend: `cd payment/backend/ficcado_payment_gateway_data && .\mvnw.cmd test` (39 tests)
+- CRM Frontend: `cd crm/ficcado_crm_app && npm test` (10 tests)
+- Website Frontend: `cd website/frontend && npm test` (128 tests)
+
+

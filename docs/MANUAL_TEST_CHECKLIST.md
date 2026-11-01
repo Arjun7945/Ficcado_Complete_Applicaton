@@ -295,3 +295,135 @@ Before beginning manual tests, ensure the platform is running:
   - Table pagination limits rows cleanly to 10 per page with working next/prev/page buttons.
   - Updates persist to the database and update the table in-place.
 
+---
+
+## Part 5: Website Customer Storefront Verification Runbook (Part 4)
+
+### Test 20: 1-Hour Sliding Session & Multi-Tab Synchronization (WEB-4)
+- **Route:** `http://localhost:3000`
+- **Goal:** Verify that customer login establishes a 1-hour Redis session with sliding expiration on API interaction, persists across page refreshes, and syncs across multiple tabs.
+- **Steps:**
+  1. Open `http://localhost:3000` in Browser Tab A.
+  2. Click the Account icon or **Sign In** in the header (`#desktop-header-auth-btn`).
+  3. Sign in with customer credentials (`customer@ficcado.com` / `Password123!`).
+  4. Inspect the session cookie `ficcado_customer_token`:
+     - Open DevTools ➔ Application ➔ Cookies.
+     - Verify `ficcado_customer_token` has `HttpOnly`, `Path=/`, and expires ~3600 seconds (1 hour) from now.
+  5. In Redis Session container, verify the key `customer:session:<id>` has TTL ~3600:
+     `docker exec -i ficcado-redis-session redis-cli -a fic_redisSession_aj ttl customer:session:<id>`
+  6. Refresh the page (F5); verify user remains signed in immediately with zero flash of logout.
+  7. Open Tab B at `http://localhost:3000`; verify user is recognized as logged in via `BroadcastChannel` and server session.
+  8. In Tab B, click **Sign Out**; verify Tab A receives logout event and transitions to logged-out state instantly.
+- **Expected Result:**
+  - Session cookie lasts 1 hour with sliding renewal.
+  - Page refresh preserves customer state without login prompt.
+  - Cross-tab login and logout synchronize in real time.
+
+### Test 21: Sign In Dialog Modal & Password-Only Authentication (WEB-6 & WEB-7)
+- **Route:** `http://localhost:3000`
+- **Goal:** Verify authentication occurs strictly inside an accessible dialog modal (`#authModal`) without full-page redirect to `/auth`, and enforces password-only credentials (OTP mode removed).
+- **Steps:**
+  1. Open `http://localhost:3000`.
+  2. Click **Sign In** in the header (`#desktop-header-auth-btn`).
+  3. Verify the centered modal `#authModal` opens with backdrop blur (`z-index: var(--z-modal)`). The browser URL stays at `/` (no navigation away).
+  4. Inspect the Sign In form:
+     - Form presents: **Email Address** (`#signin-email`) and **Password** (`#signin-password`).
+     - Verify there is **NO** "Send OTP", "Sign in with OTP", or phone-only login tabs.
+  5. Enter a wrong password and click **Sign In with Password** (`#auth-signin-submit`).
+  6. Verify inline red alert displays: *"Invalid email or password."* The modal remains open, inputs retain focus.
+  7. Enter valid password (`Password123!`) and submit.
+  8. Verify modal closes smoothly, toast announces successful login, and header displays active account avatar.
+  9. Click header avatar to open `/account` page.
+- **Expected Result:**
+  - Zero navigation away to standalone `/auth` page.
+  - Password authentication is the sole login method.
+  - Modal provides smooth accessible UX with ESC key and backdrop click dismissal.
+
+### Test 22: Forgot Password Self-Service Flow (WEB-2)
+- **Route:** `http://localhost:3000`
+- **Goal:** Verify the 3-step self-service password reset inside `#authModal`: request code, verify code, set new password.
+- **Steps:**
+  1. Open `#authModal` from header.
+  2. Click **Forgot password?** link next to the password field.
+  3. **Step 1 (Request):**
+     - Enter registered email address (`customer@ficcado.com`).
+     - Click **Send Verification Code**.
+     - Verify simulated reset code `123456` is logged in backend/UI for dev environment.
+  4. **Step 2 (Verify):**
+     - Enter 6-digit code `123456`.
+     - Click **Verify Code**.
+     - Verify modal transitions to Step 3 (Set New Password).
+  5. **Step 3 (Set New Password):**
+     - Enter new password (min 8 characters, uppercase, lowercase, number, special char: e.g. `NewPass123!`).
+     - Confirm matching password.
+     - Click **Update Password**.
+  6. Verify success banner displays: *"Password updated. Please sign in."*
+  7. Log in with the new password; verify authentication succeeds.
+- **Expected Result:**
+  - Seamless 3-step forgot password workflow completely contained within the modal.
+  - Robust validation prevents mismatched or weak passwords.
+
+### Test 23: Dynamic About Dropdown Label & Responsive Header (WEB-5)
+- **Route:** `http://localhost:3000`
+- **Goal:** Verify that the "About" navigation dropdown dynamically updates its label to match the active sub-route, and maintains zero overflow across all viewports from 768px to 1920px.
+- **Steps:**
+  1. On `http://localhost:3000`, inspect the center navigation in `DesktopHeader`:
+     - The trigger displays **"ABOUT ▾"**.
+  2. Click or hover over **"ABOUT ▾"**; verify menu opens showing:
+     - **Our Story** (`/about`)
+     - **Journal** (`/journal`)
+     - **FAQ** (`/faq`)
+     - **Support & Reach Out** (`/support`)
+  3. Click **Our Story**; verify navigation to `/about`.
+     - The trigger label dynamically updates to **"ABOUT US ▾"** with active primary highlight (`bg-[var(--primary-light)] text-[var(--primary)]`) and `aria-current="page"`.
+  4. Navigate to `/journal`; verify the trigger label updates to **"JOURNAL ▾"**.
+  5. Navigate to `/faq`; verify the trigger label updates to **"FAQ ▾"**.
+  6. Navigate to `/support`; verify the trigger label updates to **"SUPPORT ▾"**.
+  7. Reload the page (F5); verify the dynamic label persists immediately without flicker.
+  8. Navigate to `/` or `/categories`; verify label reverts to **"ABOUT ▾"**.
+  9. Resize browser width continuously from 768px to 1920px:
+     - Verify zero horizontal scrollbar (`overflow-x: hidden`).
+     - Header items micro-tune padding cleanly without colliding or line-wrapping.
+- **Expected Result:**
+  - Dropdown label accurately mirrors active sub-route.
+  - Zero responsive overflow or visual truncation across all desktop and tablet widths.
+
+### Test 24: Website Color Token Harmonization & WCAG 2.1 AA Compliance (WEB-1)
+- **Route:** All customer pages
+- **Goal:** Verify that all website components, badges, chips, buttons, modals, and tables strictly adhere to website design tokens with WCAG 2.1 AA compliant contrast.
+- **Steps:**
+  1. Inspect badge and status pill colors on `/categories/t-shirts`, `/wishlist`, and `/checkout`:
+     - Status badges use `--primary-light` background and `--primary` text.
+     - Live badges use `--primary-light` and `--accent-green`.
+     - Roadmap badges use `--primary-light` and `--accent-ice`.
+  2. Inspect primary and secondary buttons across pages:
+     - `.btn-primary` renders Royal Blue (`#2B62C6`) with white text (`#FFFFFF`, contrast ratio >= 5.7:1).
+     - `.btn-secondary` renders icy tint (`var(--primary-light)`) with royal blue text.
+  3. Run automated color audit: `npm run check:colors` ➔ verify 0 non-token color violations.
+  4. Run automated contrast verification: `npm run check:contrast` ➔ verify 18/18 target elements pass WCAG AA.
+- **Expected Result:**
+  - Zero raw hex codes or hardcoded Tailwind colors outside allowable files.
+  - 100% WCAG 2.1 AA contrast compliance across all text, chips, buttons, and dialogs.
+
+### Test 25: Custom Print "Design Your Own T-Shirt" Experience (WEB-3)
+- **Route:** `http://localhost:3000/custom-tshirt`
+- **Goal:** Verify the dedicated "Coming Soon" custom print page with brand tokens, 3-step feature highlight, and zero broken forms.
+- **Steps:**
+  1. In Desktop Header navigation or footer, click **Custom T-Shirt** or navigate to `http://localhost:3000/custom-tshirt`.
+  2. Inspect page layout:
+     - Hero badge displays **"Coming Soon"** with sparkles icon in `--primary-light` / `--primary` / `--accent-ice`.
+     - Shirt icon chip renders centered with `--primary-light` circle.
+     - Heading clearly states **"Custom Print — Design Your Own T-Shirt"**.
+     - Subtitle clearly explains: *"Customers will soon be able to submit their own design, and the Ficcado team will print it and deliver the T-shirt directly to your doorstep."*
+  3. Inspect 3-step highlight cards:
+     - Step 1: "Submit Your Design" (Paintbrush icon)
+     - Step 2: "Premium 240 GSM Blanks" (Shirt icon)
+     - Step 3: "Printed & Delivered" (Truck icon)
+  4. Verify there are **strictly NO** non-functional file upload dropzones, mockup editors, price calculators, or broken order submission forms.
+  5. Inspect action CTAs:
+     - **Explore Live Wear Drops →** (`#custom-tshirt-explore-btn`) routes back to `/`.
+     - **Chat with Team on WhatsApp** (`#custom-tshirt-whatsapp-btn`) opens WhatsApp chat with phone number `+91 6282000729`.
+- **Expected Result:**
+  - High-end streetwear coming-soon announcement page that builds customer anticipation without frustrating broken forms.
+
+

@@ -1962,11 +1962,11 @@
         }
       }
     },
-    "/api/internal/customer/otp-login" : {
+    "/api/internal/customer/reset-password" : {
       "post" : {
         "tags" : [ "Internal Service Handshakes" ],
-        "summary" : "Complete OTP verification handshake and issue Customer JWT",
-        "operationId" : "otpLogin",
+        "summary" : "Set new customer password, set emailVerifiedAt, and invalidate all active sessions",
+        "operationId" : "resetPassword",
         "parameters" : [ {
           "name" : "X-Internal-Secret",
           "in" : "header",
@@ -1979,10 +1979,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "type" : "object",
-                "additionalProperties" : {
-                  "type" : "string"
-                }
+                "$ref" : "#/components/schemas/InternalResetPasswordRequest"
               }
             }
           },
@@ -3238,6 +3235,43 @@
               "*/*" : {
                 "schema" : {
                   "type" : "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/internal/customer/exists" : {
+      "get" : {
+        "tags" : [ "Internal Service Handshakes" ],
+        "summary" : "Check if customer exists by email for password reset eligibility",
+        "operationId" : "checkCustomerExists",
+        "parameters" : [ {
+          "name" : "X-Internal-Secret",
+          "in" : "header",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "email",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object",
+                  "additionalProperties" : {
+                    "type" : "boolean"
+                  }
                 }
               }
             }
@@ -5047,6 +5081,20 @@
           }
         },
         "required" : [ "itemName", "priceEach", "quantity", "size" ]
+      },
+      "InternalResetPasswordRequest" : {
+        "type" : "object",
+        "properties" : {
+          "email" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "newPassword" : {
+            "type" : "string",
+            "minLength" : 1
+          }
+        },
+        "required" : [ "email", "newPassword" ]
       },
       "CustomerRegistrationRequest" : {
         "type" : "object",

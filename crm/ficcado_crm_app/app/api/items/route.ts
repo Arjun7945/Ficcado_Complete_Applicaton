@@ -41,7 +41,9 @@ export async function GET(request: Request) {
       };
     });
 
-    return Response.json({ items });
+    return Response.json({ items }, {
+      headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
+    });
   } catch (err: any) {
     const status = err.status || 500;
     return Response.json({ error: err.message || "Couldn't load items." }, { status });

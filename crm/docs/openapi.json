@@ -807,8 +807,72 @@
       },
       "put" : {
         "tags" : [ "Customers" ],
-        "summary" : "Update customer profile and addresses",
+        "summary" : "Update customer profile and addresses by phone",
         "operationId" : "update_9",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CustomerUpdateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CustomerResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/customers/{id}" : {
+      "get" : {
+        "tags" : [ "Customers" ],
+        "summary" : "Get customer by ID",
+        "operationId" : "getById_7",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CustomerResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put" : {
+        "tags" : [ "Customers" ],
+        "summary" : "Update customer profile and addresses by ID",
+        "operationId" : "updateById",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -883,7 +947,7 @@
       "get" : {
         "tags" : [ "Admins" ],
         "summary" : "Get admin by ID (SUPERADMIN, ADMIN or self)",
-        "operationId" : "getById_7",
+        "operationId" : "getById_8",
         "parameters" : [ {
           "name" : "id",
           "in" : "path",
@@ -3103,7 +3167,7 @@
       "get" : {
         "tags" : [ "Inventory" ],
         "summary" : "Get inventory record by ID",
-        "operationId" : "getById_8",
+        "operationId" : "getById_9",
         "parameters" : [ {
           "name" : "id",
           "in" : "path",
@@ -3174,34 +3238,6 @@
               "*/*" : {
                 "schema" : {
                   "type" : "object"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/customers/{id}" : {
-      "get" : {
-        "tags" : [ "Customers" ],
-        "summary" : "Get customer by ID",
-        "operationId" : "getById_9",
-        "parameters" : [ {
-          "name" : "id",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int64"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/CustomerResponse"
                 }
               }
             }
@@ -5026,7 +5062,7 @@
           "phone" : {
             "type" : "string",
             "minLength" : 1,
-            "pattern" : "^(\\+91)?[6-9]\\d{9}$"
+            "pattern" : "^[6-9]\\d{9}$"
           },
           "password" : {
             "type" : "string",

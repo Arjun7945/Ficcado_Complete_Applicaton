@@ -80,6 +80,7 @@ export default function ItemsPage() {
   const [editItem, setEditItem]               = useState<Item | null>(null);
   const [saving, setSaving]                   = useState(false);
   const [editError, setEditError]             = useState<string | null>(null);
+  const [editSuccess, setEditSuccess]         = useState<string | null>(null);
   const [isConflict, setIsConflict]           = useState(false);
   const [editName, setEditName]               = useState('');
   const [editType, setEditType]               = useState('');
@@ -102,7 +103,10 @@ export default function ItemsPage() {
   async function loadItems() {
     setLoading(true);
     try {
-      const res  = await fetch('/api/items');
+      const res = await fetch('/api/items', {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-store' },
+      });
       const data = await res.json();
       if (!res.ok) { setError(parseApiError(data)); return; }
       setItems(data.items ?? []);
@@ -284,6 +288,7 @@ export default function ItemsPage() {
     setEditStatus(resolvedStatus);
     setEditImages(item.images || []);
     setEditError(null);
+    setEditSuccess(null);
 
     if (item.id) {
       try {
@@ -352,6 +357,7 @@ export default function ItemsPage() {
     e.preventDefault();
     if (!editItem) return;
     setEditError(null);
+    setEditSuccess(null);
     setIsConflict(false);
 
     if (!editName.trim()) { setEditError('Item name is required'); return; }
@@ -380,7 +386,8 @@ export default function ItemsPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        if (res.status === 409 || data.code === 'ITEM_VERSION_CONFLICT') {
+        const isVerConflict = data.code === 'ITEM_VERSION_CONFLICT' || data.errorCode === 'ITEM_VERSION_CONFLICT';
+        if (isVerConflict) {
           setIsConflict(true);
           setEditError("This item was changed by another admin. Reload to see the latest version.");
         } else {
@@ -389,7 +396,45 @@ export default function ItemsPage() {
         return;
       }
 
-      setEditItem(null);
+      const updated = data.item;
+      const newVersion = updated?.version != null ? updated.version : (editItem.version != null ? editItem.version + 1 : 1);
+
+      // Keep open edit state in sync with updated version and values so subsequent saves succeed without reload
+      setEditItem((prev) => prev ? {
+        ...prev,
+        ...updated,
+        itemName: editName,
+        itemType: editType,
+        price: editPrice,
+        costPrice: editCostPrice,
+        sizes: editSizes.join(', '),
+        currentStatus: editStatus,
+        description: editDescription.trim() || '',
+        colors: editColors,
+        tags: editTags,
+        version: newVersion,
+      } : null);
+
+      // Also update the item in the list state immediately
+      setItems((prevItems) => prevItems.map((it) => {
+        const matches = (editItem.id && it.id === editItem.id) || (it.sno === editItem.sno);
+        if (!matches) return it;
+        return {
+          ...it,
+          itemName: editName,
+          itemType: editType,
+          price: editPrice,
+          costPrice: editCostPrice,
+          sizes: editSizes.join(', '),
+          currentStatus: editStatus,
+          description: editDescription.trim() || '',
+          colors: editColors,
+          tags: editTags,
+          version: newVersion,
+        };
+      }));
+
+      setEditSuccess(`Item '${editName}' updated successfully.`);
       setSuccess(`Item '${editName}' updated successfully.`);
       loadItems();
     } catch {
@@ -933,12 +978,61 @@ export default function ItemsPage() {
                       onClick={async () => {
                         setIsConflict(false);
                         setEditError(null);
-                        setEditItem(null);
+                        setEditSuccess(null);
+                        if (editItem?.id || editItem?.sno) {
+                          const itemId = editItem.id || editItem.sno;
+                          try {
+                            const freshRes = await fetch(`/api/items/${encodeURIComponent(itemId)}`, {
+                              cache: 'no-store',
+                              headers: { 'Cache-Control': 'no-store' },
+                            });
+                            if (freshRes.ok) {
+                              const freshData = await freshRes.json();
+                              const fresh = freshData.item;
+                              if (fresh) {
+                                setEditName(fresh.itemName);
+                                setEditType(fresh.itemType || 'T-Shirt');
+                                setEditPrice(String(fresh.priceOfItem || fresh.price || '0'));
+                                setEditCostPrice(String(fresh.costPrice || '0'));
+                                const freshSizes = Array.isArray(fresh.sizes)
+                                  ? fresh.sizes.map((s: any) => s.size || s)
+                                  : (fresh.sizes ? String(fresh.sizes).split(/,\s*/).filter(Boolean) : []);
+                                setEditSizes(freshSizes);
+                                setEditDescription(fresh.description || '');
+                                setEditColors(fresh.colors ? [...fresh.colors] : []);
+                                setEditTags(fresh.tags ? [...fresh.tags] : []);
+                                const rawStatus = (fresh.currentStatus || fresh.status || '').toUpperCase().replace(/\s+/g, '_');
+                                const STATUS_MAP: Record<string, string> = {
+                                  OUT_OF_STOCK: ItemStatus.OUT_OF_STOCK,
+                                  INACTIVE: ItemStatus.INACTIVE,
+                                  DISCONTINUED: ItemStatus.DISCONTINUED,
+                                  ACTIVE: ItemStatus.ACTIVE,
+                                  IN_STOCK: ItemStatus.ACTIVE,
+                                };
+                                setEditStatus(STATUS_MAP[rawStatus] ?? ItemStatus.ACTIVE);
+                                setEditItem({
+                                  ...fresh,
+                                  sno: String(fresh.id),
+                                  price: String(fresh.priceOfItem || fresh.price || '0'),
+                                  version: fresh.version != null ? fresh.version : 0,
+                                });
+                              }
+                            }
+                          } catch (err) {
+                            logger.error('Failed to reload fresh item', { error: String(err) });
+                          }
+                        }
                         await loadItems();
                       }}
                     >
                       Reload Item
                     </button>
+                  </div>
+                )}
+
+                {editSuccess && !isConflict && (
+                  <div style={{ marginBottom: 16 }}>
+                    <ErrorMessage message={editSuccess} variant="success" onDismiss={() => setEditSuccess(null)} />
                   </div>
                 )}
 

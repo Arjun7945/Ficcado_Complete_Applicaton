@@ -161,24 +161,55 @@ public class ItemService {
 
             if (colors != null) {
                 List<String> validColors = validateColors(colors);
-                item.getColors().clear();
+                // Remove colors no longer present in the updated list
+                item.getColors().removeIf(c -> !validColors.contains(c.getColorHex()));
+
+                // Determine colors already present on the entity
+                Set<String> existingColors = item.getColors().stream()
+                        .map(ItemColor::getColorHex)
+                        .collect(Collectors.toSet());
+
+                // Update display order for existing, or add new colors
                 for (int i = 0; i < validColors.size(); i++) {
-                    item.getColors().add(ItemColor.builder()
-                            .item(item)
-                            .colorHex(validColors.get(i))
-                            .displayOrder(i)
-                            .build());
+                    String hex = validColors.get(i);
+                    final int order = i;
+                    if (existingColors.contains(hex)) {
+                        item.getColors().stream()
+                                .filter(c -> c.getColorHex().equals(hex))
+                                .findFirst()
+                                .ifPresent(c -> c.setDisplayOrder(order));
+                    } else {
+                        item.getColors().add(ItemColor.builder()
+                                .item(item)
+                                .colorHex(hex)
+                                .displayOrder(order)
+                                .build());
+                    }
                 }
             }
 
             if (tags != null) {
                 List<String> validTags = validateTags(tags);
-                item.getTags().clear();
+                Set<String> validLowerTags = validTags.stream()
+                        .map(String::toLowerCase)
+                        .collect(Collectors.toSet());
+
+                // Remove tags no longer present in the updated list
+                item.getTags().removeIf(t -> !validLowerTags.contains(t.getTag().toLowerCase()));
+
+                // Determine lower-case tags already present on the entity
+                Set<String> existingLowerTags = item.getTags().stream()
+                        .map(t -> t.getTag().toLowerCase())
+                        .collect(Collectors.toSet());
+
+                // Add only newly requested tags
                 for (String tag : validTags) {
-                    item.getTags().add(ItemTag.builder()
-                            .item(item)
-                            .tag(tag)
-                            .build());
+                    if (!existingLowerTags.contains(tag.toLowerCase())) {
+                        item.getTags().add(ItemTag.builder()
+                                .item(item)
+                                .tag(tag)
+                                .build());
+                    }
                 }
             }
 
@@ -204,6 +235,7 @@ public class ItemService {
             }
 
             Item saved = itemRepository.save(item);
+            itemRepository.flush();
             activityLogService.log(admin, "UPDATE", "ITEMS", "items",
                     saved.getId().toString(), "Item updated: " + saved.getItemName());
             log.info("Item updated [id={}, name={}, version={}]", saved.getId(), saved.getItemName(), saved.getVersion());

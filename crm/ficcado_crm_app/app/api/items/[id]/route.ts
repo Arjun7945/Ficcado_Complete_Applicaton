@@ -6,7 +6,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const { id } = await params;
   try {
     const item = await apiClient.get(`/api/items/${id}`);
-    return Response.json({ item });
+    return Response.json({ item }, {
+      headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
+    });
   } catch (err: any) {
     return Response.json({ error: err.message || 'Item not found.' }, { status: 404 });
   }
@@ -24,7 +26,9 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     const updated = await apiClient.put(`/api/items/${id}`, payload, {
       headers: { cookie: request.headers.get('cookie') || '' },
     });
-    return Response.json({ success: true, item: updated });
+    return Response.json({ success: true, item: updated }, {
+      headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
+    });
   } catch (err: any) {
     const status = err.status || 500;
     return Response.json({

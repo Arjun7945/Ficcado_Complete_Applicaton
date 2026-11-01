@@ -238,7 +238,7 @@ export function MobileNavDrawer() {
             >
               <div className="flex items-center gap-3">
                 <Shirt size={16} className="text-[var(--primary)]" />
-                <span>Custom T-Shirt</span>
+                <span>Custom Print</span>
               </div>
               <span className="text-[10px] font-bold text-amber-500 bg-amber-50 px-2 py-0.5 rounded-full">
                 Soon

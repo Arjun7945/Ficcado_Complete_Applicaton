@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { ArrowLeft, Sparkles, Shirt, Paintbrush, Truck, ShieldCheck, HeartHandshake } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Custom T-Shirt | Design Your Own | Ficcado',
+  title: 'Custom Print | Design Your Own | Ficcado',
   description:
     'Design your own T-shirt is coming soon at Ficcado. Customers will soon be able to submit their own design, and the Ficcado team will print it and deliver the custom T-shirt.',
 };
@@ -37,7 +37,7 @@ export default function CustomTShirtPage() {
           </div>
 
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-900 text-[var(--text-main)] tracking-tight">
-            Design Your Own T-Shirt
+            Custom Print — Design Your Own T-Shirt
           </h1>
 
           <p className="text-sm md:text-base text-[var(--text-muted)] leading-relaxed pt-1">

@@ -303,3 +303,11 @@ If running locally without a tunnel:
 - When a customer completes payment in the browser, the frontend immediately verifies the payment via `POST /api/payments/verify`.
 - If the browser closes, network drops, or the user navigates away before verification completes, the **Reconciliation Scheduler** in `ficcado_payment_gateway_data` runs automatically every **10 minutes** (guarded by ShedLock). It polls Razorpay for orders in `CREATED` or `PROCESSING` state, verifies captured payments, finalizes sales in CRM with remark `WEBSITE SALE`, and triggers customer email notifications.
 
+---
+
+## 8. Troubleshooting: API Gateway Upstream Latency / IPv6 Unreachable (ISS-04)
+
+- **Symptom:** Gateway requests to microservices take 1000ms–2200ms or fail intermittently with `connect() failed (101: Network unreachable) while connecting to upstream` in `docker compose logs gateway`.
+- **Cause:** Docker Desktop on Windows injects both IPv4 (`192.168.65.254`) and IPv6 ULA (`fdc4:f303:9324::254`) addresses for `host.docker.internal` into the container `/etc/hosts`. Static NGINX `upstream` blocks resolve this via glibc/musl `getaddrinfo`, which prioritizes IPv6 per RFC 6724. Because Docker's bridge network does not route host IPv6, connection attempts to IPv6 stall and timeout before falling back to IPv4.
+- **Fix:** In `infra/gateway/nginx.conf.template`, the API Gateway server defines Docker internal DNS resolver `resolver 127.0.0.11 ipv6=off valid=30s;` and dynamic backend variables (`$ficcado_data_backend`, `$ficcado_website_data_backend`, `$ficcado_payment_data_backend`). Docker's DNS server `127.0.0.11` resolves `host.docker.internal` exclusively to IPv4, eliminating upstream connect timeouts and reducing gateway latency from ~1100ms to ~28ms.
+

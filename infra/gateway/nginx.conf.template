@@ -74,22 +74,6 @@ http {
 
     limit_req_status 429;
 
-    # ── Upstreams ─────────────────────────────────────────────────────────────
-    upstream ficcado_data_upstream {
-        server ${FICCADO_DATA_UPSTREAM} max_fails=3 fail_timeout=10s;
-        keepalive 32;
-    }
-
-    upstream ficcado_website_data_upstream {
-        server ${FICCADO_WEBSITE_DATA_UPSTREAM} max_fails=3 fail_timeout=10s;
-        keepalive 32;
-    }
-
-    upstream ficcado_payment_gateway_data_upstream {
-        server ${FICCADO_PAYMENT_DATA_UPSTREAM} max_fails=3 fail_timeout=10s;
-        keepalive 32;
-    }
-
     # ── Gateway Server ────────────────────────────────────────────────────────
     server {
         listen 8000;
@@ -97,6 +81,13 @@ http {
 
         # Client body limit
         client_max_body_size 10M;
+
+        # ── DNS Resolver & Dynamic Upstreams (IPv4 only via Docker DNS) ───────
+        resolver 127.0.0.11 ipv6=off valid=30s;
+
+        set $ficcado_data_backend "http://${FICCADO_DATA_UPSTREAM}";
+        set $ficcado_website_data_backend "http://${FICCADO_WEBSITE_DATA_UPSTREAM}";
+        set $ficcado_payment_data_backend "http://${FICCADO_PAYMENT_DATA_UPSTREAM}";
 
         # ── Global Security Headers ───────────────────────────────────────────
         add_header X-Frame-Options "SAMEORIGIN" always;
@@ -119,21 +110,21 @@ http {
 
         # ── Microservice Upstream Health Checks ───────────────────────────────
         location = /health/ficcado-data {
-            proxy_pass http://ficcado_data_upstream/actuator/health;
+            proxy_pass $ficcado_data_backend/actuator/health;
             proxy_set_header Host $host;
             proxy_connect_timeout 2s;
             proxy_read_timeout 3s;
         }
 
         location = /health/website-data {
-            proxy_pass http://ficcado_website_data_upstream/actuator/health;
+            proxy_pass $ficcado_website_data_backend/actuator/health;
             proxy_set_header Host $host;
             proxy_connect_timeout 2s;
             proxy_read_timeout 3s;
         }
 
         location = /health/payment-gateway {
-            proxy_pass http://ficcado_payment_gateway_data_upstream/actuator/health;
+            proxy_pass $ficcado_payment_data_backend/actuator/health;
             proxy_set_header Host $host;
             proxy_connect_timeout 2s;
             proxy_read_timeout 3s;
@@ -160,7 +151,7 @@ http {
                 return 204;
             }
 
-            proxy_pass http://ficcado_website_data_upstream;
+            proxy_pass $ficcado_website_data_backend$request_uri;
             proxy_http_version 1.1;
             proxy_set_header Connection "";
             proxy_set_header Host $host;
@@ -183,7 +174,7 @@ http {
                 return 204;
             }
 
-            proxy_pass http://ficcado_website_data_upstream;
+            proxy_pass $ficcado_website_data_backend$request_uri;
             proxy_http_version 1.1;
             proxy_set_header Connection "";
             proxy_set_header Host $host;
@@ -206,7 +197,7 @@ http {
                 return 204;
             }
 
-            proxy_pass http://ficcado_website_data_upstream;
+            proxy_pass $ficcado_website_data_backend$request_uri;
             proxy_http_version 1.1;
             proxy_set_header Connection "";
             proxy_set_header Host $host;
@@ -229,7 +220,7 @@ http {
                 return 204;
             }
 
-            proxy_pass http://ficcado_website_data_upstream;
+            proxy_pass $ficcado_website_data_backend$request_uri;
             proxy_http_version 1.1;
             proxy_set_header Connection "";
             proxy_set_header Host $host;
@@ -241,7 +232,7 @@ http {
         # ── Customer Auth Subrequest for auth_request ─────────────────────────
         location = /_auth_customer_session {
             internal;
-            proxy_pass http://ficcado_data_upstream/api/internal/session/validate;
+            proxy_pass $ficcado_data_backend/api/internal/session/validate;
             proxy_pass_request_body off;
             proxy_set_header Content-Length "";
             proxy_set_header X-Original-URI $request_uri;
@@ -270,7 +261,7 @@ http {
             auth_request /_auth_customer_session;
             auth_request_set $auth_customer_id $upstream_http_x_customer_id;
 
-            proxy_pass http://ficcado_website_data_upstream;
+            proxy_pass $ficcado_website_data_backend$request_uri;
             proxy_http_version 1.1;
             proxy_set_header Connection "";
             proxy_set_header Host $host;
@@ -301,7 +292,7 @@ http {
             auth_request /_auth_customer_session;
             auth_request_set $auth_customer_id $upstream_http_x_customer_id;
 
-            proxy_pass http://ficcado_payment_gateway_data_upstream;
+            proxy_pass $ficcado_payment_data_backend$request_uri;
             proxy_http_version 1.1;
             proxy_set_header Connection "";
             proxy_set_header Host $host;
@@ -316,7 +307,7 @@ http {
             # Webhook endpoint: no origin check, rate limited by IP
             limit_req zone=general_api burst=30 nodelay;
 
-            proxy_pass http://ficcado_payment_gateway_data_upstream;
+            proxy_pass $ficcado_payment_data_backend$request_uri;
             proxy_http_version 1.1;
             proxy_set_header Connection "";
             proxy_set_header Host $host;
@@ -339,7 +330,7 @@ http {
                 return 204;
             }
 
-            proxy_pass http://ficcado_data_upstream;
+            proxy_pass $ficcado_data_backend$request_uri;
             proxy_http_version 1.1;
             proxy_set_header Connection "";
             proxy_set_header Host $host;
@@ -362,7 +353,7 @@ http {
                 return 204;
             }
 
-            proxy_pass http://ficcado_data_upstream;
+            proxy_pass $ficcado_data_backend$request_uri;
             proxy_http_version 1.1;
             proxy_set_header Connection "";
             proxy_set_header Host $host;
@@ -391,7 +382,7 @@ http {
             auth_request /_auth_customer_session;
             auth_request_set $auth_customer_id $upstream_http_x_customer_id;
 
-            proxy_pass http://ficcado_data_upstream;
+            proxy_pass $ficcado_data_backend$request_uri;
             proxy_http_version 1.1;
             proxy_set_header Connection "";
             proxy_set_header Host $host;
@@ -416,7 +407,7 @@ http {
                 return 204;
             }
 
-            proxy_pass http://ficcado_data_upstream;
+            proxy_pass $ficcado_data_backend$request_uri;
             proxy_http_version 1.1;
             proxy_set_header Connection "";
             proxy_set_header Host $host;
@@ -439,7 +430,7 @@ http {
                 return 204;
             }
 
-            proxy_pass http://ficcado_data_upstream;
+            proxy_pass $ficcado_data_backend$request_uri;
             proxy_http_version 1.1;
             proxy_set_header Connection "";
             proxy_set_header Host $host;

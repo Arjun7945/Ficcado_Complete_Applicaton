@@ -51,9 +51,9 @@ export function RatingStars({
               <Star
                 size={size}
                 strokeWidth={1.5}
-                fill={isFilled ? '#F59E0B' : isHalf ? '#F59E0B' : 'none'}
+                fill={isFilled ? 'var(--accent-gold)' : isHalf ? 'var(--accent-gold)' : 'none'}
                 style={{
-                  color: isFilled || isHalf ? '#F59E0B' : 'var(--border-medium)',
+                  color: isFilled || isHalf ? 'var(--accent-gold)' : 'var(--border-medium)',
                   display: 'block',
                 }}
               />
@@ -75,9 +75,9 @@ export function RatingStars({
             <Star
               size={size}
               strokeWidth={1.5}
-              fill={isFilled ? '#F59E0B' : isHalf ? '#F59E0B' : 'none'}
+              fill={isFilled ? 'var(--accent-gold)' : isHalf ? 'var(--accent-gold)' : 'none'}
               style={{
-                color: isFilled || isHalf ? '#F59E0B' : 'var(--border-medium)',
+                color: isFilled || isHalf ? 'var(--accent-gold)' : 'var(--border-medium)',
                 display: 'block',
               }}
             />

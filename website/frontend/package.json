@@ -19,6 +19,8 @@
     "pretest": "npm run generate",
     "test": "tsx --test scripts/tests/*.test.mjs",
     "check:brand": "node scripts/check-brand.mjs",
+    "check:colors": "node scripts/color-audit.mjs --check",
+    "check:contrast": "node scripts/contrast-check.mjs",
     "check:devices": "node scripts/device-checker.mjs"
   },
   "dependencies": {

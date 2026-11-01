@@ -61,12 +61,12 @@ export default async function CategoryDetailPage({ params }: CategoryPageProps) 
         </Link>
 
         <div className="card p-8 md:p-14 text-center rounded-3xl bg-[var(--bg-surface)] border border-[var(--border-light)] shadow-md space-y-6">
-          <div className="w-16 h-16 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto shadow-xs">
+          <div className="w-16 h-16 rounded-full bg-[var(--primary-light)] text-[var(--primary)] flex items-center justify-center mx-auto shadow-xs">
             <Clock size={32} />
           </div>
 
           <div className="space-y-2 max-w-lg mx-auto">
-            <span className="inline-block px-3 py-1 rounded-full text-xs font-800 uppercase tracking-widest bg-amber-50 text-amber-600 border border-amber-200">
+            <span className="inline-block px-3 py-1 rounded-full text-xs font-800 uppercase tracking-widest bg-[var(--primary-light)] text-[var(--primary)] border border-[var(--accent-ice)]">
               Silhouette Roadmap
             </span>
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-900 text-[var(--text-main)] tracking-tight">
@@ -182,7 +182,7 @@ export default async function CategoryDetailPage({ params }: CategoryPageProps) 
       </div>
 
       <div className="space-y-1 border-b border-[var(--border-light)] pb-5">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-800 uppercase tracking-wider bg-emerald-50 text-emerald-600 border border-emerald-200">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-800 uppercase tracking-wider bg-[var(--primary-light)] text-[var(--accent-green)] border border-[var(--border-light)]">
           <Sparkles size={12} />
           <span>Live Collection</span>
         </div>

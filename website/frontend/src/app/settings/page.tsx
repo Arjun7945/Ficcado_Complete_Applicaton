@@ -101,10 +101,9 @@ export default function SettingsPage() {
 
         {/* Brand Identity Card */}
         <section
-          className="p-7 md:p-10 text-white rounded-3xl shadow-xl space-y-4 relative overflow-hidden"
+          className="p-7 md:p-10 text-white rounded-3xl shadow-xl space-y-4 relative overflow-hidden bg-[var(--primary)]"
           style={{
-            background: 'linear-gradient(135deg, #2B62C6 0%, #1D4ED8 60%, #1E40AF 100%)',
-            boxShadow: '0 20px 40px -12px rgba(43, 98, 198, 0.35)',
+            boxShadow: 'var(--shadow-btn)',
           }}
         >
           {/* Subtle Ambient Decorative Glow */}
@@ -124,12 +123,12 @@ export default function SettingsPage() {
             </div>
             <div>
               <h1 className="text-2xl font-900 tracking-tight text-white">Ficcado Clothing</h1>
-              <p className="text-sm text-blue-100 font-semibold mt-0.5">
+              <p className="text-sm text-white/90 font-semibold mt-0.5">
                 High Quality Unisex Wears
               </p>
             </div>
           </div>
-          <p className="text-xs md:text-sm text-blue-50 leading-relaxed relative z-10 font-normal">
+          <p className="text-xs md:text-sm text-white/80 leading-relaxed relative z-10 font-normal">
             Ficcado was founded in 2024 by three friends — Sinan MS, Ganga Lakshmi, and Rohith Murali —
             dedicated to crafting high quality, honest apparel. We currently sell signature unisex
             T-shirts crafted with premium 240 GSM combed cotton.
@@ -236,7 +235,7 @@ export default function SettingsPage() {
               id="settings-whatsapp-btn"
               className="card p-4 rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-light)] flex items-center gap-3 hover:border-[var(--primary)]/40 transition-all group"
             >
-              <PhoneCall size={18} className="text-green-500 shrink-0" />
+              <PhoneCall size={18} className="text-[var(--accent-green)] shrink-0" />
               <div>
                 <p className="text-xs font-800 text-[var(--text-main)]">WhatsApp</p>
                 <p className="text-[11px] text-[var(--text-muted)]">+91 6282 000 729</p>
@@ -260,7 +259,7 @@ export default function SettingsPage() {
               id="settings-instagram-btn"
               className="card p-4 rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-light)] flex items-center gap-3 hover:border-[var(--primary)]/40 transition-all group"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-pink-500 shrink-0"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--primary)] shrink-0"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
               <div>
                 <p className="text-xs font-800 text-[var(--text-main)]">Instagram</p>
                 <p className="text-[11px] text-[var(--text-muted)]">@ficcado.clothing</p>

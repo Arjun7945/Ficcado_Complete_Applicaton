@@ -299,7 +299,7 @@ export function CategoryProductGrid({ initialProducts, categoryName }: CategoryP
           {activeFilterCount > 0 && (
             <button
               onClick={handleResetFilters}
-              className="text-xs font-semibold text-[var(--text-muted)] hover:text-red-500 transition-colors inline-flex items-center gap-1 cursor-pointer"
+              className="text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--accent-red)] transition-colors inline-flex items-center gap-1 cursor-pointer"
               aria-label="Reset all applied filters"
             >
               <RotateCcw size={12} />
@@ -357,7 +357,7 @@ export function CategoryProductGrid({ initialProducts, categoryName }: CategoryP
                       colors: activeColors.filter((c) => c !== colorKey),
                     })
                   }
-                  className="hover:text-red-500 transition-colors ml-0.5 cursor-pointer"
+                  className="hover:text-[var(--accent-red)] transition-colors ml-0.5 cursor-pointer"
                   aria-label={`Remove ${label} color filter`}
                 >
                   <X size={12} />
@@ -378,7 +378,7 @@ export function CategoryProductGrid({ initialProducts, categoryName }: CategoryP
                     sizes: activeSizes.filter((s) => s !== size),
                   })
                 }
-                className="hover:text-red-500 transition-colors ml-0.5 cursor-pointer"
+                className="hover:text-[var(--accent-red)] transition-colors ml-0.5 cursor-pointer"
                 aria-label={`Remove size ${size} filter`}
               >
                 <X size={12} />
@@ -393,7 +393,7 @@ export function CategoryProductGrid({ initialProducts, categoryName }: CategoryP
               </span>
               <button
                 onClick={() => updateUrlParams({ minPrice: 1, maxPrice: highestPrice })}
-                className="hover:text-red-500 transition-colors ml-0.5 cursor-pointer"
+                className="hover:text-[var(--accent-red)] transition-colors ml-0.5 cursor-pointer"
                 aria-label="Remove price filter"
               >
                 <X size={12} />
@@ -569,7 +569,7 @@ export function CategoryProductGrid({ initialProducts, categoryName }: CategoryP
                   {draftColors.length > 0 && (
                     <button
                       onClick={() => setDraftColors([])}
-                      className="text-[11px] text-[var(--text-muted)] hover:text-red-500 transition-colors cursor-pointer"
+                      className="text-[11px] text-[var(--text-muted)] hover:text-[var(--accent-red)] transition-colors cursor-pointer"
                     >
                       Clear colors
                     </button>
@@ -601,7 +601,7 @@ export function CategoryProductGrid({ initialProducts, categoryName }: CategoryP
                         className={`flex items-center justify-between p-2.5 rounded-xl border transition-all cursor-pointer text-left ${
                           isSelected
                             ? 'border-[var(--primary)] bg-[var(--primary-light)] font-bold text-[var(--primary)]'
-                            : 'border-[var(--border-light)] bg-[var(--bg-surface-alt)] hover:border-gray-400 text-[var(--text-main)]'
+                            : 'border-[var(--border-light)] bg-[var(--bg-surface-alt)] hover:border-[var(--border-medium)] text-[var(--text-main)]'
                         }`}
                         aria-pressed={isSelected}
                       >
@@ -629,7 +629,7 @@ export function CategoryProductGrid({ initialProducts, categoryName }: CategoryP
                     {draftSizes.length > 0 && (
                       <button
                         onClick={() => setDraftSizes([])}
-                        className="text-[11px] text-[var(--text-muted)] hover:text-red-500 transition-colors cursor-pointer"
+                        className="text-[11px] text-[var(--text-muted)] hover:text-[var(--accent-red)] transition-colors cursor-pointer"
                       >
                         Clear sizes
                       </button>
@@ -651,7 +651,7 @@ export function CategoryProductGrid({ initialProducts, categoryName }: CategoryP
                           className={`h-9 min-w-[36px] px-3.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                             isSelected
                               ? 'border-[var(--primary)] bg-[var(--primary)] text-white shadow-2xs'
-                              : 'border-[var(--border-light)] bg-[var(--bg-surface-alt)] text-[var(--text-main)] hover:border-gray-400'
+                              : 'border-[var(--border-light)] bg-[var(--bg-surface-alt)] text-[var(--text-main)] hover:border-[var(--border-medium)]'
                           }`}
                           aria-pressed={isSelected}
                         >

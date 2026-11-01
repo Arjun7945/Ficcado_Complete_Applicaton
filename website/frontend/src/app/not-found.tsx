@@ -3,17 +3,17 @@ import { Home, ShoppingBag, HelpCircle } from 'lucide-react';
 
 export default function NotFound() {
   return (
-    <main className="min-h-screen bg-[#0d0d0d] text-zinc-100 flex items-center justify-center px-4 py-16">
+    <main className="min-h-screen bg-[var(--bg-app)] text-[var(--text-main)] flex items-center justify-center px-4 py-16">
       <div className="max-w-md w-full text-center space-y-6">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-zinc-800/80 border border-zinc-700/50 text-zinc-400 mb-2">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[var(--primary-light)] border border-[var(--accent-ice)] text-[var(--primary)] mb-2">
           <span className="text-2xl font-bold tracking-wider font-mono">404</span>
         </div>
 
         <div className="space-y-2">
-          <h1 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+          <h1 className="text-3xl font-extrabold tracking-tight text-[var(--text-main)] sm:text-4xl">
             Page Not Found
           </h1>
-          <p className="text-sm text-zinc-400">
+          <p className="text-sm text-[var(--text-muted)]">
             The collection, page, or resource you are looking for doesn’t exist or has moved.
           </p>
         </div>
@@ -21,24 +21,24 @@ export default function NotFound() {
         <div className="pt-4 flex flex-col sm:flex-row gap-3 justify-center">
           <Link
             href="/"
-            className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-white text-black font-semibold text-sm hover:bg-zinc-200 transition-colors shadow-sm"
+            className="btn-primary inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold shadow-sm cursor-pointer"
           >
             <Home className="w-4 h-4" />
             Return to Storefront
           </Link>
           <Link
             href="/categories/t-shirts"
-            className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-zinc-800 text-zinc-200 font-medium text-sm hover:bg-zinc-700 transition-colors border border-zinc-700/60"
+            className="btn-secondary inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold cursor-pointer"
           >
             <ShoppingBag className="w-4 h-4" />
             Explore T-Shirts
           </Link>
         </div>
 
-        <div className="pt-8 border-t border-zinc-800/80">
+        <div className="pt-8 border-t border-[var(--border-light)]">
           <Link
             href="/support"
-            className="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors"
           >
             <HelpCircle className="w-3.5 h-3.5" />
             Need assistance? Contact Ficcado Support

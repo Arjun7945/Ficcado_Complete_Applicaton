@@ -232,13 +232,7 @@ export function HomeView({ initialProducts, catalogError }: HomeViewProps) {
             unoptimized
           />
           {/* Gradient overlay */}
-          <div
-            className="absolute inset-0"
-            style={{
-              background:
-                'linear-gradient(to right, rgba(17,24,39,0.85) 0%, rgba(17,24,39,0.4) 50%, transparent 100%)',
-            }}
-          />
+          <div className="absolute inset-0 bg-gradient-to-r from-[var(--text-main)]/85 via-[var(--text-main)]/40 to-transparent" />
           {/* Hero copy */}
           <div className="absolute bottom-5 left-5 md:bottom-12 md:left-12 max-w-md">
             <span
@@ -290,7 +284,7 @@ export function HomeView({ initialProducts, catalogError }: HomeViewProps) {
                   className="rounded-full px-4 md:px-5 py-1.5 md:py-2 text-xs md:text-sm font-semibold whitespace-nowrap transition-all active:scale-95 cursor-pointer"
                   style={{
                     background: isActive ? 'var(--primary)' : 'var(--bg-surface)',
-                    color: isActive ? '#fff' : 'var(--text-muted)',
+                    color: isActive ? 'var(--text-inverse)' : 'var(--text-muted)',
                     border: `1.5px solid ${isActive ? 'var(--primary)' : 'var(--border-light)'}`,
                     flexShrink: 0,
                   }}
@@ -348,7 +342,7 @@ export function HomeView({ initialProducts, catalogError }: HomeViewProps) {
           </div>
         ) : catalogError ? (
           <div id="catalog-error-state" className="flex flex-col items-center py-16 gap-3 text-center px-4 max-w-md mx-auto animate-fade-in">
-            <div className="w-14 h-14 rounded-full bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400 flex items-center justify-center shadow-xs">
+            <div className="w-14 h-14 rounded-full bg-[var(--bg-surface)] text-[var(--accent-red)] border border-[var(--accent-red)] flex items-center justify-center shadow-xs">
               <AlertCircle size={28} />
             </div>
             <p className="text-base font-bold text-[var(--text-main)]">

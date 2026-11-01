@@ -16,19 +16,19 @@ const TOAST_ICONS: Record<ToastType, React.ComponentType<LucideProps>> = {
 
 const TOAST_COLORS: Record<ToastType, { bg: string; icon: string; border: string }> = {
   success: {
-    bg: 'rgba(16, 185, 129, 0.08)',
-    icon: '#047857',
-    border: 'rgba(16, 185, 129, 0.25)',
+    bg: 'var(--bg-surface)',
+    icon: 'var(--accent-green)',
+    border: 'var(--accent-green)',
   },
   error: {
-    bg: 'rgba(255, 59, 48, 0.08)',
-    icon: '#DC2626',
-    border: 'rgba(255, 59, 48, 0.25)',
+    bg: 'var(--bg-surface)',
+    icon: 'var(--accent-red)',
+    border: 'var(--accent-red)',
   },
   info: {
-    bg: 'rgba(43, 98, 198, 0.08)',
+    bg: 'var(--primary-light)',
     icon: 'var(--primary)',
-    border: 'rgba(43, 98, 198, 0.25)',
+    border: 'var(--accent-ice)',
   },
 };
 

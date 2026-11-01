@@ -213,7 +213,7 @@ export function FilterModal() {
                     className="rounded-full px-4 py-1.5 text-sm font-semibold transition-all active:scale-95 cursor-pointer"
                     style={{
                       background: isActive ? 'var(--primary)' : 'var(--bg-surface-alt)',
-                      color: isActive ? '#fff' : 'var(--text-muted)',
+                      color: isActive ? 'var(--text-inverse)' : 'var(--text-muted)',
                       border: `1.5px solid ${isActive ? 'var(--primary)' : 'var(--border-light)'}`,
                     }}
                     aria-pressed={isActive}
@@ -240,7 +240,7 @@ export function FilterModal() {
                     style={{
                       fontWeight: 700,
                       background: isActive ? 'var(--primary)' : 'var(--bg-surface-alt)',
-                      color: isActive ? '#fff' : 'var(--text-main)',
+                      color: isActive ? 'var(--text-inverse)' : 'var(--text-main)',
                       border: `1.5px solid ${isActive ? 'var(--primary)' : 'var(--border-light)'}`,
                     }}
                     aria-pressed={isActive}
@@ -266,7 +266,7 @@ export function FilterModal() {
                     className="h-8 w-8 rounded-full transition-all active:scale-90"
                     style={{
                       background: hex,
-                      boxShadow: '0 0 0 1px rgba(0,0,0,0.12)',
+                      boxShadow: 'var(--shadow-xs)',
                       outline: isActive ? `3px solid var(--primary)` : 'none',
                       outlineOffset: isActive ? '2px' : '0',
                     }}

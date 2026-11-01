@@ -273,8 +273,8 @@ function ProductModalDialog({ product }: { product: Product }) {
                 <div>
                   {product.featured && (
                     <div className="mb-1.5">
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-800 uppercase tracking-wider text-amber-300 bg-neutral-950/85 border border-amber-400/40 backdrop-blur-md shadow-xs">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-800 uppercase tracking-wider text-[var(--primary)] bg-[var(--primary-light)] border border-[var(--accent-ice)] shadow-xs">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] animate-pulse" />
                         New Launch Drop
                       </span>
                     </div>
@@ -319,7 +319,7 @@ function ProductModalDialog({ product }: { product: Product }) {
                       style={{
                         fontWeight: 700,
                         background: selectedSize === size ? 'var(--primary)' : 'var(--bg-surface-alt)',
-                        color: selectedSize === size ? '#fff' : 'var(--text-main)',
+                        color: selectedSize === size ? 'var(--text-inverse)' : 'var(--text-main)',
                         border: selectedSize === size ? 'none' : '1.5px solid var(--border-light)',
                         boxShadow: selectedSize === size ? 'var(--shadow-btn)' : 'none',
                       }}
@@ -358,7 +358,7 @@ function ProductModalDialog({ product }: { product: Product }) {
                           border: selectedColor === color ? `3px solid var(--primary)` : '2px solid transparent',
                           outline: selectedColor === color ? `2px solid var(--primary)` : 'none',
                           outlineOffset: selectedColor === color ? '2px' : '0',
-                          boxShadow: '0 0 0 1px rgba(0,0,0,0.12)',
+                          boxShadow: 'var(--shadow-xs)',
                         }}
                         aria-pressed={selectedColor === color}
                         aria-label={`Select color ${getColorName(color)}`}
@@ -423,12 +423,12 @@ function ProductModalDialog({ product }: { product: Product }) {
                 onClick={() => toggleWishlist(product.id)}
                 className={`h-12 w-12 flex items-center justify-center rounded-2xl border transition-all active:scale-95 cursor-pointer shrink-0 shadow-xs ${
                   isFavorited
-                    ? 'bg-red-50 dark:bg-red-950/30 border-red-200 text-red-500'
-                    : 'bg-[var(--bg-surface-alt)] hover:bg-[var(--border-light)] border-[var(--border-light)] text-[var(--text-muted)] hover:text-red-500'
+                    ? 'bg-[var(--bg-surface)] border-[var(--accent-red)] text-[var(--accent-red)]'
+                    : 'bg-[var(--bg-surface-alt)] hover:bg-[var(--border-light)] border-[var(--border-light)] text-[var(--text-muted)] hover:text-[var(--accent-red)]'
                 }`}
                 aria-label={isFavorited ? 'Remove from wishlist' : 'Add to wishlist'}
               >
-                <Heart size={20} className={isFavorited ? 'fill-red-500 text-red-500' : ''} />
+                <Heart size={20} className={isFavorited ? 'fill-[var(--accent-red)] text-[var(--accent-red)]' : ''} />
               </button>
             </div>
           </div>
@@ -456,12 +456,12 @@ function ProductModalDialog({ product }: { product: Product }) {
             onClick={() => toggleWishlist(product.id)}
             className={`h-11 w-11 flex items-center justify-center rounded-2xl border transition-all active:scale-95 cursor-pointer shrink-0 shadow-xs ${
               isFavorited
-                ? 'bg-red-50 dark:bg-red-950/30 border-red-200 text-red-500'
-                : 'bg-[var(--bg-surface-alt)] hover:bg-[var(--border-light)] border-[var(--border-light)] text-[var(--text-muted)] hover:text-red-500'
+                ? 'bg-[var(--bg-surface)] border-[var(--accent-red)] text-[var(--accent-red)]'
+                : 'bg-[var(--bg-surface-alt)] hover:bg-[var(--border-light)] border-[var(--border-light)] text-[var(--text-muted)] hover:text-[var(--accent-red)]'
             }`}
             aria-label={isFavorited ? 'Remove from wishlist' : 'Add to wishlist'}
           >
-            <Heart size={18} className={isFavorited ? 'fill-red-500 text-red-500' : ''} />
+            <Heart size={18} className={isFavorited ? 'fill-[var(--accent-red)] text-[var(--accent-red)]' : ''} />
           </button>
 
           <button

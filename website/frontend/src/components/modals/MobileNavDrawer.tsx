@@ -148,7 +148,7 @@ export function MobileNavDrawer() {
                     await logout();
                     handleClose();
                   }}
-                  className="p-1.5 shrink-0 rounded-lg text-[var(--text-muted)] hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer"
+                  className="p-1.5 shrink-0 rounded-lg text-[var(--text-muted)] hover:text-[var(--accent-red)] hover:bg-[var(--bg-surface)] transition-colors cursor-pointer"
                   title="Sign Out"
                 >
                   <LogOut size={15} />
@@ -166,7 +166,7 @@ export function MobileNavDrawer() {
           ) : (
             <div className="p-3 rounded-2xl bg-[var(--bg-surface-alt)] border border-[var(--border-light)] flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gray-200 dark:bg-neutral-800 text-[var(--text-muted)]">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--bg-surface-alt)] border border-[var(--border-light)] text-[var(--text-muted)]">
                   <User size={16} />
                 </div>
                 <div>
@@ -206,7 +206,7 @@ export function MobileNavDrawer() {
                 <Sparkles size={16} className="text-[var(--primary)]" />
                 <span>Drops & New Arrivals</span>
               </div>
-              <span className="text-[10px] font-bold text-amber-500 bg-amber-50 px-2 py-0.5 rounded-full">
+              <span className="text-[10px] font-bold text-[var(--primary)] bg-[var(--primary-light)] px-2 py-0.5 rounded-full border border-[var(--accent-ice)]">
                 Live
               </span>
             </Link>
@@ -224,7 +224,7 @@ export function MobileNavDrawer() {
                 <Grid2X2 size={16} className="text-[var(--primary)]" />
                 <span>All Categories & Silhouettes</span>
               </div>
-              <ChevronRight size={14} className="text-gray-400" />
+              <ChevronRight size={14} className="text-[var(--text-muted)]" />
             </Link>
 
             <Link
@@ -240,7 +240,7 @@ export function MobileNavDrawer() {
                 <Shirt size={16} className="text-[var(--primary)]" />
                 <span>Custom Print</span>
               </div>
-              <span className="text-[10px] font-bold text-amber-500 bg-amber-50 px-2 py-0.5 rounded-full">
+              <span className="text-[10px] font-bold text-[var(--primary)] bg-[var(--primary-light)] px-2 py-0.5 rounded-full border border-[var(--accent-ice)]">
                 Soon
               </span>
             </Link>
@@ -263,7 +263,7 @@ export function MobileNavDrawer() {
                   {wishlistCount}
                 </span>
               ) : (
-                <ChevronRight size={14} className="text-gray-400" />
+                <ChevronRight size={14} className="text-[var(--text-muted)]" />
               )}
             </Link>
 
@@ -280,7 +280,7 @@ export function MobileNavDrawer() {
                 <Feather size={16} className="text-[var(--primary)]" />
                 <span>The Journal & Chronicles</span>
               </div>
-              <ChevronRight size={14} className="text-gray-400" />
+              <ChevronRight size={14} className="text-[var(--text-muted)]" />
             </Link>
 
             <Link
@@ -296,7 +296,7 @@ export function MobileNavDrawer() {
                 <BookOpen size={16} className="text-[var(--primary)]" />
                 <span>About Ficcado</span>
               </div>
-              <ChevronRight size={14} className="text-gray-400" />
+              <ChevronRight size={14} className="text-[var(--text-muted)]" />
             </Link>
 
             <Link
@@ -312,7 +312,7 @@ export function MobileNavDrawer() {
                 <HelpCircle size={16} className="text-[var(--primary)]" />
                 <span>Frequently Asked Questions (FAQ)</span>
               </div>
-              <ChevronRight size={14} className="text-gray-400" />
+              <ChevronRight size={14} className="text-[var(--text-muted)]" />
             </Link>
 
             <Link
@@ -328,7 +328,7 @@ export function MobileNavDrawer() {
                 <LifeBuoy size={16} className="text-[var(--primary)]" />
                 <span>Reach Out To Us (Support Desk)</span>
               </div>
-              <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+              <span className="text-[10px] font-bold text-[var(--accent-green)] bg-[var(--primary-light)] px-2 py-0.5 rounded-full border border-[var(--border-light)]">
                 Active
               </span>
             </Link>
@@ -369,7 +369,7 @@ export function MobileNavDrawer() {
                 <Settings size={16} className="text-[var(--primary)]" />
                 <span>Settings & Brand Hub</span>
               </div>
-              <ChevronRight size={14} className="text-gray-400" />
+              <ChevronRight size={14} className="text-[var(--text-muted)]" />
             </Link>
           </div>
 
@@ -385,7 +385,7 @@ export function MobileNavDrawer() {
               className="flex items-center justify-between px-3 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--primary)] transition-colors"
             >
               <div className="flex items-center gap-3">
-                <FileText size={15} className="text-gray-400" />
+                <FileText size={15} className="text-[var(--text-muted)]" />
                 <span>Terms & Conditions</span>
               </div>
             </Link>
@@ -396,7 +396,7 @@ export function MobileNavDrawer() {
               className="flex items-center justify-between px-3 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--primary)] transition-colors"
             >
               <div className="flex items-center gap-3">
-                <ShieldCheck size={15} className="text-gray-400" />
+                <ShieldCheck size={15} className="text-[var(--text-muted)]" />
                 <span>Privacy & Security</span>
               </div>
             </Link>
@@ -407,7 +407,7 @@ export function MobileNavDrawer() {
               className="flex items-center justify-between px-3 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--primary)] transition-colors"
             >
               <div className="flex items-center gap-3">
-                <RotateCcw size={15} className="text-gray-400" />
+                <RotateCcw size={15} className="text-[var(--text-muted)]" />
                 <span>Returns & 7-Day Refunds</span>
               </div>
             </Link>
@@ -418,7 +418,7 @@ export function MobileNavDrawer() {
               className="flex items-center justify-between px-3 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--primary)] transition-colors"
             >
               <div className="flex items-center gap-3">
-                <RefreshCw size={15} className="text-gray-400" />
+                <RefreshCw size={15} className="text-[var(--text-muted)]" />
                 <span>Replacements Guarantee</span>
               </div>
             </Link>
@@ -429,7 +429,7 @@ export function MobileNavDrawer() {
               className="flex items-center justify-between px-3 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--primary)] transition-colors"
             >
               <div className="flex items-center gap-3">
-                <Truck size={15} className="text-gray-400" />
+                <Truck size={15} className="text-[var(--text-muted)]" />
                 <span>Shipping & Delivery Speeds</span>
               </div>
             </Link>
@@ -440,7 +440,7 @@ export function MobileNavDrawer() {
               className="flex items-center justify-between px-3 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--primary)] transition-colors"
             >
               <div className="flex items-center gap-3">
-                <Cookie size={15} className="text-gray-400" />
+                <Cookie size={15} className="text-[var(--text-muted)]" />
                 <span>Cookie & Storage Policy</span>
               </div>
             </Link>
@@ -453,7 +453,7 @@ export function MobileNavDrawer() {
               className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--primary)] transition-colors cursor-pointer text-left"
             >
               <div className="flex items-center gap-3">
-                <Settings size={15} className="text-gray-400" />
+                <Settings size={15} className="text-[var(--text-muted)]" />
                 <span>Manage Cookie Settings</span>
               </div>
             </button>

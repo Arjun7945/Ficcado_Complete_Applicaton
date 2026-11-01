@@ -68,8 +68,8 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
         {/* New Launch badge */}
         {product.featured && (
           <div className="absolute top-2.5 left-2.5 z-10">
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-800 uppercase tracking-wider text-amber-300 bg-neutral-950/85 border border-amber-400/40 backdrop-blur-md shadow-xs">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-800 uppercase tracking-wider text-[var(--primary)] bg-[var(--primary-light)] border border-[var(--accent-ice)] shadow-xs">
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] animate-pulse" />
               New Drop
             </span>
           </div>
@@ -90,16 +90,15 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
             size={16}
             className={`transition-all ${
               isFavorited
-                ? 'fill-red-500 text-red-500 scale-110'
-                : 'text-white hover:text-red-300'
+                ? 'fill-[var(--accent-red)] text-[var(--accent-red)] scale-110'
+                : 'text-white hover:text-[var(--accent-red)]'
             }`}
           />
         </button>
 
         {/* Price tag */}
         <div
-          className="absolute bottom-2.5 left-2.5 rounded-full px-2.5 py-1 text-xs font-bold text-white tracking-tight"
-          style={{ background: 'rgba(17,24,39,0.75)', backdropFilter: 'blur(6px)' }}
+          className="absolute bottom-2.5 left-2.5 rounded-full px-2.5 py-1 text-xs font-bold text-white tracking-tight bg-[var(--text-main)]/75 backdrop-blur-md"
         >
           ₹{product.price.toLocaleString('en-IN')}
         </div>
@@ -128,10 +127,10 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
           {product.colors.map((color) => (
             <div
               key={color}
-              className="h-3.5 w-3.5 rounded-full border-2 border-white"
+              className="h-3.5 w-3.5 rounded-full border-2 border-[var(--bg-surface)]"
               style={{
                 background: color,
-                boxShadow: '0 0 0 1px rgba(0,0,0,0.12)',
+                boxShadow: 'var(--shadow-xs)',
               }}
               aria-label={`Color option: ${color}`}
             />

@@ -306,7 +306,7 @@ export function AuthModal() {
         {/* Top Header */}
         <div className="shrink-0 px-6 pt-5 pb-4 border-b border-[var(--border-light)] flex items-center justify-between bg-[var(--bg-surface-alt)]">
           <div>
-            <h2 className="text-base font-900 tracking-tight text-[var(--text-main)]">
+            <h2 id="auth-heading" className="text-base font-900 tracking-tight text-[var(--text-main)]">
               {activeView === 'signin'
                 ? 'Sign In to Ficcado'
                 : activeView === 'register'

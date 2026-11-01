@@ -182,10 +182,10 @@ export default function AboutPage() {
 
           <div className="lg:col-span-6 relative">
             <div
-              className="p-7 md:p-9 text-white rounded-3xl relative overflow-hidden border border-[#334155]/60"
+              className="p-7 md:p-9 text-white rounded-3xl relative overflow-hidden border border-[var(--border-light)]"
               style={{
-                background: 'linear-gradient(145deg, #131D2E 0%, #0B111E 100%)',
-                boxShadow: '0 20px 45px -12px rgba(15, 23, 42, 0.45)',
+                background: 'var(--text-main)',
+                boxShadow: 'var(--shadow-card)',
               }}
             >
               <Quote className="absolute -bottom-6 -right-6 w-36 h-36 text-white/5 pointer-events-none" />
@@ -204,21 +204,19 @@ export default function AboutPage() {
                   />
                 </div>
 
-                <p className="text-lg md:text-xl font-medium leading-relaxed italic text-slate-100">
+                <p className="text-lg md:text-xl font-medium leading-relaxed italic text-white">
                   “We built Ficcado because clothing shouldn’t be disposable. It should feel reassuringly heavy when you put it on, look effortless on the street, and stay just as vibrant years later.”
                 </p>
 
                 <div
-                  className="pt-4 flex items-center justify-between text-xs"
-                  style={{ borderTop: '1px solid rgba(255, 255, 255, 0.15)' }}
+                  className="pt-4 flex items-center justify-between text-xs border-t border-white/20"
                 >
                   <div>
                     <span className="font-800 block text-white text-sm">The Founding Trio</span>
-                    <span className="text-slate-300 text-xs">Sinan MS, Ganga &amp; Rohith Murali • Ficcado 2024</span>
+                    <span className="text-white/80 text-xs">Sinan MS, Ganga &amp; Rohith Murali • Ficcado 2024</span>
                   </div>
                   <span
-                    className="px-3.5 py-1 rounded-full font-bold text-xs"
-                    style={{ background: 'rgba(255, 255, 255, 0.12)', color: '#93C5FD' }}
+                    className="px-3.5 py-1 rounded-full font-bold text-xs bg-white/10 text-[var(--accent-ice)]"
                   >
                     Est. 2024
                   </span>
@@ -256,7 +254,7 @@ export default function AboutPage() {
                 }}
               >
                 {/* Image Container with aspect ratio and smooth zoom on hover */}
-                <div className="relative w-full aspect-[4/5] bg-gray-100 overflow-hidden">
+                <div className="relative w-full aspect-[4/5] bg-[var(--bg-surface-alt)] overflow-hidden">
                   <Image
                     src={founder.image}
                     alt={founder.name}
@@ -268,7 +266,7 @@ export default function AboutPage() {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
                   <div className="absolute bottom-3.5 left-4 right-4 text-white">
-                    <span className="text-xs font-bold text-[#93C5FD] block uppercase tracking-wider">
+                    <span className="text-xs font-bold text-[var(--accent-ice)] block uppercase tracking-wider">
                       {founder.role}
                     </span>
                     <h3 className="text-xl font-900 leading-tight drop-shadow-sm text-white">
@@ -362,34 +360,28 @@ export default function AboutPage() {
 
         {/* First Order Callout Card */}
         <div
-          className="p-8 md:p-10 text-white rounded-3xl shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden"
+          className="p-8 md:p-10 text-white rounded-3xl shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden bg-[var(--primary)]"
           style={{
-            background: 'linear-gradient(135deg, #2B62C6 0%, #163888 100%)',
-            boxShadow: '0 20px 45px -10px rgba(43, 98, 198, 0.4)',
+            boxShadow: 'var(--shadow-btn)',
           }}
         >
           <div className="space-y-2 text-center md:text-left">
             <span
-              className="text-xs font-800 uppercase tracking-wider px-3 py-1 rounded-full inline-block"
-              style={{ background: 'rgba(255, 255, 255, 0.18)', color: '#FFD700' }}
+              className="text-xs font-800 uppercase tracking-wider px-3 py-1 rounded-full inline-block bg-white/20 text-[var(--accent-gold)]"
             >
               Risk-Free Shopping Experience
             </span>
             <h3 className="text-xl md:text-2xl font-900 text-white">
               Ready to feel the difference of authentic 240 GSM high quality cotton?
             </h3>
-            <p className="text-xs md:text-sm text-blue-100 max-w-xl leading-relaxed">
+            <p className="text-xs md:text-sm text-white/90 max-w-xl leading-relaxed">
               Experience our signature quality, custom knit fabrics, and relaxed unisex silhouettes. Fully covered by our 7-day hassle-free doorstep return policy.
             </p>
           </div>
 
           <Link
             href="/categories"
-            className="shrink-0 px-7 py-3.5 rounded-xl font-bold text-sm shadow-md hover:bg-white/95 transition-all hover:scale-105"
-            style={{
-              background: '#FFFFFF',
-              color: '#163888',
-            }}
+            className="shrink-0 px-7 py-3.5 rounded-xl font-bold text-sm shadow-md hover:bg-white/95 transition-all hover:scale-105 bg-white text-[var(--primary)]"
           >
             Shop Current Drops 🛍️
           </Link>

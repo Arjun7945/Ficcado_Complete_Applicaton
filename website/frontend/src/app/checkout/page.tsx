@@ -582,9 +582,7 @@ export default function CheckoutPage() {
           email: customer?.email || '',
           contact: customer?.phone || '',
         },
-        theme: {
-          color: '#2B62C6',
-        },
+        theme: { color: '#2B62C6' },
         handler: async function (response: RazorpaySuccessResponse) {
           try {
             const verifyRes = await verifyPayment({
@@ -688,8 +686,7 @@ export default function CheckoutPage() {
               id="checkout-login-trigger-btn"
               type="button"
               onClick={() => openModal('authModal')}
-              className="w-full py-4 px-6 rounded-2xl text-xs md:text-sm font-bold text-white flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 cursor-pointer hover:opacity-95"
-              style={{ background: 'var(--primary, #2B62C6)' }}
+              className="btn-primary w-full py-4 px-6 rounded-2xl text-xs md:text-sm font-bold text-[var(--text-inverse)] flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 cursor-pointer hover:opacity-95"
             >
               <User size={18} />
               <span>Log in with Ficcado Account</span>
@@ -825,7 +822,7 @@ export default function CheckoutPage() {
                           className={`p-4 rounded-2xl border transition-all relative flex items-start justify-between gap-3 cursor-pointer ${
                             isSelected
                               ? 'border-[var(--primary)] bg-[var(--primary)]/5 shadow-xs'
-                              : 'border-[var(--border-light)] hover:border-gray-300 bg-[var(--bg-surface-alt)]'
+                              : 'border-[var(--border-light)] hover:border-[var(--border-medium)] bg-[var(--bg-surface-alt)]'
                           }`}
                         >
                           <div className="flex items-start gap-3 min-w-0 flex-1">
@@ -834,7 +831,7 @@ export default function CheckoutPage() {
                                 className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${
                                   isSelected
                                     ? 'border-[var(--primary)] bg-[var(--primary)] text-white'
-                                    : 'border-zinc-400 bg-transparent'
+                                    : 'border-[var(--border-medium)] bg-transparent'
                                 }`}
                               >
                                 {isSelected && <Check size={10} strokeWidth={3} />}
@@ -846,7 +843,7 @@ export default function CheckoutPage() {
                                   Delivery Destination
                                 </p>
                                 {addr.isDefault && (
-                                  <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                                  <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-[var(--primary-light)] text-[var(--accent-green)] border border-[var(--accent-green)]/30">
                                     Default
                                   </span>
                                 )}
@@ -861,7 +858,7 @@ export default function CheckoutPage() {
                             type="button"
                             disabled={isDeleting}
                             onClick={(e) => handleDeleteAddress(addr.id, e)}
-                            className="p-1.5 text-zinc-400 hover:text-red-500 transition-colors shrink-0"
+                            className="p-1.5 text-[var(--text-muted)] hover:text-[var(--accent-red)] transition-colors shrink-0"
                             title="Delete address"
                             aria-label={`Delete address ${addr.id}`}
                           >
@@ -896,13 +893,13 @@ export default function CheckoutPage() {
                   </div>
 
                   {addressFormErrors.general && (
-                    <p className="text-[11px] text-red-500">{addressFormErrors.general}</p>
+                    <p className="text-[11px] text-[var(--accent-red)]">{addressFormErrors.general}</p>
                   )}
 
                   {/* Street */}
                   <div className="space-y-1">
                     <label htmlFor="new-address-street" className="text-xs font-bold text-[var(--text-main)]">
-                      Flat / House / Building / Street Address <span className="text-red-500">*</span>
+                      Flat / House / Building / Street Address <span className="text-[var(--accent-red)]">*</span>
                     </label>
                     <input
                       id="new-address-street"
@@ -914,9 +911,9 @@ export default function CheckoutPage() {
                         setNewStreet(e.target.value);
                         if (addressFormErrors.street) setAddressFormErrors((prev) => ({ ...prev, street: '' }));
                       }}
-                      className={`input-field text-xs md:text-sm ${addressFormErrors.street ? 'border-red-500' : ''}`}
+                      className={`input-field text-xs md:text-sm ${addressFormErrors.street ? 'border-[var(--accent-red)]' : ''}`}
                     />
-                    {addressFormErrors.street && <p className="text-[11px] text-red-500">{addressFormErrors.street}</p>}
+                    {addressFormErrors.street && <p className="text-[11px] text-[var(--accent-red)]">{addressFormErrors.street}</p>}
                   </div>
 
                   {/* Landmark */}
@@ -938,7 +935,7 @@ export default function CheckoutPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div className="space-y-1">
                       <label htmlFor="new-address-city" className="text-xs font-bold text-[var(--text-main)]">
-                        City <span className="text-red-500">*</span>
+                        City <span className="text-[var(--accent-red)]">*</span>
                       </label>
                       <input
                         id="new-address-city"
@@ -950,14 +947,14 @@ export default function CheckoutPage() {
                           setNewCity(e.target.value);
                           if (addressFormErrors.city) setAddressFormErrors((prev) => ({ ...prev, city: '' }));
                         }}
-                        className={`input-field text-xs md:text-sm ${addressFormErrors.city ? 'border-red-500' : ''}`}
+                        className={`input-field text-xs md:text-sm ${addressFormErrors.city ? 'border-[var(--accent-red)]' : ''}`}
                       />
-                      {addressFormErrors.city && <p className="text-[11px] text-red-500">{addressFormErrors.city}</p>}
+                      {addressFormErrors.city && <p className="text-[11px] text-[var(--accent-red)]">{addressFormErrors.city}</p>}
                     </div>
 
                     <div className="space-y-1">
                       <label htmlFor="new-address-state" className="text-xs font-bold text-[var(--text-main)]">
-                        State <span className="text-red-500">*</span>
+                        State <span className="text-[var(--accent-red)]">*</span>
                       </label>
                       <select
                         id="new-address-state"
@@ -976,7 +973,7 @@ export default function CheckoutPage() {
 
                     <div className="space-y-1">
                       <label htmlFor="new-address-pincode" className="text-xs font-bold text-[var(--text-main)]">
-                        PIN Code <span className="text-red-500">*</span>
+                        PIN Code <span className="text-[var(--accent-red)]">*</span>
                       </label>
                       <input
                         id="new-address-pincode"
@@ -990,9 +987,9 @@ export default function CheckoutPage() {
                           setNewPincode(e.target.value.replace(/\D/g, '').slice(0, 6));
                           if (addressFormErrors.pincode) setAddressFormErrors((prev) => ({ ...prev, pincode: '' }));
                         }}
-                        className={`input-field text-xs md:text-sm ${addressFormErrors.pincode ? 'border-red-500' : ''}`}
+                        className={`input-field text-xs md:text-sm ${addressFormErrors.pincode ? 'border-[var(--accent-red)]' : ''}`}
                       />
-                      {addressFormErrors.pincode && <p className="text-[11px] text-red-500">{addressFormErrors.pincode}</p>}
+                      {addressFormErrors.pincode && <p className="text-[11px] text-[var(--accent-red)]">{addressFormErrors.pincode}</p>}
                     </div>
                   </div>
 
@@ -1014,8 +1011,7 @@ export default function CheckoutPage() {
                       id="save-new-address-btn"
                       type="submit"
                       disabled={isSavingAddress}
-                      className="py-2.5 px-5 rounded-xl text-xs font-bold text-white flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95 cursor-pointer disabled:opacity-60"
-                      style={{ background: 'var(--primary, #2B62C6)' }}
+                      className="py-2.5 px-5 rounded-xl text-xs font-bold text-white bg-[var(--primary)] hover:bg-[var(--primary-hover)] flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95 cursor-pointer disabled:opacity-60"
                     >
                       {isSavingAddress ? (
                         <>
@@ -1059,19 +1055,19 @@ export default function CheckoutPage() {
                   ))}
                 </div>
               ) : !hasActiveCouriers ? (
-                <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 space-y-2">
+                <div className="p-4 rounded-2xl bg-[var(--primary-light)] border border-[var(--accent-ice)] text-[var(--text-main)] space-y-2">
                   <div className="flex items-center gap-2 font-bold text-xs">
-                    <AlertCircle size={16} className="text-amber-700 shrink-0" />
+                    <AlertCircle size={16} className="text-[var(--accent-orange)] shrink-0" />
                     <span>Delivery options are currently unavailable.</span>
                   </div>
-                  <p className="text-xs text-amber-800 leading-relaxed">
+                  <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
                     Please contact us on WhatsApp to check delivery options and place your order directly.
                   </p>
                   <a
                     href="https://wa.me/916282000729?text=Hello%20Ficcado%20team%2C%20I%20would%20like%20to%20place%20an%20order%20and%20check%20delivery%20options."
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-xs font-bold text-[#128C7E] hover:underline pt-1"
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-[var(--primary)] hover:underline pt-1"
                   >
                     <MessageCircle size={14} />
                     <span>Contact Ficcado on WhatsApp &rarr;</span>
@@ -1090,7 +1086,7 @@ export default function CheckoutPage() {
                         className={`p-4 rounded-2xl border text-left transition-all relative flex flex-col justify-between cursor-pointer ${
                           isSelected
                             ? 'border-[var(--primary)] bg-[var(--primary)]/5 shadow-xs'
-                            : 'border-[var(--border-light)] hover:border-gray-300 bg-[var(--bg-surface-alt)]'
+                            : 'border-[var(--border-light)] hover:border-[var(--border-medium)] bg-[var(--bg-surface-alt)]'
                         }`}
                       >
                         <div className="space-y-1">
@@ -1132,8 +1128,8 @@ export default function CheckoutPage() {
               </div>
 
               {priceChangeNotice && (
-                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-2.5 text-xs text-amber-700 dark:text-amber-300 animate-fade-in">
-                  <AlertCircle size={16} className="shrink-0 mt-0.5 text-amber-500" />
+                <div className="p-3 rounded-xl bg-[var(--primary-light)] border border-[var(--accent-ice)] flex items-start gap-2.5 text-xs text-[var(--text-secondary)] animate-fade-in">
+                  <AlertCircle size={16} className="shrink-0 mt-0.5 text-[var(--accent-orange)]" />
                   <p>{priceChangeNotice}</p>
                 </div>
               )}
@@ -1180,7 +1176,7 @@ export default function CheckoutPage() {
                   <span className="text-[var(--text-muted)]">
                     Delivery {selectedCourier ? `(${selectedCourier.name})` : ''}
                   </span>
-                  <span className="font-semibold text-emerald-600">
+                  <span className="font-semibold text-[var(--accent-green)]">
                     {selectedCourier
                       ? selectedCourier.rate === 0
                         ? 'Free'
@@ -1221,7 +1217,7 @@ export default function CheckoutPage() {
               </div>
 
               {/* Online Payment Security Notice */}
-              <div className="p-3 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center gap-2.5 text-xs text-blue-700 dark:text-blue-300">
+              <div className="p-3 rounded-2xl bg-[var(--primary-light)] border border-[var(--accent-ice)] flex items-center gap-2.5 text-xs text-[var(--text-secondary)]">
                 <ShieldCheck size={16} className="text-[var(--primary)] shrink-0" />
                 <span className="font-semibold text-[11px] leading-tight">
                   Online Payment Only (Razorpay). No Cash on Delivery (COD) permitted.
@@ -1235,15 +1231,9 @@ export default function CheckoutPage() {
                 onClick={handleRazorpayPayment}
                 disabled={items.length === 0 || isSubmitting || !hasActiveCouriers || !selectedCourier || !selectedAddress}
                 aria-busy={isSubmitting}
-                className={`w-full py-4 px-6 rounded-2xl text-xs md:text-sm font-bold text-white flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed ${
+                className={`btn-primary w-full py-4 px-6 rounded-2xl text-xs md:text-sm font-bold flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
                   isSubmitting ? 'pointer-events-none cursor-wait opacity-80' : 'hover:opacity-95'
                 }`}
-                style={{
-                  background:
-                    items.length === 0 || isSubmitting || !hasActiveCouriers || !selectedCourier || !selectedAddress
-                      ? '#9CA3AF'
-                      : 'var(--primary, #2B62C6)',
-                }}
               >
                 {isSubmitting ? (
                   <>
@@ -1265,15 +1255,9 @@ export default function CheckoutPage() {
                 onClick={handlePlaceOrder}
                 disabled={items.length === 0 || isSubmitting || !hasActiveCouriers || !selectedCourier || !selectedAddress}
                 aria-busy={isSubmitting}
-                className={`w-full py-3 px-4 rounded-2xl text-xs font-semibold text-white flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed ${
+                className={`btn-secondary w-full py-3 px-4 rounded-2xl text-xs font-semibold flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
                   isSubmitting ? 'pointer-events-none cursor-wait opacity-80' : 'hover:opacity-95'
                 }`}
-                style={{
-                  background:
-                    items.length === 0 || isSubmitting || !hasActiveCouriers || !selectedCourier || !selectedAddress
-                      ? '#9CA3AF'
-                      : '#25D366',
-                }}
               >
                 {isSubmitting ? (
                   <>
@@ -1292,13 +1276,13 @@ export default function CheckoutPage() {
                 <p className="text-[11px] text-[var(--text-muted)] flex items-center justify-center gap-1">
                   <span>💬 Official Ficcado verified order dispatch</span>
                 </p>
-                <p className="text-[10px] text-zinc-500 leading-relaxed max-w-sm mx-auto">
+                <p className="text-[10px] text-[var(--text-muted)] leading-relaxed max-w-sm mx-auto">
                   By placing this order, you agree to our{' '}
-                  <Link href="/terms" className="underline hover:text-zinc-300">
+                  <Link href="/terms" className="underline hover:text-[var(--text-secondary)]">
                     Terms
                   </Link>{' '}
                   and acknowledge our{' '}
-                  <Link href="/privacy" className="underline hover:text-zinc-300">
+                  <Link href="/privacy" className="underline hover:text-[var(--text-secondary)]">
                     Privacy Policy
                   </Link>
                   . Your contact & shipping details are used solely to fulfill delivery and confirm your order.

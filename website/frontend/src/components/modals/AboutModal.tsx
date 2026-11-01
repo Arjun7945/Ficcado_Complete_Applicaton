@@ -57,8 +57,7 @@ export function AboutModal() {
           <div className="flex items-start justify-between">
             <div>
               <div
-                className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-white border border-[var(--border-light)] overflow-hidden p-1.5 mb-3"
-                style={{ boxShadow: '0 4px 16px rgba(43, 98, 198, 0.15)' }}
+                className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-white border border-[var(--border-light)] overflow-hidden p-1.5 mb-3 shadow-xs"
               >
                 <Image
                   src="/images/brand_logo/Ficcado Brand Logo.jpeg"

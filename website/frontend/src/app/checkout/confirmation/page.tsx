@@ -39,7 +39,7 @@ export default function OrderConfirmationPage() {
     <div className="min-h-[75vh] max-w-2xl mx-auto px-4 py-8 md:py-12 space-y-6 animate-fade-in">
       {/* Success Badge & Headline */}
       <div className="text-center space-y-3">
-        <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 shadow-sm mx-auto">
+        <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--primary-light)] text-[var(--accent-green)] border border-[var(--accent-green)]/30 shadow-sm mx-auto">
           <CheckCircle2 size={36} />
         </div>
         <h1 className="text-2xl sm:text-3xl font-900 tracking-tight text-[var(--text-main)]">
@@ -62,10 +62,10 @@ export default function OrderConfirmationPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+            <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-[var(--primary-light)] text-[var(--accent-green)] border border-[var(--accent-green)]/30">
               PAID ONLINE
             </span>
-            <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
+            <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-[var(--primary-light)] text-[var(--primary)] border border-[var(--accent-ice)]">
               PROCESSING
             </span>
           </div>

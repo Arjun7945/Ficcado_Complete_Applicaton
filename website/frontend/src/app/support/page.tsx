@@ -209,7 +209,7 @@ export default function SupportPage() {
             <span>Customer Care Hub • We’re Here To Help</span>
           </div>
 
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-900 text-[var(--text-main)]">
+          <h1 id="support-heading" className="text-2xl sm:text-3xl md:text-4xl font-900 text-[var(--text-main)]">
             Reach Out To Ficcado
           </h1>
 
@@ -328,12 +328,12 @@ export default function SupportPage() {
           {submittedTicket ? (
             /* Submission Honest Confirmation Card */
             <div className="card p-8 md:p-10 bg-[var(--bg-surface)] border-2 border-[var(--accent-green)] rounded-3xl shadow-md text-center max-w-2xl mx-auto space-y-6 animate-scale-in">
-              <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
+              <div className="w-16 h-16 rounded-full bg-[var(--primary-light)] text-[var(--accent-green)] flex items-center justify-center mx-auto">
                 <FileCheck2 size={32} />
               </div>
 
               <div className="space-y-2">
-                <span className="text-xs font-800 uppercase tracking-wider text-emerald-600">
+                <span className="text-xs font-800 uppercase tracking-wider text-[var(--accent-green)]">
                   Request Logged Successfully
                 </span>
                 <h3 className="text-2xl font-900 text-[var(--text-main)]">
@@ -400,7 +400,7 @@ export default function SupportPage() {
                 <div className="space-y-1.5">
                   <label htmlFor="support-name" className="text-xs font-bold text-[var(--text-main)] flex items-center gap-1">
                     <span>Full Name</span>
-                    <span className="text-red-500">*</span>
+                    <span className="text-[var(--accent-red)]">*</span>
                   </label>
                   <input
                     id="support-name"
@@ -417,7 +417,7 @@ export default function SupportPage() {
                 <div className="space-y-1.5">
                   <label htmlFor="support-email" className="text-xs font-bold text-[var(--text-main)] flex items-center gap-1">
                     <span>Email Address</span>
-                    <span className="text-red-500">*</span>
+                    <span className="text-[var(--accent-red)]">*</span>
                   </label>
                   <input
                     id="support-email"
@@ -497,7 +497,7 @@ export default function SupportPage() {
                   <div className="flex items-center justify-between">
                     <label htmlFor="support-order-id" className="text-xs font-bold text-[var(--text-main)] flex items-center gap-1.5">
                       <span>Order ID</span>
-                      <span className="text-red-500">*</span>
+                      <span className="text-[var(--accent-red)]">*</span>
                     </label>
                     <span className="text-[11px] text-[var(--text-muted)] flex items-center gap-1">
                       <HelpCircle size={12} />
@@ -514,13 +514,13 @@ export default function SupportPage() {
                     onChange={(e) => handleOrderIdChange(e.target.value)}
                     maxLength={30}
                     className={`input-field font-mono font-bold tracking-wider uppercase text-xs md:text-sm ${
-                      orderIdError ? 'border-red-500 bg-red-50/20' : ''
+                      orderIdError ? 'border-[var(--accent-red)] bg-[var(--bg-surface)]' : ''
                     }`}
                     aria-describedby={orderIdError ? 'order-id-error' : undefined}
                   />
 
                   {orderIdError ? (
-                    <p id="order-id-error" className="text-[11px] text-red-500 font-semibold flex items-center gap-1 mt-1">
+                    <p id="order-id-error" className="text-[11px] text-[var(--accent-red)] font-semibold flex items-center gap-1 mt-1">
                       <AlertCircle size={13} />
                       <span>{orderIdError}</span>
                     </p>
@@ -536,7 +536,7 @@ export default function SupportPage() {
               <div className="space-y-1.5">
                 <label htmlFor="support-description" className="text-xs font-bold text-[var(--text-main)] flex items-center gap-1">
                   <span>Describe Your Issue or Request</span>
-                  <span className="text-red-500">*</span>
+                  <span className="text-[var(--accent-red)]">*</span>
                 </label>
                 <textarea
                   id="support-description"
@@ -557,6 +557,7 @@ export default function SupportPage() {
               <div className="pt-2 space-y-2">
                 <button
                   type="submit"
+                  id="support-submit-btn"
                   disabled={isSubmitting}
                   className="btn-primary w-full py-3.5 text-xs md:text-sm font-bold shadow-md rounded-2xl flex items-center justify-center gap-2 cursor-pointer transition-all"
                   style={{ opacity: isSubmitting ? 0.7 : 1 }}
@@ -564,9 +565,9 @@ export default function SupportPage() {
                   <Send size={15} />
                   <span>{isSubmitting ? 'Logging Support Request...' : 'Submit Support Request'}</span>
                 </button>
-                <p className="text-[10px] text-center text-zinc-500 leading-relaxed">
+                <p className="text-[10px] text-center text-[var(--text-muted)] leading-relaxed">
                   By submitting this request, you acknowledge our{' '}
-                  <Link href="/privacy" className="underline hover:text-zinc-300">
+                  <Link href="/privacy" className="underline hover:text-[var(--text-main)]">
                     Privacy Policy
                   </Link>
                   . Your details are processed solely to resolve your inquiry.

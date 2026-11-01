@@ -377,9 +377,9 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
         <div
           role="status"
           aria-live="polite"
-          className="fixed bottom-4 right-4 z-50 flex items-center gap-2 rounded-lg bg-amber-950/90 border border-amber-600/50 px-4 py-3 text-sm text-amber-200 shadow-xl backdrop-blur-md transition-opacity"
+          className="fixed bottom-4 right-4 z-50 flex items-center gap-2 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-light)] px-4 py-3 text-sm text-[var(--text-main)] shadow-xl backdrop-blur-md transition-opacity"
         >
-          <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
+          <span className="h-2 w-2 rounded-full bg-[var(--primary)] animate-pulse" />
           <span>{sessionNotice}</span>
         </div>
       )}

@@ -35,6 +35,12 @@
   - **Backgrounds:** `--bg-page: #EDEFF2`, `--bg-app: #F7F7FA`, `--bg-surface: #FFFFFF`, `--bg-surface-alt: #F8FAFC`, `--bg-overlay: rgba(0, 0, 0, 0.45)`.
   - **Text:** `--text-main: #111827`, `--text-secondary: #374151`, `--text-muted: #6B7280`, `--text-light: #9CA3AF`, `--text-inverse: #FFFFFF`.
   - **Borders:** `--border-light: #E5E7EB`, `--border-medium: #D1D5DB`, `--border-focus: var(--primary)`.
+- **Color Governance & Enforcement:**
+  - **Zero Raw Color Literals:** All UI surfaces, badges, buttons, typography, and borders must strictly use the website tokens above via `var(--...)` or predefined utilities (`.btn-primary`, `.btn-secondary`, `.input-field`, `.card`).
+  - **No Hardcoded Tailwind Colors:** Utility classes such as `bg-amber-100`, `text-emerald-600`, `bg-neutral-900`, `text-red-500` are strictly disallowed across all website views and components.
+  - **Enforcement Script:** `npm run check:colors` (`website/frontend/scripts/color-audit.mjs --check`) scans all source files and fails CI if any non-token colors, raw hexes, or hardcoded Tailwind palettes are detected (allowlist: `globals.css`, `colors.ts`, `SplashScreen.tsx`, `item-images.json`).
+  - **WCAG 2.1 AA Contrast Compliance:** All interactive elements, badges, chips, headings, and buttons must achieve at minimum **4.5:1** contrast ratio for normal text and **3.0:1** for large/bold text (>=18px or >=14px bold) and UI components. Verified automatically via Playwright with `npm run check:contrast` (`website/frontend/scripts/contrast-check.mjs`).
+
 - **Radius Scale ([`src/app/globals.css:48-54`](file:///e:/A%20FICCADO%20Full%20App/Ficcado_Complete_Applicaton/website/frontend/src/app/globals.css#L48-L54)):**
   - `--radius-xs: 8px`, `--radius-sm: 14px`, `--radius-md: 20px`, `--radius-lg: 28px`, `--radius-xl: 36px`, `--radius-full: 9999px`.
 - **Shadow Scale ([`src/app/globals.css:56-64`](file:///e:/A%20FICCADO%20Full%20App/Ficcado_Complete_Applicaton/website/frontend/src/app/globals.css#L56-L64)):**

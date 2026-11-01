@@ -100,14 +100,13 @@ export default function WhatsAppContinuePage() {
       <div suppressHydrationWarning className="card p-8 md:p-12 text-center rounded-3xl bg-[var(--bg-surface)] border border-[var(--border-light)] shadow-lg space-y-6">
         {/* WhatsApp Icon */}
         <div
-          className="w-18 h-18 rounded-full flex items-center justify-center mx-auto text-white shadow-md animate-bounce-in"
-          style={{ background: '#25D366' }}
+          className="w-18 h-18 rounded-full flex items-center justify-center mx-auto text-white shadow-md animate-bounce-in bg-[var(--primary)]"
         >
           <MessageCircle size={38} />
         </div>
 
         <div className="space-y-2">
-          <span className="inline-block px-3 py-1 rounded-full text-xs font-800 uppercase tracking-widest text-[#128C7E] bg-[#E8F8F5] border border-[#25D366]/30">
+          <span className="inline-block px-3 py-1 rounded-full text-xs font-800 uppercase tracking-widest text-[var(--primary)] bg-[var(--primary-light)] border border-[var(--accent-ice)]">
             WhatsApp Order Handoff
           </span>
           <h1 className="text-2xl sm:text-3xl font-900 text-[var(--text-main)] tracking-tight">
@@ -130,15 +129,15 @@ export default function WhatsAppContinuePage() {
             This is a temporary reference. Once your order is confirmed, the Ficcado team will share your real Order ID.
           </p>
           {orderInfo?.isOffline && (
-            <div className="mt-2 text-xs font-medium text-amber-700 bg-amber-50 p-2 rounded-lg border border-amber-200">
+            <div className="mt-2 text-xs font-medium text-[var(--accent-gold)] bg-[var(--bg-surface-alt)] p-2 rounded-lg border border-[var(--accent-gold)]/30">
               Note: System running in offline verification mode; our team will verify your items directly in chat.
             </div>
           )}
         </div>
 
         {/* Customer Advisory */}
-        <div className="max-w-md mx-auto flex items-center justify-center gap-2 text-xs text-amber-700 bg-amber-50/80 border border-amber-200/60 p-3 rounded-xl">
-          <ShieldAlert size={16} className="shrink-0 text-amber-600" />
+        <div className="max-w-md mx-auto flex items-center justify-center gap-2 text-xs text-[var(--text-secondary)] bg-[var(--bg-surface-alt)] border border-[var(--border-light)] p-3 rounded-xl">
+          <ShieldAlert size={16} className="shrink-0 text-[var(--accent-gold)]" />
           <span>Please send the message as it is. Changing it can delay your order.</span>
         </div>
 
@@ -146,8 +145,7 @@ export default function WhatsAppContinuePage() {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2 max-w-md mx-auto w-full">
           <button
             onClick={handleOpenWhatsAppAgain}
-            className="w-full sm:flex-1 py-3.5 px-6 rounded-2xl text-xs md:text-sm font-bold text-white flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer"
-            style={{ background: '#25D366' }}
+            className="btn-primary w-full sm:flex-1 py-3.5 px-6 rounded-2xl text-xs md:text-sm font-bold flex items-center justify-center gap-2 cursor-pointer"
           >
             <ExternalLink size={16} />
             <span>Open WhatsApp Again</span>
@@ -155,7 +153,7 @@ export default function WhatsAppContinuePage() {
 
           <button
             onClick={handleCopyDetails}
-            className="w-full sm:flex-1 py-3.5 px-6 rounded-2xl text-xs md:text-sm font-bold bg-[var(--bg-surface-alt)] hover:bg-[var(--border-light)] text-[var(--text-main)] border border-[var(--border-light)] flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
+            className="btn-secondary w-full sm:flex-1 py-3.5 px-6 rounded-2xl text-xs md:text-sm font-bold flex items-center justify-center gap-2 cursor-pointer"
           >
             <Copy size={16} />
             <span>{copied ? 'Copied Details! ✓' : 'Copy Order Text'}</span>
@@ -169,15 +167,15 @@ export default function WhatsAppContinuePage() {
           </p>
           <div className="space-y-2 text-xs text-[var(--text-secondary)]">
             <div className="flex items-start gap-2.5">
-              <CheckCircle2 size={16} className="text-emerald-500 shrink-0 mt-0.5" />
+              <CheckCircle2 size={16} className="text-[var(--accent-green)] shrink-0 mt-0.5" />
               <span>Our team verifies stock availability and custom sizing in WhatsApp chat.</span>
             </div>
             <div className="flex items-start gap-2.5">
-              <CheckCircle2 size={16} className="text-emerald-500 shrink-0 mt-0.5" />
+              <CheckCircle2 size={16} className="text-[var(--accent-green)] shrink-0 mt-0.5" />
               <span>We provide order confirmation and payment instructions directly in chat.</span>
             </div>
             <div className="flex items-start gap-2.5">
-              <CheckCircle2 size={16} className="text-emerald-500 shrink-0 mt-0.5" />
+              <CheckCircle2 size={16} className="text-[var(--accent-green)] shrink-0 mt-0.5" />
               <span>Your garment is prepared, hand-packed, and dispatched with priority courier.</span>
             </div>
           </div>

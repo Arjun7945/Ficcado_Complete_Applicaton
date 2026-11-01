@@ -164,12 +164,12 @@ export default function AccountPage() {
   const getStatusBadge = (status: string) => {
     const s = (status || '').toUpperCase();
     if (s.includes('DELIVERED') || s.includes('PAID') || s.includes('COMPLETED')) {
-      return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800';
+      return 'bg-[var(--primary-light)] text-[var(--accent-green)] border border-[var(--accent-green)]/30';
     }
     if (s.includes('CANCELLED') || s.includes('FAILED') || s.includes('RETURNED')) {
-      return 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400 border-red-200 dark:border-red-800';
+      return 'bg-[var(--bg-surface-alt)] text-[var(--accent-red)] border border-[var(--accent-red)]/30';
     }
-    return 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400 border-blue-200 dark:border-blue-800';
+    return 'bg-[var(--primary-light)] text-[var(--primary)] border border-[var(--accent-ice)]';
   };
 
   if (isLoading) {
@@ -235,7 +235,7 @@ export default function AccountPage() {
 
         <button
           onClick={handleLogout}
-          className="flex items-center gap-1.5 text-xs font-bold text-red-500 hover:text-red-600 px-3 py-1.5 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer"
+          className="flex items-center gap-1.5 text-xs font-bold text-[var(--accent-red)] hover:bg-[var(--accent-red)]/10 px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
         >
           <LogOut size={14} />
           <span>Sign Out</span>
@@ -260,7 +260,7 @@ export default function AccountPage() {
             <p className="text-xs text-[var(--text-secondary)] font-medium">
               {customer.email}
               {customer.emailVerified && (
-                <span className="inline-flex items-center gap-1 ml-2 text-[10px] font-bold text-emerald-600">
+                <span className="inline-flex items-center gap-1 ml-2 text-[10px] font-bold text-[var(--accent-green)]">
                   <CheckCircle2 size={12} /> Verified
                 </span>
               )}
@@ -297,7 +297,7 @@ export default function AccountPage() {
           onClick={() => setActiveTab('orders')}
           className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
             activeTab === 'orders'
-              ? 'bg-white dark:bg-neutral-800 text-[var(--text-main)] shadow-xs'
+              ? 'bg-[var(--bg-surface)] text-[var(--text-main)] shadow-xs'
               : 'text-[var(--text-secondary)] hover:text-[var(--text-main)]'
           }`}
         >
@@ -309,7 +309,7 @@ export default function AccountPage() {
           onClick={() => setActiveTab('addresses')}
           className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
             activeTab === 'addresses'
-              ? 'bg-white dark:bg-neutral-800 text-[var(--text-main)] shadow-xs'
+              ? 'bg-[var(--bg-surface)] text-[var(--text-main)] shadow-xs'
               : 'text-[var(--text-secondary)] hover:text-[var(--text-main)]'
           }`}
         >
@@ -321,7 +321,7 @@ export default function AccountPage() {
           onClick={() => setActiveTab('profile')}
           className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
             activeTab === 'profile'
-              ? 'bg-white dark:bg-neutral-800 text-[var(--text-main)] shadow-xs'
+              ? 'bg-[var(--bg-surface)] text-[var(--text-main)] shadow-xs'
               : 'text-[var(--text-secondary)] hover:text-[var(--text-main)]'
           }`}
         >
@@ -454,14 +454,14 @@ export default function AccountPage() {
                     </span>
                     <div className="flex items-center gap-2">
                       {addr.isDefault && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[var(--primary-light)] text-[var(--accent-green)] border border-[var(--accent-green)]/30">
                           Default
                         </span>
                       )}
                       <button
                         type="button"
                         onClick={() => handleDeleteAddress(addr.id)}
-                        className="p-1 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer"
+                        className="p-1 rounded-lg text-[var(--accent-red)] hover:bg-[var(--accent-red)]/10 transition-colors cursor-pointer"
                         title="Delete address"
                         aria-label={`Delete address ${addr.id}`}
                       >
@@ -547,10 +547,10 @@ export default function AccountPage() {
                 type="email"
                 disabled
                 value={customer.email}
-                className="w-full h-10 px-3.5 rounded-xl bg-gray-100 dark:bg-neutral-800/60 border border-[var(--border-light)] text-xs text-[var(--text-muted)] cursor-not-allowed"
+                className="w-full h-10 px-3.5 rounded-xl bg-[var(--bg-surface-alt)] border border-[var(--border-light)] text-xs text-[var(--text-muted)] cursor-not-allowed"
               />
               <p className="text-[10px] text-[var(--text-muted)] mt-1">
-                Your email is tied to your account orders and OTP authentication.
+                Your email is tied to your account orders and account security.
               </p>
             </div>
 

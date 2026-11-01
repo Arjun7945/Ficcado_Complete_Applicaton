@@ -54,21 +54,16 @@ export function CategoryCard({ category, priority = false, onClick }: CategoryCa
       />
 
       {/* Gradient overlay */}
-      <div
-        className="absolute inset-0"
-        style={{
-          background: 'linear-gradient(to top, rgba(17,24,39,0.85) 0%, rgba(17,24,39,0.2) 50%, rgba(17,24,39,0.1) 100%)',
-        }}
-      />
+      <div className="absolute inset-0 bg-gradient-to-t from-[var(--text-main)]/85 via-[var(--text-main)]/20 to-transparent" />
 
       {/* Status Pill Badge (Top-right) */}
       <div className="absolute top-2.5 right-2.5">
         {isLive ? (
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-800 uppercase tracking-wider text-emerald-300 bg-emerald-950/80 border border-emerald-500/30 backdrop-blur-md shadow-xs">
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-800 uppercase tracking-wider text-[var(--accent-green)] bg-[var(--primary-light)] border border-[var(--border-light)] shadow-xs">
             Live Drop
           </span>
         ) : (
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-800 uppercase tracking-wider text-amber-300 bg-amber-950/80 border border-amber-500/30 backdrop-blur-md shadow-xs">
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-800 uppercase tracking-wider text-[var(--primary)] bg-[var(--primary-light)] border border-[var(--accent-ice)] shadow-xs">
             Coming Soon
           </span>
         )}
@@ -77,12 +72,12 @@ export function CategoryCard({ category, priority = false, onClick }: CategoryCa
       {/* Category label and description */}
       <div className="absolute bottom-3 left-0 right-0 px-3.5 space-y-0.5">
         <h3
-          className="text-base font-900 text-white tracking-tight leading-tight"
-          style={{ textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}
+          className="text-base font-900 text-[var(--text-inverse)] tracking-tight leading-tight"
+          style={{ textShadow: '0 1px 4px var(--shadow-overlay)' }}
         >
           {category.name}
         </h3>
-        <p className="text-[11px] text-white/80 line-clamp-1 font-medium">
+        <p className="text-[11px] text-[var(--text-inverse)]/85 line-clamp-1 font-medium">
           {category.description}
         </p>
       </div>

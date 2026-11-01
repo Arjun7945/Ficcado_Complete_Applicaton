@@ -102,7 +102,7 @@ export default function ReturnsRefundsPage() {
                 href={tab.href}
                 className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-colors ${
                   tab.active
-                    ? 'bg-[var(--primary)] text-white shadow-xs'
+                    ? 'bg-[var(--primary)] text-[var(--text-inverse)] shadow-xs'
                     : 'bg-[var(--bg-surface-alt)] text-[var(--text-secondary)] hover:bg-[var(--border-light)] border border-[var(--border-light)]'
                 }`}
               >
@@ -141,7 +141,7 @@ export default function ReturnsRefundsPage() {
                   <span>To cancel an order, please email us at <a href={`mailto:${BRAND.supportEmail}`} className="text-[var(--primary)] font-bold">{BRAND.supportEmail}</a> with your order details.</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <CheckCircle2 size={15} className="text-red-500 shrink-0 mt-0.5" />
+                  <CheckCircle2 size={15} className="text-[var(--accent-red)] shrink-0 mt-0.5" />
                   <span>If the order has already been dispatched, cancellation will not be possible.</span>
                 </li>
               </ul>

@@ -58,7 +58,7 @@ export default function ReplacementsDamagesPage() {
       {/* Header Banner */}
       <div className="bg-[var(--bg-surface)] border-b border-[var(--border-light)] py-8 md:py-12 px-4 md:px-8">
         <div className="max-w-5xl mx-auto space-y-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-800 uppercase tracking-wider border border-amber-200">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--primary-light)] text-[var(--primary)] text-xs font-800 uppercase tracking-wider border border-[var(--accent-ice)]">
             <ShieldCheck size={14} />
             <span>Zero-Hassle Transit Protection • 100% Replacement Guarantee</span>
           </div>
@@ -79,7 +79,7 @@ export default function ReplacementsDamagesPage() {
                 href={tab.href}
                 className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-colors ${
                   tab.active
-                    ? 'bg-[var(--primary)] text-white shadow-xs'
+                    ? 'bg-[var(--primary)] text-[var(--text-inverse)] shadow-xs'
                     : 'bg-[var(--bg-surface-alt)] text-[var(--text-secondary)] hover:bg-[var(--border-light)] border border-[var(--border-light)]'
                 }`}
               >
@@ -138,7 +138,7 @@ export default function ReplacementsDamagesPage() {
             {/* Section 3: Incorrect Size or Item Delivered */}
             <section className="card p-6 md:p-8 bg-[var(--bg-surface)] border border-[var(--border-light)] space-y-4">
               <h2 className="text-lg md:text-xl font-800 text-[var(--text-main)] flex items-center gap-2">
-                <AlertTriangle size={20} className="text-amber-500" />
+                <AlertTriangle size={20} className="text-[var(--accent-gold)]" />
                 <span>Incorrect Silhouette, Size or Color Sent</span>
               </h2>
               <p className="text-xs md:text-sm text-[var(--text-secondary)] leading-relaxed">
@@ -162,7 +162,7 @@ export default function ReplacementsDamagesPage() {
               >
                 Submit Replacement Ticket
               </Link>
-              <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs leading-relaxed">
+              <div className="p-3.5 rounded-xl bg-[var(--primary-light)] border border-[var(--accent-ice)] text-[var(--primary)] text-xs leading-relaxed">
                 <strong>Important:</strong> Please retain the damaged carton/mailer until photo confirmation is completed.
               </div>
             </div>

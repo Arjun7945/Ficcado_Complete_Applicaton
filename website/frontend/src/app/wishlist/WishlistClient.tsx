@@ -125,7 +125,7 @@ export function WishlistClient() {
               <Heart size={28} className="fill-[var(--primary)]" />
             </div>
             <div className="space-y-1">
-              <h2 className="text-base sm:text-lg font-bold text-[var(--text-main)]">
+              <h2 id="wishlist-guest-title" className="text-base sm:text-lg font-bold text-[var(--text-main)]">
                 Save your favorites across devices
               </h2>
               <p className="text-xs sm:text-sm text-[var(--text-muted)] max-w-xl">
@@ -137,7 +137,7 @@ export function WishlistClient() {
             id="wishlist-guest-signin-btn"
             type="button"
             onClick={() => openModal('authModal')}
-            className="w-full md:w-auto px-6 py-3 rounded-xl text-xs font-bold text-white bg-[var(--primary)] hover:bg-[var(--primary-hover)] transition-all cursor-pointer shadow-btn shrink-0"
+            className="w-full md:w-auto px-6 py-3 rounded-xl text-xs font-bold text-[var(--text-inverse)] bg-[var(--primary)] hover:bg-[var(--primary-hover)] transition-all cursor-pointer shadow-btn shrink-0"
           >
             Sign In or Register
           </button>
@@ -153,9 +153,9 @@ export function WishlistClient() {
               key={n}
               className="rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-light)] overflow-hidden space-y-3 p-3 animate-pulse"
             >
-              <div className="w-full bg-gray-200 dark:bg-neutral-800 rounded-xl" style={{ aspectRatio: '3/4' }} />
-              <div className="h-4 bg-gray-200 dark:bg-neutral-800 rounded w-3/4" />
-              <div className="h-3 bg-gray-200 dark:bg-neutral-800 rounded w-1/2" />
+              <div className="w-full bg-[var(--bg-surface-alt)] rounded-xl" style={{ aspectRatio: '3/4' }} />
+              <div className="h-4 bg-[var(--bg-surface-alt)] rounded w-3/4" />
+              <div className="h-3 bg-[var(--bg-surface-alt)] rounded w-1/2" />
             </div>
           ))}
         </div>
@@ -166,7 +166,7 @@ export function WishlistClient() {
             <Heart size={32} />
           </div>
           <div className="space-y-2">
-            <h2 className="text-xl sm:text-2xl font-bold text-[var(--text-main)]">
+            <h2 id="wishlist-empty-title" className="text-xl sm:text-2xl font-bold text-[var(--text-main)]">
               Your Wishlist is Empty
             </h2>
             <p className="text-xs sm:text-sm text-[var(--text-muted)] leading-relaxed">
@@ -177,7 +177,7 @@ export function WishlistClient() {
             <Link
               id="wishlist-explore-btn"
               href="/"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-bold text-white bg-[var(--primary)] hover:bg-[var(--primary-hover)] transition-all cursor-pointer shadow-btn"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-bold text-[var(--text-inverse)] bg-[var(--primary)] hover:bg-[var(--primary-hover)] transition-all cursor-pointer shadow-btn"
             >
               <Sparkles size={16} />
               <span>Explore Latest Drops</span>

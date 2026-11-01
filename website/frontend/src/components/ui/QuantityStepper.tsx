@@ -58,7 +58,7 @@ export function QuantityStepper({
         }}
         aria-label="Decrease quantity"
       >
-        <Minus size={iconSize} strokeWidth={2.5} style={{ color: qty <= min ? 'var(--text-muted)' : '#fff' }} />
+        <Minus size={iconSize} strokeWidth={2.5} style={{ color: qty <= min ? 'var(--text-muted)' : 'var(--text-inverse)' }} />
       </button>
 
       <span
@@ -90,7 +90,7 @@ export function QuantityStepper({
         }}
         aria-label="Increase quantity"
       >
-        <Plus size={iconSize} strokeWidth={2.5} style={{ color: '#fff' }} />
+        <Plus size={iconSize} strokeWidth={2.5} style={{ color: 'var(--text-inverse)' }} />
       </button>
     </div>
   );

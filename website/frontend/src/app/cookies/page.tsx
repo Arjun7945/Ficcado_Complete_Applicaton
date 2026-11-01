@@ -118,7 +118,7 @@ export default function CookiesPage() {
                 href={tab.href}
                 className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-colors ${
                   tab.active
-                    ? 'bg-[var(--primary)] text-white shadow-xs'
+                    ? 'bg-[var(--primary)] text-[var(--text-inverse)] shadow-xs'
                     : 'bg-[var(--bg-surface-alt)] text-[var(--text-secondary)] hover:bg-[var(--border-light)] border border-[var(--border-light)]'
                 }`}
               >
@@ -139,7 +139,7 @@ export default function CookiesPage() {
           </div>
           <button
             onClick={openSettings}
-            className="px-4 py-2.5 rounded-xl bg-[var(--primary)] text-white font-semibold text-xs flex items-center gap-2 hover:opacity-90 transition-opacity cursor-pointer"
+            className="px-4 py-2.5 rounded-xl bg-[var(--primary)] text-[var(--text-inverse)] font-semibold text-xs flex items-center gap-2 hover:opacity-90 transition-opacity cursor-pointer"
           >
             <Settings size={14} />
             <span>Manage Preferences</span>
@@ -172,8 +172,8 @@ export default function CookiesPage() {
                     <td className="p-3.5">
                       <span className={`inline-block px-2 py-0.5 rounded-md font-semibold text-[10px] ${
                         item.category.includes('Necessary')
-                          ? 'bg-emerald-950 text-emerald-400 border border-emerald-800/40'
-                          : 'bg-zinc-800 text-zinc-300'
+                          ? 'bg-[var(--primary-light)] text-[var(--accent-green)] border border-[var(--border-light)]'
+                          : 'bg-[var(--bg-surface-alt)] text-[var(--text-secondary)] border border-[var(--border-light)]'
                       }`}>
                         {item.category}
                       </span>

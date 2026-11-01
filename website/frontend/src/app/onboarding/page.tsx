@@ -37,7 +37,7 @@ export default function OnboardingPage() {
       <div
         id="walkthrough-page"
         className="flex flex-col max-w-md mx-auto w-full md:rounded-3xl md:overflow-hidden md:shadow-2xl"
-        style={{ minHeight: '640px', height: '100%', background: '#0a0a14', position: 'relative', overflow: 'hidden' }}
+        style={{ minHeight: '640px', height: '100%', background: 'var(--text-main)', position: 'relative', overflow: 'hidden' }}
       >
       {/* Full bleed hero image */}
       <div className="absolute inset-0">
@@ -51,17 +51,12 @@ export default function OnboardingPage() {
           key={slide.img}
         />
         {/* Gradient scrim — stronger at bottom */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background: 'linear-gradient(to top, rgba(5,5,20,0.95) 0%, rgba(5,5,20,0.35) 55%, rgba(5,5,20,0.10) 100%)',
-          }}
-        />
+        <div className="absolute inset-0 bg-gradient-to-t from-[var(--text-main)] via-[var(--text-main)]/40 to-transparent" />
       </div>
 
       {/* Top Header with Brand Emblem & Skip Button */}
       <div className="relative z-10 flex items-center justify-between px-5 pt-4">
-        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/10">
+        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--text-inverse)]/10 backdrop-blur-md border border-[var(--text-inverse)]/10">
           <Image
             src="/images/brand_logo/favicon-rounded.png"
             alt="Ficcado Clothing Emblem"
@@ -69,14 +64,13 @@ export default function OnboardingPage() {
             height={20}
             className="rounded-full"
           />
-          <span className="text-xs font-bold text-white tracking-wider">Ficcado Clothing</span>
+          <span className="text-xs font-bold text-[var(--text-inverse)] tracking-wider">Ficcado Clothing</span>
         </div>
         {!isLast ? (
           <button
             id="walkthrough-skip"
             onClick={finish}
-            className="rounded-full px-4 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-70 cursor-pointer"
-            style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)' }}
+            className="rounded-full px-4 py-1.5 text-xs font-semibold text-[var(--text-inverse)] bg-[var(--text-inverse)]/15 border border-[var(--text-inverse)]/10 backdrop-blur-md transition-opacity hover:opacity-70 cursor-pointer"
           >
             Skip
           </button>
@@ -86,13 +80,13 @@ export default function OnboardingPage() {
       {/* Bottom content */}
       <div className="absolute bottom-0 left-0 right-0 z-10 px-6 pb-10 pt-8">
         {/* Brand category pill */}
-        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[var(--primary)] text-white text-[10px] font-bold uppercase tracking-widest mb-2.5">
+        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[var(--primary)] text-[var(--text-inverse)] text-[10px] font-bold uppercase tracking-widest mb-2.5">
           <span>High Quality Unisex Wears</span>
         </div>
 
         {/* Title */}
         <h1
-          className="text-2xl sm:text-3xl font-800 leading-tight text-white mb-2.5"
+          className="text-2xl sm:text-3xl font-800 leading-tight text-[var(--text-inverse)] mb-2.5"
           style={{ fontWeight: 800 }}
           key={`title-${currentSlide}`}
         >
@@ -101,8 +95,7 @@ export default function OnboardingPage() {
 
         {/* Subtitle */}
         <p
-          className="text-sm leading-relaxed mb-6"
-          style={{ color: 'rgba(255,255,255,0.72)' }}
+          className="text-sm leading-relaxed mb-6 text-[var(--text-inverse)]/75"
           key={`sub-${currentSlide}`}
         >
           {slide.subtitle}
@@ -122,7 +115,7 @@ export default function OnboardingPage() {
                 width: i === currentSlide ? '24px' : '8px',
                 height: '8px',
                 borderRadius: '4px',
-                background: i === currentSlide ? '#fff' : 'rgba(255,255,255,0.35)',
+                background: i === currentSlide ? 'var(--text-inverse)' : 'var(--border-medium)',
                 border: 'none',
                 padding: 0,
                 cursor: 'pointer',

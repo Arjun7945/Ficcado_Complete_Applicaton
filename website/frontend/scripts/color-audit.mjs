@@ -20,7 +20,9 @@ const outputFile = path.join(repoRoot, 'docs/PART4_COLOR_AUDIT.md');
 const ALLOW_LIST = [
   path.join(srcDir, 'app', 'globals.css'),
   path.join(srcDir, 'generated', 'item-images.json'),
-];
+  path.join(srcDir, 'lib', 'colors.ts'),
+  path.join(srcDir, 'components', 'ui', 'SplashScreen.tsx'),
+].map((p) => path.normalize(p));
 
 // Tailwind color names that violate token rules
 const TAILWIND_COLORS = [
@@ -119,7 +121,7 @@ export function runColorAudit({ writeReport = true } = {}) {
   const violations = [];
 
   for (const file of allFiles) {
-    if (ALLOW_LIST.includes(file)) continue;
+    if (ALLOW_LIST.includes(path.normalize(file))) continue;
 
     const relativePath = path.relative(frontendRoot, file).replace(/\\/g, '/');
     const content = fs.readFileSync(file, 'utf8');
@@ -130,6 +132,11 @@ export function runColorAudit({ writeReport = true } = {}) {
 
       // Ignore comments or CSS custom properties definition
       if (line.trim().startsWith('//') || line.trim().startsWith('/*') || line.trim().startsWith('*')) {
+        return;
+      }
+
+      // Ignore browser viewport themeColor, Razorpay SDK theme color, or console.log brand banner
+      if (line.includes('themeColor:') || line.includes('theme: { color:') || line.includes('console.log')) {
         return;
       }
 

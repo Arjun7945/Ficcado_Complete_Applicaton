@@ -49,27 +49,27 @@ export function ImageGestureHint({ onDismiss }: ImageGestureHintProps) {
       role="tooltip"
     >
       {/* Background scrim for contrast */}
-      <div className="absolute inset-0 bg-black/35 backdrop-blur-[2px] transition-opacity duration-300" />
+      <div className="absolute inset-0 bg-[var(--text-main)]/35 backdrop-blur-[2px] transition-opacity duration-300" />
 
       {/* Floating gesture badge */}
       <div
-        className="relative z-10 flex flex-col items-center gap-2 px-4 py-3 rounded-2xl bg-neutral-950/85 border border-white/20 text-white shadow-2xl backdrop-blur-md transform transition-transform hover:scale-105 active:scale-95"
+        className="relative z-10 flex flex-col items-center gap-2 px-4 py-3 rounded-2xl bg-[var(--text-main)]/90 border border-[var(--border-light)] text-[var(--text-inverse)] shadow-2xl backdrop-blur-md transform transition-transform hover:scale-105 active:scale-95"
         style={{
-          boxShadow: '0 20px 40px -15px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.15)',
+          boxShadow: 'var(--shadow-card)',
         }}
       >
         {/* Animated Tap Ripple & Hand Icon */}
         <div className="relative w-11 h-11 flex items-center justify-center">
           {/* Pulsing ripple ring */}
           <span
-            className="absolute inset-0 rounded-full bg-white/20 animate-ping"
+            className="absolute inset-0 rounded-full bg-[var(--text-inverse)]/20 animate-ping"
             style={{ animationDuration: '1.6s' }}
           />
-          <span className="absolute inset-1 rounded-full bg-white/15 animate-pulse" />
+          <span className="absolute inset-1 rounded-full bg-[var(--text-inverse)]/15 animate-pulse" />
 
           {/* SVG Hand Tap Gesture */}
           <svg
-            className="w-7 h-7 text-white relative z-10 animate-bounce"
+            className="w-7 h-7 text-[var(--text-inverse)] relative z-10 animate-bounce"
             style={{ animationDuration: '1.2s' }}
             viewBox="0 0 24 24"
             fill="none"
@@ -88,16 +88,16 @@ export function ImageGestureHint({ onDismiss }: ImageGestureHintProps) {
 
         {/* Informative Label */}
         <div className="text-center space-y-0.5">
-          <p className="text-xs font-800 tracking-wide uppercase text-white font-mono">
+          <p className="text-xs font-800 tracking-wide uppercase text-[var(--text-inverse)] font-mono">
             Tap Image for Close Look
           </p>
-          <p className="text-[11px] text-white/75 font-medium">
+          <p className="text-[11px] text-[var(--text-inverse)]/75 font-medium">
             Inspect fabric weave & high-res details
           </p>
         </div>
 
         {/* Micro Dismiss Pill */}
-        <span className="mt-0.5 inline-block text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-white/15 text-white/90 border border-white/10">
+        <span className="mt-0.5 inline-block text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-[var(--text-inverse)]/15 text-[var(--text-inverse)]/90 border border-[var(--text-inverse)]/10">
           Got it
         </span>
       </div>

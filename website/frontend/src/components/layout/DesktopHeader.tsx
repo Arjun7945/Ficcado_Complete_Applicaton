@@ -125,9 +125,6 @@ export function DesktopHeader() {
           <Link href="/" className="flex items-center gap-2 lg:gap-2.5 group">
             <div
               className="relative flex h-9 w-9 lg:h-10 lg:w-10 items-center justify-center rounded-xl bg-white border border-[var(--border-light)] shadow-xs transition-transform group-hover:scale-105 overflow-hidden p-1"
-              style={{
-                boxShadow: '0 2px 8px rgba(43, 98, 198, 0.12)',
-              }}
             >
               <Image
                 src="/images/brand_logo/Ficcado Brand Logo.jpeg"
@@ -257,7 +254,7 @@ export function DesktopHeader() {
             <button
               type="submit"
               aria-label="Submit search"
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] font-800 bg-[var(--border-light)] text-[var(--text-muted)] px-1.5 py-0.5 rounded-md hover:bg-gray-300 transition-colors cursor-pointer"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] font-800 bg-[var(--border-light)] text-[var(--text-muted)] px-1.5 py-0.5 rounded-md hover:bg-[var(--border-medium)] transition-colors cursor-pointer"
             >
               ↵
             </button>
@@ -305,12 +302,12 @@ export function DesktopHeader() {
             className={`relative flex items-center justify-center h-9 w-9 rounded-full border transition-all active:scale-90 cursor-pointer ${
               pathname.startsWith('/wishlist')
                 ? 'bg-[var(--primary-light)] text-[var(--primary)] border-[var(--primary)]/40 shadow-xs'
-                : 'bg-[var(--bg-surface-alt)] hover:bg-[var(--border-light)] text-[var(--text-main)] hover:text-red-500 border-[var(--border-light)]'
+                : 'bg-[var(--bg-surface-alt)] hover:bg-[var(--border-light)] text-[var(--text-main)] hover:text-[var(--accent-red)] border-[var(--border-light)]'
             }`}
             title={`Wishlist (${wishlistCount})`}
             aria-label={`Wishlist, ${wishlistCount} item${wishlistCount !== 1 ? 's' : ''}`}
           >
-            <Heart size={15} className={wishlistCount > 0 ? 'fill-red-500 text-red-500' : ''} />
+            <Heart size={15} className={wishlistCount > 0 ? 'fill-[var(--accent-red)] text-[var(--accent-red)]' : ''} />
             {wishlistCount > 0 && (
               <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--primary)] text-white text-[9px] font-black px-0.5 shadow-xs">
                 {wishlistCount}

@@ -139,10 +139,10 @@ const JOURNAL_ARTICLES: Article[] = [
 ];
 
 const COLOR_MOODS = [
-  { name: 'Royal Ficcado', hex: '#2B62C6', secondary: '#B4D1EF', vibe: 'Signature High Quality T-Shirt Energy' },
-  { name: 'Citrus Dawn', hex: '#FF6B00', secondary: '#FDBA74', vibe: 'Bold High-Contrast Drop' },
-  { name: 'Sage Mint', hex: '#9FD2C7', secondary: '#E6F4F1', vibe: 'Understated Architectural Minimal' },
-  { name: 'Nocturne Black', hex: '#111827', secondary: '#374151', vibe: 'High Quality Midnight Silhouette' },
+  { name: 'Royal Ficcado', hex: 'var(--primary)', secondary: 'var(--accent-ice)', vibe: 'Signature High Quality T-Shirt Energy' },
+  { name: 'Citrus Dawn', hex: 'var(--accent-orange)', secondary: 'var(--primary-light)', vibe: 'Bold High-Contrast Drop' },
+  { name: 'Sage Mint', hex: 'var(--accent-mint)', secondary: 'var(--primary-light)', vibe: 'Understated Architectural Minimal' },
+  { name: 'Nocturne Black', hex: 'var(--text-main)', secondary: 'var(--text-secondary)', vibe: 'High Quality Midnight Silhouette' },
 ];
 
 export default function JournalPage() {
@@ -287,8 +287,8 @@ export default function JournalPage() {
                   key={mood.name}
                   onClick={() => setActiveMood(mood)}
                   className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all border cursor-pointer ${isSelected
-                      ? 'bg-white shadow-md border-gray-400 scale-105'
-                      : 'bg-[var(--bg-surface)] border-[var(--border-light)] hover:border-gray-300'
+                      ? 'bg-[var(--bg-surface)] shadow-md border-[var(--primary)] scale-105'
+                      : 'bg-[var(--bg-surface)] border-[var(--border-light)] hover:border-[var(--border-medium)]'
                     }`}
                 >
                   <span
@@ -327,14 +327,14 @@ export default function JournalPage() {
           </div>
 
           {/* Morphing Blob Display */}
-          <div className="relative w-full h-64 md:h-80 rounded-2xl overflow-hidden bg-gradient-to-br from-gray-900 to-gray-950 flex items-center justify-center">
+          <div className="relative w-full h-64 md:h-80 rounded-2xl overflow-hidden bg-[var(--text-main)] flex items-center justify-center">
             {/* SVG Organic Morphing Blob */}
             <div
               className={`w-48 h-48 sm:w-64 sm:h-64 rounded-[40%_60%_70%_30%/40%_50%_60%_50%] transition-all duration-1000 ${blobSpeed === 'pulse' ? 'animate-pulse' : 'animate-spin-smooth'
                 }`}
               style={{
                 background: `linear-gradient(135deg, ${activeMood.hex} 0%, ${activeMood.secondary} 100%)`,
-                boxShadow: `0 0 80px ${activeMood.hex}88`,
+                boxShadow: '0 0 80px var(--primary-glow)',
                 animationDuration: blobSpeed === 'pulse' ? '2s' : '18s',
               }}
             />
@@ -347,7 +347,7 @@ export default function JournalPage() {
               <h3 className="text-2xl sm:text-3xl font-900 text-white tracking-tight">
                 Designed for Movement
               </h3>
-              <p className="text-xs text-gray-200 max-w-sm mt-1">
+              <p className="text-xs text-white/80 max-w-sm mt-1">
                 High Quality 240 GSM combed cotton cut with architectural drape and effortless street presence.
               </p>
             </div>
@@ -381,7 +381,7 @@ export default function JournalPage() {
               key={article.slug}
               className="card group flex flex-col bg-[var(--bg-surface)] border border-[var(--border-light)] hover:border-[var(--primary)]/30 transition-all rounded-3xl overflow-hidden shadow-xs hover:shadow-hover"
             >
-              <div className="relative w-full aspect-[16/9] bg-gray-100 overflow-hidden">
+              <div className="relative w-full aspect-[16/9] bg-[var(--bg-surface-alt)] overflow-hidden">
                 <Image
                   src={article.image}
                   alt={article.title}
@@ -434,23 +434,21 @@ export default function JournalPage() {
       {/* Apparel Community Newsletter Card */}
       <section className="max-w-5xl mx-auto px-4 md:px-8 pt-6">
         <div
-          className="p-8 md:p-10 text-white rounded-3xl shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden"
+          className="p-8 md:p-10 text-white rounded-3xl shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden bg-[var(--primary)]"
           style={{
-            background: 'linear-gradient(135deg, #2B62C6 0%, #163888 100%)',
-            boxShadow: '0 20px 45px -10px rgba(43, 98, 198, 0.4)',
+            boxShadow: 'var(--shadow-btn)',
           }}
         >
           <div className="space-y-2 text-center md:text-left">
             <span
-              className="text-xs font-800 uppercase tracking-wider px-3 py-1 rounded-full inline-block"
-              style={{ background: 'rgba(255, 255, 255, 0.18)', color: '#FFD700' }}
+              className="text-xs font-800 uppercase tracking-wider px-3 py-1 rounded-full inline-block bg-white/20 text-[var(--accent-gold)]"
             >
               The Drop Notification List
             </span>
             <h3 className="text-xl md:text-2xl font-900 text-white">
               Never Miss A Limited T-Shirt & Future Wear Capsule
             </h3>
-            <p className="text-xs md:text-sm text-blue-100 max-w-md leading-relaxed">
+            <p className="text-xs md:text-sm text-white/90 max-w-md leading-relaxed">
               Be the first to access new t-shirt releases, behind-the-scenes textile logs, and upcoming wear drops.
             </p>
           </div>
@@ -462,16 +460,12 @@ export default function JournalPage() {
               value={newsletterEmail}
               onChange={(e) => setNewsletterEmail(e.target.value)}
               placeholder="Enter your email"
-              className="px-4 py-3 rounded-xl bg-white/15 border border-white/25 text-white placeholder-blue-100 text-xs focus:outline-none focus:ring-2 focus:ring-white w-full sm:w-64"
+              className="px-4 py-3 rounded-xl bg-white/15 border border-white/25 text-white placeholder:text-white/70 text-xs focus:outline-none focus:ring-2 focus:ring-white w-full sm:w-64"
             />
             <button
               type="submit"
               disabled={isSubscribing}
-              className="shrink-0 px-6 py-3 rounded-xl font-bold text-xs shadow-md hover:bg-white/95 transition-all hover:scale-105 cursor-pointer whitespace-nowrap disabled:opacity-75"
-              style={{
-                background: '#FFFFFF',
-                color: '#163888',
-              }}
+              className="shrink-0 px-6 py-3 rounded-xl font-bold text-xs shadow-md hover:bg-white/95 transition-all hover:scale-105 cursor-pointer whitespace-nowrap disabled:opacity-75 bg-white text-[var(--primary)]"
             >
               {isSubscribing ? 'Saving to List...' : 'Get Early Access 📬'}
             </button>
@@ -534,7 +528,7 @@ export default function JournalPage() {
 
             {/* Modal Scrollable Article Body */}
             <div className="p-6 sm:p-8 flex-1 min-h-0 overflow-y-auto space-y-6 overscroll-contain">
-              <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden bg-gray-100 shadow-xs shrink-0">
+              <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden bg-[var(--bg-surface-alt)] shadow-xs shrink-0">
                 <Image
                   src={selectedArticle.image}
                   alt={selectedArticle.title}

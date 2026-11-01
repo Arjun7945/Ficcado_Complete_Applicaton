@@ -51,6 +51,8 @@ services:
       - "noeviction"
       - "--appendonly"
       - "yes"
+      - "--appendfsync"
+      - "everysec"
     volumes:
       - ficcado_redis_session_data:/data
     healthcheck:

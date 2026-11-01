@@ -38,7 +38,7 @@ const ABOUT_DROPDOWN_LINKS: NavLink[] = [
 export function DesktopHeader() {
   const pathname = usePathname();
   const router = useRouter();
-  const { totalItemsCount, subtotalAmount } = useCart();
+  const { totalItemsCount } = useCart();
   const { openModal } = useModal();
   const { customer, isAuthenticated } = useCustomerAuth();
   const { wishlistCount } = useWishlist();
@@ -325,24 +325,20 @@ export function DesktopHeader() {
             <Settings size={15} />
           </Link>
 
-          {/* Shopping Bag CTA — icon button on tablet, full on xl */}
+          {/* Shopping Bag CTA — icon-only circular button matching Wishlist & Settings geometry */}
           <button
             id="desktop-header-cart-btn"
             onClick={() => openModal('cartDrawer')}
-            className="relative flex items-center justify-center h-9 w-9 xl:w-auto xl:px-3.5 xl:gap-2 rounded-full bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white transition-all active:scale-95 shadow-btn font-bold text-xs cursor-pointer"
-            aria-label={`Shopping Bag, ${totalItemsCount} item${totalItemsCount !== 1 ? 's' : ''}`}
+            className="relative flex items-center justify-center h-9 w-9 rounded-full bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white transition-all active:scale-90 shadow-btn font-bold cursor-pointer"
+            aria-label={`Open bag, ${totalItemsCount} item${totalItemsCount !== 1 ? 's' : ''}`}
+            title="Shopping Bag"
           >
-            <div className="relative">
-              <ShoppingBag size={15} />
-              {totalItemsCount > 0 && (
-                <span className="absolute -top-1.5 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-white text-[var(--primary)] text-[9px] font-black px-0.5 shadow-xs">
-                  {totalItemsCount}
-                </span>
-              )}
-            </div>
-            <span className="hidden xl:inline">
-              {totalItemsCount > 0 ? `Bag (₹${subtotalAmount.toLocaleString('en-IN')})` : 'Bag'}
-            </span>
+            <ShoppingBag size={15} />
+            {totalItemsCount > 0 && (
+              <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-white text-[var(--primary)] text-[9px] font-black px-0.5 shadow-xs">
+                {totalItemsCount}
+              </span>
+            )}
           </button>
 
           {/* Slide Navigation Menu Icon Only */}

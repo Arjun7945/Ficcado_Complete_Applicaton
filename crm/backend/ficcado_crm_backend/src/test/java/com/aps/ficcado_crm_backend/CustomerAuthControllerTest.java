@@ -73,6 +73,48 @@ class CustomerAuthControllerTest {
     }
 
     @Test
+    @DisplayName("POST /api/customer/auth/register normalizes phone formats like '+91 98765 43210'")
+    void register_formattedPhone_normalizesAndSucceeds() throws Exception {
+        CustomerProfileResponse profile = new CustomerProfileResponse(
+                1L, "Jane Doe", "jane@example.com", "9876543210", false, false, 0, Collections.emptyList()
+        );
+        CustomerAuthResponse response = new CustomerAuthResponse(
+                true, "Registration successful", "mock.jwt.token", profile
+        );
+
+        when(customerAuthService.registerCustomer(argThat(req -> "9876543210".equals(req.phone())))).thenReturn(response);
+
+        Map<String, String> body = Map.of(
+                "name", "Jane Doe",
+                "email", "jane@example.com",
+                "phone", "+91 98765 43210",
+                "password", "Secret123!"
+        );
+
+        mockMvc.perform(post("/api/customer/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success").value(true));
+    }
+
+    @Test
+    @DisplayName("POST /api/customer/auth/register rejects invalid phone with 400")
+    void register_invalidPhone_returns400() throws Exception {
+        Map<String, String> body = Map.of(
+                "name", "Jane Doe",
+                "email", "jane@example.com",
+                "phone", "12345",
+                "password", "Secret123!"
+        );
+
+        mockMvc.perform(post("/api/customer/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     @DisplayName("POST /api/customer/auth/login succeeds for valid credentials")
     void login_validCredentials_success() throws Exception {
         Customer customer = Customer.builder()

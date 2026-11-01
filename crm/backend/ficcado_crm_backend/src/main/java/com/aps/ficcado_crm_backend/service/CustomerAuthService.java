@@ -9,6 +9,7 @@ import com.aps.ficcado_crm_backend.entity.CustomerAddress;
 import com.aps.ficcado_crm_backend.entity.RevokedToken;
 import com.aps.ficcado_crm_backend.repository.CustomerRepository;
 import com.aps.ficcado_crm_backend.repository.RevokedTokenRepository;
+import com.aps.ficcado_crm_backend.util.PhoneNormalizer;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -311,12 +312,7 @@ public class CustomerAuthService {
     }
 
     public static String normalizePhone(String phone) {
-        if (phone == null) return "";
-        String digits = phone.replaceAll("\\D", "");
-        if (digits.length() > 10) {
-            digits = digits.substring(digits.length() - 10);
-        }
-        return digits;
+        return PhoneNormalizer.normalize(phone);
     }
 
     private String hashToken(String rawToken) {

@@ -1,5 +1,6 @@
 package com.aps.ficcado_crm_backend.dto;
 
+import com.aps.ficcado_crm_backend.util.PhoneNormalizer;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -24,7 +25,7 @@ public class CustomerAuthDto {
             String email,
 
             @NotBlank(message = "Phone number is required")
-            @Pattern(regexp = "^(\\+91)?[6-9]\\d{9}$", message = "Valid 10-digit Indian mobile number is required")
+            @Pattern(regexp = "^[6-9]\\d{9}$", message = "Valid 10-digit Indian mobile number is required")
             String phone,
 
             @NotBlank(message = "Password is required")
@@ -32,7 +33,11 @@ public class CustomerAuthDto {
             String password,
 
             String address
-    ) {}
+    ) {
+        public CustomerRegistrationRequest {
+            phone = PhoneNormalizer.normalize(phone);
+        }
+    }
 
     public record CustomerLoginRequest(
             @NotBlank(message = "Email address is required")
@@ -81,7 +86,13 @@ public class CustomerAuthDto {
             String name,
             String phone,
             String address
-    ) {}
+    ) {
+        public UpdateProfileRequest {
+            if (phone != null && !phone.isBlank()) {
+                phone = PhoneNormalizer.normalize(phone);
+            }
+        }
+    }
 
     public record CustomerOrderSummaryResponse(
             Long id,

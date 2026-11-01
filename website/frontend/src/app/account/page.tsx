@@ -25,6 +25,7 @@ import { useCustomerAuth } from '@/context/CustomerAuthContext';
 import { useModal } from '@/context/ModalContext';
 import { useToast } from '@/context/ToastContext';
 import { CustomerOrder, getCustomerOrders, updateCustomerProfile } from '@/lib/api/auth';
+import { normalizePhone, isValidIndianPhone } from '@/lib/phone';
 
 type AccountTab = 'orders' | 'addresses' | 'profile';
 
@@ -100,11 +101,17 @@ export default function AccountPage() {
       return;
     }
 
+    const normalizedPhone = normalizePhone(editPhone);
+    if (!isValidIndianPhone(normalizedPhone)) {
+      showToast('Please enter a valid 10-digit Indian mobile number', 'error');
+      return;
+    }
+
     setSavingProfile(true);
     try {
       const updated = await updateCustomerProfile({
         name: editName.trim(),
-        phone: editPhone.trim(),
+        phone: normalizedPhone,
       });
       if (updated) {
         await refreshProfile();

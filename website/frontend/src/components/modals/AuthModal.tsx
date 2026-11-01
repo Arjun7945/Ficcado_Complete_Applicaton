@@ -10,6 +10,7 @@ import { X, Mail, Lock, Phone, User, MapPin, ArrowRight, CheckCircle2, AlertCirc
 import { useModal } from '@/context/ModalContext';
 import { useCustomerAuth } from '@/context/CustomerAuthContext';
 import { useToast } from '@/context/ToastContext';
+import { normalizePhone, isValidIndianPhone } from '@/lib/phone';
 
 type AuthTab = 'signin' | 'register';
 type LoginMethod = 'otp' | 'password';
@@ -39,6 +40,7 @@ export function AuthModal() {
   // UI status
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [phoneFieldError, setPhoneFieldError] = useState<string | null>(null);
 
   const isOpen = activeModal === 'authModal';
 
@@ -133,6 +135,7 @@ export function AuthModal() {
   // Handle Registration
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    setPhoneFieldError(null);
     if (!regName.trim() || !regEmail.trim() || !regPhone.trim() || !regPassword) {
       setErrorMsg('Please fill in all required fields');
       return;
@@ -142,13 +145,19 @@ export function AuthModal() {
       return;
     }
 
+    const normalizedPhone = normalizePhone(regPhone);
+    if (!isValidIndianPhone(normalizedPhone)) {
+      setPhoneFieldError('Please enter a valid 10-digit Indian mobile number (e.g. 9876543210 or +91 98765 43210)');
+      return;
+    }
+
     setIsSubmitting(true);
     setErrorMsg(null);
     try {
       const res = await register({
         name: regName.trim(),
         email: regEmail.trim(),
-        phone: regPhone.trim(),
+        phone: normalizedPhone,
         password: regPassword,
         address: regAddress.trim() || undefined,
       });
@@ -157,10 +166,20 @@ export function AuthModal() {
         showToast('Account created successfully!', 'success');
         closeModal();
       } else {
-        setErrorMsg(res.message || 'Registration failed');
+        const msg = res.message || 'Registration failed';
+        if (msg.toLowerCase().includes('phone') || msg.toLowerCase().includes('mobile')) {
+          setPhoneFieldError(msg);
+        } else {
+          setErrorMsg(msg);
+        }
       }
     } catch (err) {
-      setErrorMsg((err as Error).message || 'Registration error');
+      const msg = (err as Error).message || 'Registration error';
+      if (msg.toLowerCase().includes('phone') || msg.toLowerCase().includes('mobile')) {
+        setPhoneFieldError(msg);
+      } else {
+        setErrorMsg(msg);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -493,12 +512,24 @@ export function AuthModal() {
                     type="tel"
                     required
                     value={regPhone}
-                    onChange={(e) => setRegPhone(e.target.value)}
-                    placeholder="9876543210"
-                    className="w-full h-10 pl-9 pr-3 rounded-xl bg-[var(--bg-surface-alt)] border border-[var(--border-light)] text-xs text-[var(--text-main)] focus:outline-none focus:border-[var(--primary)]"
+                    onChange={(e) => {
+                      setRegPhone(e.target.value);
+                      if (phoneFieldError) setPhoneFieldError(null);
+                    }}
+                    placeholder="9876543210 or +91 98765 43210"
+                    className={`w-full h-10 pl-9 pr-3 rounded-xl bg-[var(--bg-surface-alt)] border text-xs text-[var(--text-main)] focus:outline-none ${
+                      phoneFieldError
+                        ? 'border-red-500 focus:border-red-500'
+                        : 'border-[var(--border-light)] focus:border-[var(--primary)]'
+                    }`}
                   />
                   <Phone size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
                 </div>
+                {phoneFieldError && (
+                  <p className="text-xs text-red-500 font-semibold mt-1">
+                    {phoneFieldError}
+                  </p>
+                )}
               </div>
 
               <div>

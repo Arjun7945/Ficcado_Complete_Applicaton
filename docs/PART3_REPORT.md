@@ -12,9 +12,9 @@
 |---|---|---|---|
 | **P3-0** | Baseline & Live Reproduction (Zero Code Changes) | **Completed & Verified** | All 5 containers up; all 7 health endpoints UP; baseline recorded across all 10 suites; 7 issues reproduced live; `docs/PART3_DIAGNOSIS.md` written. |
 | **P3-1** | ISS-04: Gateway IPv6 Upstream Failure | **Completed & Committed** | Added `resolver 127.0.0.11 ipv6=off valid=30s;` and dynamic backend variables. Latency dropped ~1100ms ➔ 28ms. 0 network unreachable errors. Commit: `b318af1`. |
-| **P3-2** | ISS-01: Customer Session Instability & Logout on Page Change | **Completed & Verified** | Configured 401 entry point; resilient state rule in `CustomerAuthContext.tsx`; 30s throttled route check; dedicated `/api/customer/auth/logout` on `general_api`; 429/503 ProblemDetail error pages with CORS. All 7 real Chrome acceptance checks pass. |
-| **P3-3** | ISS-05: Customer Registration Phone Format Normalization | *Next Up* | |
-| **P3-4** | ISS-02: Product Modal Blank Image for Data-URL Items | *Pending* | |
+| **P3-2** | ISS-01: Customer Session Instability & Logout on Page Change | **Completed & Committed** | Configured 401 entry point; resilient state rule in `CustomerAuthContext.tsx`; 30s throttled route check; dedicated `/api/customer/auth/logout` on `general_api`; 429/503 ProblemDetail error pages with CORS. All 7 real Chrome acceptance checks pass. Commit: `ea7dc7b`. |
+| **P3-3** | ISS-05: Customer Registration Phone Format Normalization | **Completed & Verified** | Canonical `PhoneNormalizer` utility; compact constructor normalization in `CustomerAuthDto`; client-side helper & `AuthModal` validation UI; 11 backend normalizer tests + 5 controller tests + 5 frontend integration tests pass 100%. |
+| **P3-4** | ISS-02: Product Modal Blank Image for Data-URL Items | *Next Up* | |
 | **P3-5** | ISS-03: Tablet & Desktop Header Responsive Layout Refactor | *Pending* | |
 | **P3-6** | ISS-06 & ISS-07: CRM Middleware Matcher & Next.js Proxy Migration | *Pending* | |
 | **P3-7** | Live End-to-End Proof, Regression & Documentation | *Pending* | |
@@ -102,3 +102,40 @@ Detailed diagnostic evidence, log outputs, and root causes are documented in [`d
   - Acceptance 5: Paused Redis Session container (`docker pause ficcado-redis-session`) — protected calls failed closed with HTTP 503 `SESSION_STORE_UNAVAILABLE`, UI stayed logged in with non-blocking notice; unpaused container and verified clean recovery (PASS).
   - Acceptance 7: Forged `X-Customer-Id` without session cookie returned HTTP 401 Unauthorized through the gateway (PASS).
   - Regression: All 15 backend customer session unit tests pass; all 105 website frontend tests pass; `npm run check:brand` 100% green.
+  - Commit: `ea7dc7b` (`P3-2: fix customer session state retention and 401 entry point`).
+
+---
+
+## Phase P3-3: Customer Registration Phone Format Normalization (ISS-05)
+
+- **Issue:** Users entering commonly formatted Indian phone numbers (such as `+91 98765 43210`, `98765-43210`, or `09876543210`) encountered HTTP 400 Bad Request registration errors (`Valid 10-digit Indian mobile number is required`).
+- **Root Cause Analysis:**
+  1. `CustomerRegistrationRequest` in `CustomerAuthDto.java` enforced `@Pattern(regexp = "^[6-9]\\d{9}$")` directly on raw user input without pre-validation normalization.
+  2. Database inquiry confirmed 100% of existing customer phone numbers in `customers` table are stored in the canonical 10-digit national format (`^[6-9]\d{9}$`). Permitting raw un-normalized or `+91`-prefixed strings would violate customer lookup uniqueness (`findByPhoneNumber`) and create duplicate customer records for CRM sales vs storefront logins.
+  3. Jackson deserialization evaluates record compact constructors before Bean Validation (`@Valid`) runs, providing an ideal, backward-compatible hook to normalize validly formatted inputs into the canonical 10-digit representation.
+- **Implementation:**
+  - **Backend Utility (`PhoneNormalizer.java`):**
+    - Strips whitespace, hyphens, dots, and parentheses.
+    - Strips `+91` prefix (13 chars), `91` prefix (12 digits), or leading `0` (11 digits).
+    - Preserves canonical 10-digit national number.
+    - Exposes `isValidIndianPhone(String)` verifying `^[6-9]\\d{9}$`.
+  - **DTO Contracts (`CustomerAuthDto.java`):**
+    - Added compact constructor to `CustomerRegistrationRequest` normalizing `phone` prior to `@Pattern` evaluation.
+    - Added compact constructor to `UpdateProfileRequest` normalizing optional `phone` if provided.
+  - **Service Layer (`CustomerAuthService.java`):**
+    - Delegated `normalizePhone` to `PhoneNormalizer.normalize(phone)`.
+  - **Frontend Helper (`src/lib/phone.ts`):**
+    - Implemented client-side `normalizePhone` and `isValidIndianPhone` with identical logic to ensure immediate UI feedback.
+  - **UI Validation (`AuthModal.tsx` & `account/page.tsx`):**
+    - Updated `AuthModal` with dedicated `phoneFieldError` state and styling (`border-red-500`, red helper text beneath input).
+    - Client-side validation prevents submission and explains expected format if phone is invalid.
+    - Formats phone upon profile update in `/account`.
+  - **Documentation:**
+    - Appended changes to `docs/FICCADO_DATA_CHANGELOG.md`.
+- **Verification:**
+  - `PhoneNormalizerTest.java`: 11/11 tests pass (spaces, hyphens, dots, parentheses, +91, 91, 0, invalid lengths, letters).
+  - `CustomerAuthControllerTest.java`: 5/5 tests pass including `register_formattedPhone_normalizesAndSucceeds` and `register_invalidPhone_returns400`.
+  - `scripts/tests/phone-normalization.test.mjs`: 5/5 tests pass (3 pure function tests + 2 live gateway integration tests against port 8000).
+  - Full website test suite: 110/110 tests pass (including 19 suites).
+  - `npm run check:brand`: 100% clean (strictly Ficcado double C, prefix FIC-).
+

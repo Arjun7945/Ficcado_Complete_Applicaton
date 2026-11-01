@@ -1,9 +1,6 @@
 package com.aps.ficcado_website_data.controller;
 
-import com.aps.ficcado_website_data.dto.OtpGenerateRequest;
-import com.aps.ficcado_website_data.dto.OtpGenerateResponse;
-import com.aps.ficcado_website_data.dto.OtpVerifyRequest;
-import com.aps.ficcado_website_data.dto.OtpVerifyResponse;
+import com.aps.ficcado_website_data.dto.*;
 import com.aps.ficcado_website_data.entity.enums.OtpPurpose;
 import com.aps.ficcado_website_data.service.OtpService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -36,14 +33,14 @@ class OtpControllerTest {
     void testGenerateOtp_Valid_Returns200() throws Exception {
         OtpGenerateRequest request = OtpGenerateRequest.builder()
                 .email("test@ficcado.in")
-                .purpose(OtpPurpose.CUSTOMER_LOGIN)
+                .purpose(OtpPurpose.PASSWORD_RESET)
                 .build();
 
         OtpGenerateResponse response = OtpGenerateResponse.builder()
                 .email("test@ficcado.in")
-                .purpose(OtpPurpose.CUSTOMER_LOGIN)
+                .purpose(OtpPurpose.PASSWORD_RESET)
                 .expiresInSeconds(600)
-                .message("Verification code sent.")
+                .message("If an account exists, we sent a code")
                 .build();
 
         when(otpService.generateOtp(any(OtpGenerateRequest.class))).thenReturn(response);
@@ -62,14 +59,15 @@ class OtpControllerTest {
         OtpVerifyRequest request = OtpVerifyRequest.builder()
                 .email("test@ficcado.in")
                 .otp("123456")
-                .purpose(OtpPurpose.CUSTOMER_LOGIN)
+                .purpose(OtpPurpose.PASSWORD_RESET)
                 .build();
 
         OtpVerifyResponse response = OtpVerifyResponse.builder()
                 .verified(true)
                 .email("test@ficcado.in")
-                .purpose(OtpPurpose.CUSTOMER_LOGIN)
+                .purpose(OtpPurpose.PASSWORD_RESET)
                 .verificationToken("mock-token-uuid")
+                .resetToken("mock-token-uuid")
                 .message("Verification successful.")
                 .build();
 
@@ -81,7 +79,7 @@ class OtpControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.verified").value(true))
-                .andExpect(jsonPath("$.data.verificationToken").value("mock-token-uuid"));
+                .andExpect(jsonPath("$.data.resetToken").value("mock-token-uuid"));
     }
 
     @Test
@@ -89,7 +87,7 @@ class OtpControllerTest {
         OtpVerifyRequest request = OtpVerifyRequest.builder()
                 .email("test@ficcado.in")
                 .otp("123") // Not 6 digits
-                .purpose(OtpPurpose.CUSTOMER_LOGIN)
+                .purpose(OtpPurpose.PASSWORD_RESET)
                 .build();
 
         mockMvc.perform(post("/api/v1/otp/verify")
@@ -97,5 +95,25 @@ class OtpControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false));
+    }
+
+    @Test
+    void testResetPassword_Valid_Returns200() throws Exception {
+        PasswordResetConfirmRequest request = PasswordResetConfirmRequest.builder()
+                .email("test@ficcado.in")
+                .resetToken("mock-valid-token")
+                .newPassword("NewSecretPass123")
+                .confirmPassword("NewSecretPass123")
+                .build();
+
+        when(otpService.resetPassword(any(PasswordResetConfirmRequest.class)))
+                .thenReturn("Password updated. Please sign in.");
+
+        mockMvc.perform(post("/api/v1/otp/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("Password updated. Please sign in."));
     }
 }

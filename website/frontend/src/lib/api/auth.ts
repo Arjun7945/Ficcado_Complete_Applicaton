@@ -85,48 +85,77 @@ export async function loginWithPassword(email: string, password: string): Promis
 }
 
 /**
- * Requests a 6-digit OTP to be generated and emailed by Ficcado-Website-Data.
+ * Step 1: Requests a 6-digit password reset OTP to be generated and emailed by Ficcado-Website-Data.
+ * Response is always generic ("If an account exists, we sent a code") with identical timing.
  */
-export async function requestLoginOtp(email: string): Promise<{ success: boolean; message: string; cooldownSeconds?: number }> {
+export async function requestPasswordReset(email: string): Promise<{ success: boolean; message: string; cooldownSeconds?: number }> {
   const res = await apiClient<ApiResponse<{ email: string; purpose: string; expiresInSeconds: number }>>(
-    `${API_CONFIG.routes.otp}/generate`,
+    `${API_CONFIG.routes.otp}/forgot-password/request`,
     {
       method: 'POST',
-      body: JSON.stringify({ email, purpose: 'CUSTOMER_LOGIN' }),
+      body: JSON.stringify({ email: email.trim().toLowerCase(), purpose: 'PASSWORD_RESET' }),
     }
   );
   return {
     success: res.success,
-    message: res.message || 'Verification code sent to your email.',
+    message: res.message || 'If an account exists, we sent a code',
     cooldownSeconds: 60,
   };
 }
 
 /**
- * Verifies the 6-digit OTP and completes authentication via service-to-service handshake.
+ * Step 2: Verifies the 6-digit password reset OTP and receives a single-use reset token valid for 10 minutes.
  */
-export async function verifyLoginOtp(email: string, otp: string): Promise<CustomerAuthResult> {
-  const res = await apiClient<ApiResponse<{ verified: boolean; email: string; verificationToken: string; customerToken?: string }>>(
-    `${API_CONFIG.routes.otp}/verify`,
+export async function verifyPasswordResetOtp(email: string, otp: string): Promise<{ success: boolean; message: string; resetToken?: string }> {
+  const res = await apiClient<ApiResponse<{ verified: boolean; email: string; resetToken?: string; verificationToken?: string }>>(
+    `${API_CONFIG.routes.otp}/forgot-password/verify`,
     {
       method: 'POST',
-      body: JSON.stringify({ email, otp, purpose: 'CUSTOMER_LOGIN' }),
+      body: JSON.stringify({ email: email.trim().toLowerCase(), otp: otp.trim(), purpose: 'PASSWORD_RESET' }),
     }
   );
 
   if (res.success && res.data?.verified) {
-    // If customerToken was attached from handshake, return it; otherwise check profile
-    const token = res.data.customerToken;
+    const token = res.data.resetToken || res.data.verificationToken;
     return {
       success: true,
-      message: 'OTP verified successfully.',
-      token,
+      message: res.message || 'Verification successful.',
+      resetToken: token,
     };
   }
 
   return {
     success: false,
     message: res.message || 'Invalid or expired verification code.',
+  };
+}
+
+/**
+ * Step 3: Sets a new password using the verified single-use reset token.
+ * Stores BCrypt hash, sets emailVerifiedAt, and invalidates all existing sessions.
+ */
+export async function confirmPasswordReset(
+  email: string,
+  resetToken: string,
+  newPassword: string,
+  confirmPassword: string
+): Promise<{ success: boolean; message: string }> {
+  const res = await apiClient<ApiResponse<{ message?: string }>>(
+    `${API_CONFIG.routes.otp}/forgot-password/reset`,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        email: email.trim().toLowerCase(),
+        resetToken: resetToken.trim(),
+        newPassword,
+        confirmPassword,
+      }),
+    }
+  );
+
+  return {
+    success: res.success,
+    message: res.message || 'Password updated. Please sign in.',
   };
 }
 

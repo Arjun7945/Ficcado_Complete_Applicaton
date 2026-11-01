@@ -17,8 +17,6 @@ import {
   pauseCustomerSession,
   loginWithPassword as apiLoginPassword,
   registerCustomer as apiRegister,
-  requestLoginOtp as apiRequestOtp,
-  verifyLoginOtp as apiVerifyOtp,
   logoutCustomer as apiLogout,
 } from '@/lib/api/auth';
 import { ApiError } from '@/lib/api/client';
@@ -34,8 +32,6 @@ interface CustomerAuthContextType {
   showIdlePrompt: boolean;
   sessionNotice: string | null;
   loginWithPassword: (email: string, pass: string) => Promise<{ success: boolean; message?: string }>;
-  loginWithOtp: (email: string, code: string) => Promise<{ success: boolean; message?: string }>;
-  requestOtp: (email: string) => Promise<{ success: boolean; message: string }>;
   register: (data: CustomerRegistrationData) => Promise<{ success: boolean; message?: string }>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -342,24 +338,6 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const requestOtp = async (email: string) => {
-    return apiRequestOtp(email);
-  };
-
-  const loginWithOtp = async (email: string, code: string) => {
-    try {
-      const res = await apiVerifyOtp(email, code);
-      if (res.success) {
-        await refreshProfile();
-        lastActivityRef.current = Date.now();
-        broadcast({ type: 'LOGIN' });
-        return { success: true };
-      }
-      return { success: false, message: res.message || 'Invalid code' };
-    } catch (err) {
-      return { success: false, message: (err as Error).message || 'Verification error' };
-    }
-  };
 
   const register = async (data: CustomerRegistrationData) => {
     try {
@@ -386,8 +364,6 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
         showIdlePrompt,
         sessionNotice,
         loginWithPassword,
-        loginWithOtp,
-        requestOtp,
         register,
         logout,
         refreshProfile,

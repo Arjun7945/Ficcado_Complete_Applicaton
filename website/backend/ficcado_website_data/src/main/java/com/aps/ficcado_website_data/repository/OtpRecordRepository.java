@@ -15,4 +15,6 @@ public interface OtpRecordRepository extends JpaRepository<OtpRecord, Long> {
     Optional<OtpRecord> findTopByEmailAndPurposeAndVerifiedFalseOrderByCreatedAtDesc(String email, OtpPurpose purpose);
 
     List<OtpRecord> findByEmailAndCreatedAtAfter(String email, Instant after);
+
+    long countByEmailAndCreatedAtAfter(String email, Instant after);
 }

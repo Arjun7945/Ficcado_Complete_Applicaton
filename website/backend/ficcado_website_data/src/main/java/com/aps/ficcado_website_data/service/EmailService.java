@@ -87,11 +87,7 @@ public class EmailService {
 
     public void sendOtpEmail(String to, String otp, OtpPurpose purpose) {
         String subject = "Your Ficcado Security Code: " + otp;
-        String purposeDescription = switch (purpose) {
-            case CUSTOMER_LOGIN -> "sign in to your Ficcado customer account";
-            case CUSTOMER_SIGNUP -> "complete your Ficcado account registration";
-            case EMAIL_VERIFICATION -> "verify your email address";
-        };
+        String purposeDescription = "reset your Ficcado customer account password";
 
         String bodyText = String.format(
                 "Hello,\n\nYour one-time security code is %s to %s.\n\n" +

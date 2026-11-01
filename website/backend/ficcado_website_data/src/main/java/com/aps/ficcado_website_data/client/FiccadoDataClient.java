@@ -33,30 +33,48 @@ public class FiccadoDataClient {
     }
 
     /**
-     * Executes internal OTP login handshake to generate Customer JWT upon OTP verification.
+     * Checks if a customer exists in Ficcado-Data by email.
      */
-    public Optional<String> completeCustomerOtpLogin(String email, String phone, String name) {
+    public boolean checkCustomerExists(String email) {
+        if (email == null || email.isBlank()) return false;
         try {
-            log.info("Sending internal OTP login handshake to Ficcado-Data for email: {}", email);
+            Map<?, ?> response = restClient.get()
+                    .uri(uriBuilder -> uriBuilder.path("/api/internal/customer/exists")
+                            .queryParam("email", email.trim().toLowerCase())
+                            .build())
+                    .header("X-Internal-Secret", internalApiKey)
+                    .retrieve()
+                    .body(Map.class);
+
+            return response != null && Boolean.TRUE.equals(response.get("exists"));
+        } catch (Exception e) {
+            log.warn("Failed to check customer existence with Ficcado-Data for email '{}': {}", email, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Executes internal password reset handshake with Ficcado-Data to store BCrypt hash,
+     * set emailVerifiedAt, and invalidate all sessions.
+     */
+    public boolean resetCustomerPassword(String email, String newPassword) {
+        try {
+            log.info("Sending internal password reset request to Ficcado-Data for email: {}", email);
             Map<?, ?> response = restClient.post()
-                    .uri("/api/internal/customer/otp-login")
+                    .uri("/api/internal/customer/reset-password")
                     .header("X-Internal-Secret", internalApiKey)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(Map.of(
-                            "email", email,
-                            "phone", phone != null ? phone : "",
-                            "name", name != null ? name : ""
+                            "email", email.trim().toLowerCase(),
+                            "newPassword", newPassword
                     ))
                     .retrieve()
                     .body(Map.class);
 
-            if (response != null && Boolean.TRUE.equals(response.get("success"))) {
-                String token = (String) response.get("token");
-                return Optional.ofNullable(token);
-            }
+            return response != null && Boolean.TRUE.equals(response.get("success"));
         } catch (Exception e) {
-            log.warn("Internal OTP login handshake with Ficcado-Data failed: {}", e.getMessage());
+            log.error("Internal password reset with Ficcado-Data failed for email '{}': {}", email, e.getMessage());
+            return false;
         }
-        return Optional.empty();
     }
 }

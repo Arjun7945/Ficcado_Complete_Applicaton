@@ -69,34 +69,27 @@ public class CustomerAuthService {
         // 1. Check if email already exists
         Optional<Customer> existingByEmail = customerRepository.findByEmailIdIgnoreCase(email);
         if (existingByEmail.isPresent()) {
-            Customer c = existingByEmail.get();
-            if (c.getPasswordHash() != null) {
-                return new CustomerAuthResponse(false, "An account with this email already exists. Please sign in.", null, null);
-            } else {
-                // Customer was created from CRM sale by phone — cannot set password without OTP verification (Q-005 item 3)
-                return new CustomerAuthResponse(false,
-                        "This email is linked to prior orders. Please verify via email OTP to complete your account setup.",
-                        null, null);
-            }
-        }
-
-        // 2. Check if phone is already linked to another customer record with a different email
-        Optional<Customer> existingByPhone = customerRepository.findByPhoneNumber(phone);
-        if (existingByPhone.isPresent() && !existingByPhone.get().getEmailId().equalsIgnoreCase(email)) {
             return new CustomerAuthResponse(false,
-                    "This mobile number is already associated with another account.", null, null);
+                    "We could not create an account with these details. If you already have an account, sign in or use Forgot password.",
+                    null, null);
         }
 
-        // 3. Create customer
-        Customer customer = existingByPhone.orElseGet(() -> Customer.builder()
+        // 2. Check if phone is already linked to another customer record
+        Optional<Customer> existingByPhone = customerRepository.findByPhoneNumber(phone);
+        if (existingByPhone.isPresent()) {
+            return new CustomerAuthResponse(false,
+                    "We could not create an account with these details. If you already have an account, sign in or use Forgot password.",
+                    null, null);
+        }
+
+        // 3. Create customer with unverified email (emailVerifiedAt is null)
+        Customer customer = Customer.builder()
                 .customerName(request.name().trim())
                 .phoneNumber(phone)
                 .emailId(email)
                 .totalOrdersPlaced(0)
-                .build());
+                .build();
 
-        customer.setCustomerName(request.name().trim());
-        customer.setEmailId(email);
         customer.setPasswordHash(passwordEncoder.encode(request.password()));
 
         // Add default address if provided
@@ -128,45 +121,27 @@ public class CustomerAuthService {
                 .filter(customer -> passwordEncoder.matches(rawPassword, customer.getPasswordHash()));
     }
 
-    // ── Authentication (OTP Handshake) ────────────────────────────────────────
+    // ── Password Reset & Verification ─────────────────────────────────────────
+
+    @Transactional(readOnly = true)
+    public boolean customerExists(String email) {
+        if (email == null || email.isBlank()) return false;
+        return customerRepository.findByEmailIdIgnoreCase(normalizeEmail(email)).isPresent();
+    }
 
     @Transactional
-    public CustomerAuthResponse authenticateViaVerifiedOtp(String email, String phone, String name) {
+    public void resetPassword(String email, String newPassword) {
         String normalizedEmail = normalizeEmail(email);
-        Optional<Customer> opt = customerRepository.findByEmailIdIgnoreCase(normalizedEmail);
+        Customer customer = customerRepository.findByEmailIdIgnoreCase(normalizedEmail)
+                .orElseThrow(() -> new IllegalArgumentException("Customer not found"));
 
-        Customer customer;
-        if (opt.isPresent()) {
-            customer = opt.get();
-            customer.setEmailVerifiedAt(Instant.now());
-            if (phone != null && !phone.isBlank() && customer.getPhoneNumber() == null) {
-                customer.setPhoneNumber(normalizePhone(phone));
-            }
-        } else {
-            // New OTP-based customer: create profile
-            String effectivePhone = (phone != null && !phone.isBlank())
-                    ? normalizePhone(phone)
-                    : "OTP-" + System.currentTimeMillis();
+        customer.setPasswordHash(passwordEncoder.encode(newPassword));
+        customer.setEmailVerifiedAt(Instant.now());
+        customerRepository.save(customer);
 
-            // Handle phone collision gracefully if phone exists
-            if (customerRepository.existsByPhoneNumber(effectivePhone)) {
-                effectivePhone = "OTP-" + System.currentTimeMillis();
-            }
-
-            customer = Customer.builder()
-                    .customerName(name != null && !name.isBlank() ? name.trim() : "Valued Customer")
-                    .emailId(normalizedEmail)
-                    .phoneNumber(effectivePhone)
-                    .emailVerifiedAt(Instant.now())
-                    .totalOrdersPlaced(0)
-                    .build();
-        }
-
-        Customer saved = customerRepository.save(customer);
-        log.info("Customer authenticated via verified OTP [id={}, email={}]", saved.getId(), saved.getEmailId());
-
-        String token = generateCustomerToken(saved);
-        return new CustomerAuthResponse(true, "Authentication successful", token, mapToProfileResponse(saved));
+        customerSessionService.deleteAllSessionsForCustomer(customer.getId());
+        log.info("Customer password reset and all active sessions invalidated [customerId={}, email={}]",
+                customer.getId(), customer.getEmailId());
     }
 
     // ── JWT Management ────────────────────────────────────────────────────────

@@ -2103,7 +2103,7 @@
     "/api/customer/session/touch" : {
       "post" : {
         "tags" : [ "Customer Session" ],
-        "summary" : "Touch customer session to extend sliding idle timeout to 600s",
+        "summary" : "Touch customer session to extend sliding idle timeout",
         "operationId" : "touchSession",
         "responses" : {
           "200" : {

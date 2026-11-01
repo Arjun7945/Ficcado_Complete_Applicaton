@@ -3,7 +3,6 @@ package com.aps.ficcado_website_data.dto;
 import com.aps.ficcado_website_data.entity.enums.OtpPurpose;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.*;
@@ -24,6 +23,6 @@ public class OtpVerifyRequest {
     @Pattern(regexp = "^\\d{6}$", message = "OTP must be exactly 6 digits")
     private String otp;
 
-    @NotNull(message = "OTP purpose is required")
-    private OtpPurpose purpose;
+    @Builder.Default
+    private OtpPurpose purpose = OtpPurpose.PASSWORD_RESET;
 }

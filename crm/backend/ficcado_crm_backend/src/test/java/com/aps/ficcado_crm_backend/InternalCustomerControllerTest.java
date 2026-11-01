@@ -1,8 +1,7 @@
 package com.aps.ficcado_crm_backend;
 
 import com.aps.ficcado_crm_backend.controller.InternalCustomerController;
-import com.aps.ficcado_crm_backend.dto.CustomerAuthDto.CustomerAuthResponse;
-import com.aps.ficcado_crm_backend.dto.CustomerAuthDto.CustomerProfileResponse;
+import com.aps.ficcado_crm_backend.controller.InternalCustomerController.InternalResetPasswordRequest;
 import com.aps.ficcado_crm_backend.service.CustomerAuthService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,10 +16,8 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import java.util.Collections;
-import java.util.Map;
-
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -45,39 +42,66 @@ class InternalCustomerControllerTest {
     }
 
     @Test
-    @DisplayName("Internal OTP login handshake succeeds with valid X-Internal-Secret")
-    void internalOtpLogin_validSecret_success() throws Exception {
-        CustomerProfileResponse profile = new CustomerProfileResponse(
-                1L, "Jane Doe", "jane@example.com", "9876543210", true, false, 0, Collections.emptyList()
-        );
-        CustomerAuthResponse response = new CustomerAuthResponse(
-                true, "Authentication successful", "customer.jwt.handshake", profile
-        );
+    @DisplayName("Internal checkCustomerExists returns exists true with valid X-Internal-Secret")
+    void checkCustomerExists_validSecret_returnsExists() throws Exception {
+        when(customerAuthService.customerExists("jane@example.com")).thenReturn(true);
 
-        when(customerAuthService.authenticateViaVerifiedOtp("jane@example.com", "9876543210", "Jane Doe"))
-                .thenReturn(response);
+        mockMvc.perform(get("/api/internal/customer/exists")
+                        .header("X-Internal-Secret", SECRET)
+                        .param("email", "jane@example.com"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.exists").value(true));
+    }
 
-        Map<String, String> body = Map.of(
-                "email", "jane@example.com",
-                "phone", "9876543210",
-                "name", "Jane Doe"
-        );
+    @Test
+    @DisplayName("Internal checkCustomerExists rejected with 403 when secret is missing or invalid")
+    void checkCustomerExists_invalidSecret_forbidden() throws Exception {
+        mockMvc.perform(get("/api/internal/customer/exists")
+                        .header("X-Internal-Secret", "wrong-secret")
+                        .param("email", "jane@example.com"))
+                .andExpect(status().isForbidden());
+    }
 
-        mockMvc.perform(post("/api/internal/customer/otp-login")
+    @Test
+    @DisplayName("Internal resetPassword succeeds with valid X-Internal-Secret")
+    void resetPassword_validSecret_success() throws Exception {
+        doNothing().when(customerAuthService).resetPassword("jane@example.com", "NewPass123!");
+
+        InternalResetPasswordRequest body = new InternalResetPasswordRequest("jane@example.com", "NewPass123!");
+
+        mockMvc.perform(post("/api/internal/customer/reset-password")
                         .header("X-Internal-Secret", SECRET)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.token").value("customer.jwt.handshake"));
+                .andExpect(jsonPath("$.message").value("Password updated successfully"));
+
+        verify(customerAuthService, times(1)).resetPassword("jane@example.com", "NewPass123!");
     }
 
     @Test
-    @DisplayName("Internal OTP login handshake rejected with 403 when secret is missing or invalid")
-    void internalOtpLogin_invalidSecret_forbidden() throws Exception {
-        Map<String, String> body = Map.of("email", "jane@example.com");
+    @DisplayName("Internal resetPassword returns 404 when customer not found")
+    void resetPassword_customerNotFound_notFound() throws Exception {
+        doThrow(new IllegalArgumentException("Customer not found"))
+                .when(customerAuthService).resetPassword("unknown@example.com", "NewPass123!");
 
-        mockMvc.perform(post("/api/internal/customer/otp-login")
+        InternalResetPasswordRequest body = new InternalResetPasswordRequest("unknown@example.com", "NewPass123!");
+
+        mockMvc.perform(post("/api/internal/customer/reset-password")
+                        .header("X-Internal-Secret", SECRET)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("Customer not found"));
+    }
+
+    @Test
+    @DisplayName("Internal resetPassword rejected with 403 when secret is missing or invalid")
+    void resetPassword_invalidSecret_forbidden() throws Exception {
+        InternalResetPasswordRequest body = new InternalResetPasswordRequest("jane@example.com", "NewPass123!");
+
+        mockMvc.perform(post("/api/internal/customer/reset-password")
                         .header("X-Internal-Secret", "wrong-secret")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(body)))

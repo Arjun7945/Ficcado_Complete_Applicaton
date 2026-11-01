@@ -661,7 +661,7 @@ export default function CheckoutPage() {
 
           <div className="space-y-2">
             <span className="text-[11px] font-bold uppercase tracking-widest text-[var(--primary)] bg-[var(--primary)]/10 px-3 py-1 rounded-full border border-[var(--primary)]/20">
-              Verified Checkout Only
+              Customer Checkout Only
             </span>
             <h1 className="text-2xl md:text-3xl font-900 text-[var(--text-main)] tracking-tight">
               Customer Log In Required
@@ -745,18 +745,18 @@ export default function CheckoutPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
           {/* Left Column: Customer Profile & Addresses & Delivery */}
           <div className="lg:col-span-7 space-y-6">
-            {/* Section 1: Verified Account Summary Card */}
+            {/* Section 1: Customer Account Summary Card */}
             <div id="checkout-verified-account-card" className="card p-5 md:p-6 rounded-3xl bg-[var(--bg-surface)] border border-[var(--border-light)] shadow-xs space-y-4">
               <div className="flex items-center justify-between border-b border-[var(--border-light)] pb-3">
                 <div className="flex items-center gap-2">
-                  <ShieldCheck size={18} className="text-emerald-500" />
+                  <ShieldCheck size={18} className="text-[var(--primary)]" />
                   <h2 className="text-base font-800 text-[var(--text-main)]">
-                    1. Verified Customer Account
+                    1. Account Details
                   </h2>
                 </div>
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
-                  <Check size={10} strokeWidth={3} />
-                  Verified
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[var(--primary-light)] text-[var(--primary)] border border-[var(--border-light)]">
+                  <User size={10} strokeWidth={2.5} />
+                  Account details
                 </span>
               </div>
 
@@ -768,7 +768,7 @@ export default function CheckoutPage() {
                   </p>
                 </div>
                 <div className="p-3 rounded-2xl bg-[var(--bg-surface-alt)] border border-[var(--border-light)]">
-                  <span className="text-[10px] uppercase font-bold text-[var(--text-muted)] tracking-wider block">Verified Phone</span>
+                  <span className="text-[10px] uppercase font-bold text-[var(--text-muted)] tracking-wider block">Phone</span>
                   <p id="checkout-customer-phone" className="text-xs font-bold text-[var(--text-main)] mt-0.5 truncate">
                     +91 {customer?.phone || '—'}
                   </p>

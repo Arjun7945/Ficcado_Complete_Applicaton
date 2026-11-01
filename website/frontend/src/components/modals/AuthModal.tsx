@@ -419,11 +419,12 @@ export function AuthModal() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@example.com"
-                    className="input-field w-full h-10 pl-9 pr-3 rounded-xl bg-[var(--bg-surface-alt)] border border-[var(--border-light)] text-xs text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]"
+                    style={{ paddingLeft: '2.75rem' }}
+                    className="input-field w-full h-10 pl-11 pr-3 rounded-xl bg-[var(--bg-surface-alt)] border border-[var(--border-light)] text-xs text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]"
                   />
                   <Mail
                     size={15}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
                   />
                 </div>
               </div>
@@ -460,11 +461,12 @@ export function AuthModal() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter your password"
-                    className="input-field w-full h-10 pl-9 pr-3 rounded-xl bg-[var(--bg-surface-alt)] border border-[var(--border-light)] text-xs text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]"
+                    style={{ paddingLeft: '2.75rem' }}
+                    className="input-field w-full h-10 pl-11 pr-3 rounded-xl bg-[var(--bg-surface-alt)] border border-[var(--border-light)] text-xs text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]"
                   />
                   <Lock
                     size={15}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
                   />
                 </div>
               </div>
@@ -507,11 +509,12 @@ export function AuthModal() {
                     value={regName}
                     onChange={(e) => setRegName(e.target.value)}
                     placeholder="Full name"
-                    className="input-field w-full h-10 pl-9 pr-3 rounded-xl bg-[var(--bg-surface-alt)] border border-[var(--border-light)] text-xs text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]"
+                    style={{ paddingLeft: '2.75rem' }}
+                    className="input-field w-full h-10 pl-11 pr-3 rounded-xl bg-[var(--bg-surface-alt)] border border-[var(--border-light)] text-xs text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]"
                   />
                   <User
                     size={15}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
                   />
                 </div>
               </div>
@@ -533,11 +536,12 @@ export function AuthModal() {
                     value={regEmail}
                     onChange={(e) => setRegEmail(e.target.value)}
                     placeholder="you@example.com"
-                    className="input-field w-full h-10 pl-9 pr-3 rounded-xl bg-[var(--bg-surface-alt)] border border-[var(--border-light)] text-xs text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]"
+                    style={{ paddingLeft: '2.75rem' }}
+                    className="input-field w-full h-10 pl-11 pr-3 rounded-xl bg-[var(--bg-surface-alt)] border border-[var(--border-light)] text-xs text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]"
                   />
                   <Mail
                     size={15}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
                   />
                 </div>
               </div>
@@ -562,7 +566,8 @@ export function AuthModal() {
                       if (phoneFieldError) setPhoneFieldError(null);
                     }}
                     placeholder="10-digit mobile number"
-                    className={`input-field w-full h-10 pl-9 pr-3 rounded-xl bg-[var(--bg-surface-alt)] border text-xs text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:outline-none ${
+                    style={{ paddingLeft: '2.75rem' }}
+                    className={`input-field w-full h-10 pl-11 pr-3 rounded-xl bg-[var(--bg-surface-alt)] border text-xs text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:outline-none ${
                       phoneFieldError
                         ? 'border-[var(--accent-red)] focus:border-[var(--accent-red)]'
                         : 'border-[var(--border-light)] focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]'
@@ -570,7 +575,7 @@ export function AuthModal() {
                   />
                   <Phone
                     size={15}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
                   />
                 </div>
                 {phoneFieldError && (
@@ -598,11 +603,12 @@ export function AuthModal() {
                     value={regPassword}
                     onChange={(e) => setRegPassword(e.target.value)}
                     placeholder="Enter your password"
-                    className="input-field w-full h-10 pl-9 pr-3 rounded-xl bg-[var(--bg-surface-alt)] border border-[var(--border-light)] text-xs text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]"
+                    style={{ paddingLeft: '2.75rem' }}
+                    className="input-field w-full h-10 pl-11 pr-3 rounded-xl bg-[var(--bg-surface-alt)] border border-[var(--border-light)] text-xs text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]"
                   />
                   <Lock
                     size={15}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
                   />
                 </div>
               </div>
@@ -622,11 +628,12 @@ export function AuthModal() {
                     value={regAddress}
                     onChange={(e) => setRegAddress(e.target.value)}
                     placeholder="House/Apt, Street, City, Pincode"
-                    className="input-field w-full p-2.5 pl-9 rounded-xl bg-[var(--bg-surface-alt)] border border-[var(--border-light)] text-xs text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)] resize-none"
+                    style={{ paddingLeft: '2.75rem' }}
+                    className="input-field w-full p-2.5 pl-11 rounded-xl bg-[var(--bg-surface-alt)] border border-[var(--border-light)] text-xs text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)] resize-none"
                   />
                   <MapPin
                     size={15}
-                    className="absolute left-3 top-3 text-[var(--text-muted)]"
+                    className="absolute left-3.5 top-3 text-[var(--text-muted)]"
                   />
                 </div>
               </div>
@@ -672,11 +679,12 @@ export function AuthModal() {
                         value={forgotEmail}
                         onChange={(e) => setForgotEmail(e.target.value)}
                         placeholder="you@example.com"
-                        className="input-field w-full h-10 pl-9 pr-3 rounded-xl bg-[var(--bg-surface-alt)] border border-[var(--border-light)] text-xs text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]"
+                        style={{ paddingLeft: '2.75rem' }}
+                        className="input-field w-full h-10 pl-11 pr-3 rounded-xl bg-[var(--bg-surface-alt)] border border-[var(--border-light)] text-xs text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]"
                       />
                       <Mail
                         size={15}
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
+                        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
                       />
                     </div>
                   </div>
@@ -753,7 +761,7 @@ export function AuthModal() {
                       />
                       <KeyRound
                         size={15}
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
+                        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
                       />
                     </div>
                   </div>
@@ -827,11 +835,12 @@ export function AuthModal() {
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                         placeholder="Enter your password"
-                        className="input-field w-full h-10 pl-9 pr-3 rounded-xl bg-[var(--bg-surface-alt)] border border-[var(--border-light)] text-xs text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]"
+                        style={{ paddingLeft: '2.75rem' }}
+                        className="input-field w-full h-10 pl-11 pr-3 rounded-xl bg-[var(--bg-surface-alt)] border border-[var(--border-light)] text-xs text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]"
                       />
                       <Lock
                         size={15}
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
+                        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
                       />
                     </div>
                   </div>
@@ -854,11 +863,12 @@ export function AuthModal() {
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="Re-enter new password"
-                        className="input-field w-full h-10 pl-9 pr-3 rounded-xl bg-[var(--bg-surface-alt)] border border-[var(--border-light)] text-xs text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]"
+                        style={{ paddingLeft: '2.75rem' }}
+                        className="input-field w-full h-10 pl-11 pr-3 rounded-xl bg-[var(--bg-surface-alt)] border border-[var(--border-light)] text-xs text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]"
                       />
                       <Lock
                         size={15}
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
+                        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
                       />
                     </div>
                   </div>

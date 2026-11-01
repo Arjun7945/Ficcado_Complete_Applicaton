@@ -4,6 +4,7 @@
 // =============================================================================
 
 import { API_CONFIG } from './config';
+import { getCustomerToken } from './sessionToken';
 
 export interface ApiResponse<T = unknown> {
   success: boolean;
@@ -77,15 +78,23 @@ export async function apiClient<T>(
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+    ...((fetchOptions.headers as Record<string, string>) || {}),
+  };
+
+  // Defense-in-depth: inject session Bearer token throughout the whole frontend
+  const token = getCustomerToken();
+  if (token && !headers['Authorization'] && !headers['authorization']) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   try {
     const res = await fetch(url, {
       credentials: fetchOptions.credentials || 'include',
       ...fetchOptions,
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-        ...fetchOptions.headers,
-      },
+      headers,
       signal: controller.signal,
     });
 

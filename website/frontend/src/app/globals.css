@@ -493,28 +493,30 @@ html {
 }
 
 /* Input field */
-.input-field {
-  width: 100%;
-  padding: 0.8125rem 1rem;
-  border: 1.5px solid var(--border-light);
-  border-radius: var(--radius-sm);
-  background: var(--bg-surface-alt);
-  color: var(--text-main);
-  font-family: inherit;
-  font-size: 0.9375rem;
-  line-height: 1.5;
-  outline: none;
-  transition: border-color var(--duration-fast) var(--ease-out),
-              box-shadow var(--duration-fast) var(--ease-out);
-}
+@layer components {
+  .input-field {
+    width: 100%;
+    padding: 0.8125rem 1rem;
+    border: 1.5px solid var(--border-light);
+    border-radius: var(--radius-sm);
+    background: var(--bg-surface-alt);
+    color: var(--text-main);
+    font-family: inherit;
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    outline: none;
+    transition: border-color var(--duration-fast) var(--ease-out),
+                box-shadow var(--duration-fast) var(--ease-out);
+  }
 
-.input-field::placeholder {
-  color: var(--text-light);
-}
+  .input-field::placeholder {
+    color: var(--text-light);
+  }
 
-.input-field:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--primary-glow);
+  .input-field:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-glow);
+  }
 }
 
 /* Status badge colours */

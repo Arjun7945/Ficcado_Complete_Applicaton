@@ -20,6 +20,7 @@ import {
   logoutCustomer as apiLogout,
 } from '@/lib/api/auth';
 import { ApiError } from '@/lib/api/client';
+import { setCustomerToken, clearCustomerToken } from '@/lib/api/sessionToken';
 import { IdleTimeoutPromptModal } from '@/components/modals/IdleTimeoutPromptModal';
 
 export const ACTIVITY_THROTTLE_MS = 2000;
@@ -92,6 +93,7 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
           }
         } catch (profileErr) {
           if (profileErr instanceof ApiError && profileErr.statusCode === 401) {
+            clearCustomerToken();
             setCustomer(null);
             setSessionNotice(null);
           } else if (profileErr instanceof ApiError && profileErr.statusCode === 503) {
@@ -100,11 +102,13 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
         }
       } else {
         // Session explicitly inactive (expired or invalid token)
+        clearCustomerToken();
         setCustomer(null);
         setSessionNotice(null);
       }
     } catch (err) {
       if (err instanceof ApiError && err.statusCode === 401) {
+        clearCustomerToken();
         setCustomer(null);
         setSessionNotice(null);
       } else if (err instanceof ApiError && err.statusCode === 503) {
@@ -124,6 +128,7 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
       await apiLogout();
       broadcast({ type: 'LOGOUT' });
     } finally {
+      clearCustomerToken();
       setCustomer(null);
       setShowIdlePrompt(false);
       setSessionNotice(null);
@@ -148,11 +153,15 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
               setShowIdlePrompt(false);
               break;
             case 'LOGOUT':
+              clearCustomerToken();
               setCustomer(null);
               setShowIdlePrompt(false);
               setSessionNotice(null);
               break;
             case 'LOGIN':
+              if (data.token && typeof data.token === 'string') {
+                setCustomerToken(data.token);
+              }
               refreshProfile();
               break;
             case 'PAUSE':
@@ -327,9 +336,12 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
     try {
       const res = await apiLoginPassword(email, pass);
       if (res.success && res.customer) {
+        if (res.token) {
+          setCustomerToken(res.token);
+        }
         setCustomer(res.customer);
         lastActivityRef.current = Date.now();
-        broadcast({ type: 'LOGIN' });
+        broadcast({ type: 'LOGIN', token: res.token });
         return { success: true };
       }
       return { success: false, message: res.message || 'Login failed' };
@@ -338,14 +350,16 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-
   const register = async (data: CustomerRegistrationData) => {
     try {
       const res = await apiRegister(data);
       if (res.success && res.customer) {
+        if (res.token) {
+          setCustomerToken(res.token);
+        }
         setCustomer(res.customer);
         lastActivityRef.current = Date.now();
-        broadcast({ type: 'LOGIN' });
+        broadcast({ type: 'LOGIN', token: res.token });
         return { success: true };
       }
       return { success: false, message: res.message || 'Registration failed' };

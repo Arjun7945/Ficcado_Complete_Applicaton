@@ -200,7 +200,7 @@ export default function AccountPage() {
           <button
             type="button"
             onClick={() => openModal('authModal')}
-            className="flex-1 h-11 rounded-xl bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white text-xs font-bold transition-all active:scale-95 shadow-btn cursor-pointer"
+            className="flex-1 h-11 rounded-xl bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[var(--text-inverse)] text-xs font-bold transition-all active:scale-95 shadow-btn cursor-pointer"
           >
             Sign In or Register
           </button>
@@ -245,7 +245,7 @@ export default function AccountPage() {
       {/* Profile Overview Card */}
       <div className="p-5 sm:p-6 rounded-3xl bg-[var(--bg-surface)] border border-[var(--border-light)] shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-4">
-          <div className="flex h-14 w-14 sm:h-16 sm:w-16 shrink-0 items-center justify-center rounded-2xl bg-[var(--primary)] text-white font-black text-xl shadow-xs">
+          <div className="flex h-14 w-14 sm:h-16 sm:w-16 shrink-0 items-center justify-center rounded-2xl bg-[var(--primary)] text-[var(--text-inverse)] font-black text-xl shadow-xs">
             {customer.name?.charAt(0) || 'C'}
           </div>
           <div className="space-y-1">
@@ -297,7 +297,7 @@ export default function AccountPage() {
           onClick={() => setActiveTab('orders')}
           className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
             activeTab === 'orders'
-              ? 'bg-[var(--bg-surface)] text-[var(--text-main)] shadow-xs'
+              ? 'bg-[var(--primary)] text-[var(--text-inverse)] shadow-sm'
               : 'text-[var(--text-secondary)] hover:text-[var(--text-main)]'
           }`}
         >
@@ -309,7 +309,7 @@ export default function AccountPage() {
           onClick={() => setActiveTab('addresses')}
           className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
             activeTab === 'addresses'
-              ? 'bg-[var(--bg-surface)] text-[var(--text-main)] shadow-xs'
+              ? 'bg-[var(--primary)] text-[var(--text-inverse)] shadow-sm'
               : 'text-[var(--text-secondary)] hover:text-[var(--text-main)]'
           }`}
         >
@@ -321,7 +321,7 @@ export default function AccountPage() {
           onClick={() => setActiveTab('profile')}
           className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
             activeTab === 'profile'
-              ? 'bg-[var(--bg-surface)] text-[var(--text-main)] shadow-xs'
+              ? 'bg-[var(--primary)] text-[var(--text-inverse)] shadow-sm'
               : 'text-[var(--text-secondary)] hover:text-[var(--text-main)]'
           }`}
         >
@@ -347,7 +347,7 @@ export default function AccountPage() {
               </p>
               <Link
                 href="/"
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--primary)] text-white text-xs font-bold hover:bg-[var(--primary-hover)] transition-colors mt-2"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--primary)] text-[var(--text-inverse)] text-xs font-bold hover:bg-[var(--primary-hover)] transition-colors mt-2"
               >
                 <span>Browse Latest Drops</span>
                 <ChevronRight size={14} />
@@ -502,7 +502,7 @@ export default function AccountPage() {
               <button
                 type="submit"
                 disabled={savingAddress || !newAddress.trim()}
-                className="px-5 py-2.5 rounded-xl bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white text-xs font-bold flex items-center gap-2 active:scale-95 transition-all cursor-pointer shadow-btn disabled:opacity-50"
+                className="px-5 py-2.5 rounded-xl bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[var(--text-inverse)] text-xs font-bold flex items-center gap-2 active:scale-95 transition-all cursor-pointer shadow-btn disabled:opacity-50"
               >
                 {savingAddress ? (
                   <Loader2 size={14} className="animate-spin" />
@@ -545,9 +545,11 @@ export default function AccountPage() {
               </label>
               <input
                 type="email"
+                readOnly
                 disabled
                 value={customer.email}
-                className="w-full h-10 px-3.5 rounded-xl bg-[var(--bg-surface-alt)] border border-[var(--border-light)] text-xs text-[var(--text-muted)] cursor-not-allowed"
+                className="w-full h-10 px-3.5 rounded-xl bg-[var(--bg-surface-alt)] disabled:bg-[var(--bg-surface-alt)] disabled:opacity-100 disabled:text-[var(--text-muted)] border border-[var(--border-light)] text-xs text-[var(--text-muted)] cursor-not-allowed select-none"
+                style={{ backgroundColor: 'var(--bg-surface-alt)', color: 'var(--text-muted)' }}
               />
               <p className="text-[10px] text-[var(--text-muted)] mt-1">
                 Your email is tied to your account orders and account security.
@@ -570,7 +572,7 @@ export default function AccountPage() {
             <button
               type="submit"
               disabled={savingProfile}
-              className="px-5 py-2.5 rounded-xl bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white text-xs font-bold flex items-center gap-2 active:scale-95 transition-all cursor-pointer shadow-btn disabled:opacity-50"
+              className="px-5 py-2.5 rounded-xl bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[var(--text-inverse)] text-xs font-bold flex items-center gap-2 active:scale-95 transition-all cursor-pointer shadow-btn disabled:opacity-50"
             >
               {savingProfile ? (
                 <Loader2 size={14} className="animate-spin" />

@@ -32,10 +32,12 @@ import java.util.List;
 public class CustomerJwtAuthenticationFilter extends OncePerRequestFilter {
 
     public static final String COOKIE_NAME = "ficcado_customer_session";
+    public static final String BACKGROUND_HEADER = "X-Ficcado-Background";
 
     private final CustomerAuthService customerAuthService;
 
-    public static final String BACKGROUND_HEADER = "X-Ficcado-Background";
+    @org.springframework.beans.factory.annotation.Value("${app.gateway.shared-secret:ficcado-gateway-internal-secret-2026}")
+    private String gatewaySharedSecret;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -67,6 +69,27 @@ public class CustomerJwtAuthenticationFilter extends OncePerRequestFilter {
                     log.error("Session store unavailable during customer authentication: {}", e.getMessage());
                     writeSessionUnavailableResponse(response, e.getMessage());
                     return; // Fail closed! Do not proceed to protected endpoints.
+                }
+            } else {
+                // Secondary fallback: Gateway authentication via verified X-Gateway-Secret and X-Customer-Id
+                String gatewaySecret = request.getHeader("X-Gateway-Secret");
+                String customerIdHeader = request.getHeader("X-Customer-Id");
+                if (gatewaySecret != null && gatewaySecret.equals(gatewaySharedSecret)
+                        && customerIdHeader != null && !customerIdHeader.isBlank()) {
+                    try {
+                        Long customerId = Long.parseLong(customerIdHeader.trim());
+                        customerAuthService.getCustomerById(customerId).ifPresent(customer -> {
+                            var auth = new UsernamePasswordAuthenticationToken(
+                                    customer,
+                                    null,
+                                    List.of(new SimpleGrantedAuthority(CustomerAuthService.CUSTOMER_ROLE))
+                            );
+                            SecurityContextHolder.getContext().setAuthentication(auth);
+                            log.debug("Authenticated customer via gateway headers [id={}, email={}]", customer.getId(), customer.getEmailId());
+                        });
+                    } catch (NumberFormatException e) {
+                        log.warn("Invalid X-Customer-Id header from gateway: {}", customerIdHeader);
+                    }
                 }
             }
         }

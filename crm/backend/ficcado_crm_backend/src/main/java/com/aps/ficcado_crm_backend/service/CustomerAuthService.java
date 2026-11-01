@@ -259,6 +259,11 @@ public class CustomerAuthService {
         return revokedTokenRepository.existsByTokenHash(hashToken(rawToken));
     }
 
+    public Optional<Customer> getCustomerById(Long customerId) {
+        if (customerId == null) return Optional.empty();
+        return customerRepository.findById(customerId);
+    }
+
     // ── Mapping & Helpers ──────────────────────────────────────────────────────
 
     public CustomerProfileResponse mapToProfileResponse(Customer c) {

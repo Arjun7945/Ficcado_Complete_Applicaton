@@ -62,6 +62,7 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
           onError={() => setImageError(true)}
           priority={isPriority}
           loading={isPriority ? 'eager' : 'lazy'}
+          unoptimized={displaySrc.startsWith('data:')}
         />
 
         {/* New Launch badge */}

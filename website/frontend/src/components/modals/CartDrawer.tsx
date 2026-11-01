@@ -125,6 +125,7 @@ export function CartDrawer() {
                       sizes="72px"
                       className="object-cover"
                       loading="eager"
+                      unoptimized={Boolean((item.flatImg || item.img || '').startsWith('data:'))}
                     />
                   </div>
 

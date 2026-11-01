@@ -20,6 +20,7 @@ import { getSiteUrl } from '@/lib/siteUrl';
 import { ImageZoomModal } from '@/components/modals/ImageZoomModal';
 import { ImageGestureHint } from '@/components/ui/ImageGestureHint';
 import { getColorName, getColorKeyword } from '@/lib/colors';
+import { isRenderableImageSrc } from '@/lib/imageSource';
 import type { Product, SizeOption } from '@/types';
 
 const DEFAULT_SIZES: SizeOption[] = ['S', 'M', 'L', 'XL'];
@@ -54,18 +55,23 @@ function ProductModalDialog({ product }: { product: Product }) {
   const selectedColor = userColor || (product.colors && product.colors[0]) || 'Standard';
 
   const resolvedFromSlug = getItemImages(product.slug || product.name);
-  const rawImages =
-    product.images && product.images.length > 0 && product.images.every((img) => img.startsWith('/') || img.startsWith('http'))
-      ? product.images
-      : resolvedFromSlug.length > 0 && resolvedFromSlug[0] !== PLACEHOLDER_IMAGE
-      ? resolvedFromSlug
-      : product.img && (product.img.startsWith('/') || product.img.startsWith('http'))
-      ? [product.img]
-      : resolvedFromSlug;
+  const candidateImages = product.images && product.images.length > 0
+    ? product.images.filter(isRenderableImageSrc)
+    : [];
+
+  const rawImages = candidateImages.length > 0
+    ? candidateImages
+    : resolvedFromSlug.length > 0 && resolvedFromSlug[0] !== PLACEHOLDER_IMAGE
+    ? resolvedFromSlug
+    : isRenderableImageSrc(product.img)
+    ? [product.img]
+    : isRenderableImageSrc(product.image_main)
+    ? [product.image_main]
+    : resolvedFromSlug;
 
   const colorKeyword = getColorKeyword(selectedColor);
   const colorFiltered = colorKeyword
-    ? rawImages.filter((img) => img.toLowerCase().includes(colorKeyword))
+    ? rawImages.filter((img) => !img.startsWith('data:') && img.toLowerCase().includes(colorKeyword))
     : [];
   const images = colorFiltered.length > 0 ? colorFiltered : rawImages;
   const activeImage = images[activeImageIdx] || images[0] || PLACEHOLDER_IMAGE;
@@ -88,14 +94,16 @@ function ProductModalDialog({ product }: { product: Product }) {
 
   const siteUrl = getSiteUrl();
 
+  const jsonLdImages = images
+    .filter((img) => !img.startsWith('data:'))
+    .map((img) => (img.startsWith('http') ? img : `${siteUrl}${img.startsWith('/') ? '' : '/'}${img}`));
+
   const productJsonLd: Record<string, unknown> = {
     '@context': 'https://schema.org',
     '@type': 'Product',
     '@id': `${siteUrl}/#product-${product.id}`,
     name: product.name,
-    image: images.map((img) =>
-      img.startsWith('http') ? img : `${siteUrl}${img.startsWith('/') ? '' : '/'}${img}`
-    ),
+    image: jsonLdImages.length > 0 ? jsonLdImages : [`${siteUrl}/images/placeholder.webp`],
     description:
       product.desc ||
       product.description ||
@@ -211,6 +219,7 @@ function ProductModalDialog({ product }: { product: Product }) {
                 className="object-cover transition-transform duration-500 group-hover:scale-105"
                 priority
                 loading="eager"
+                unoptimized={activeImage.startsWith('data:')}
               />
               {/* Tap to Zoom pill badge */}
               <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-md text-white text-[11px] font-bold shadow-lg transition-all group-hover:scale-105">
@@ -248,6 +257,7 @@ function ProductModalDialog({ product }: { product: Product }) {
                       sizes="48px"
                       className="object-cover"
                       loading="eager"
+                      unoptimized={img.startsWith('data:')}
                     />
                   </button>
                 ))}

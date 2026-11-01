@@ -10,6 +10,7 @@ import {
   getSecondaryItemImage,
   PLACEHOLDER_IMAGE,
 } from '@/lib/itemImages';
+import { isRenderableImageSrc } from '@/lib/imageSource';
 
 export const PLACEHOLDER_PRODUCT_IMAGE = PLACEHOLDER_IMAGE;
 export const PLACEHOLDER_BLUR_DATA_URL =
@@ -28,7 +29,7 @@ const CATEGORY_IMAGE_MAP: Record<string, string> = {
  * Resolves main image URL for a given product slug or image path
  */
 export function getProductMainImage(slug?: string, imageMain?: string): string {
-  if (imageMain && (imageMain.startsWith('/') || imageMain.startsWith('http'))) {
+  if (isRenderableImageSrc(imageMain)) {
     return imageMain;
   }
   if (slug) {
@@ -41,7 +42,7 @@ export function getProductMainImage(slug?: string, imageMain?: string): string {
  * Resolves flat lay image URL for cart & bag thumbnails
  */
 export function getProductFlatImage(slug?: string, flatImg?: string): string {
-  if (flatImg && (flatImg.startsWith('/') || flatImg.startsWith('http'))) {
+  if (isRenderableImageSrc(flatImg)) {
     return flatImg;
   }
   if (slug) {

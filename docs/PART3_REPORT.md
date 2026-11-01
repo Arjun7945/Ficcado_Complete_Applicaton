@@ -13,9 +13,9 @@
 | **P3-0** | Baseline & Live Reproduction (Zero Code Changes) | **Completed & Verified** | All 5 containers up; all 7 health endpoints UP; baseline recorded across all 10 suites; 7 issues reproduced live; `docs/PART3_DIAGNOSIS.md` written. |
 | **P3-1** | ISS-04: Gateway IPv6 Upstream Failure | **Completed & Committed** | Added `resolver 127.0.0.11 ipv6=off valid=30s;` and dynamic backend variables. Latency dropped ~1100ms ➔ 28ms. 0 network unreachable errors. Commit: `b318af1`. |
 | **P3-2** | ISS-01: Customer Session Instability & Logout on Page Change | **Completed & Committed** | Configured 401 entry point; resilient state rule in `CustomerAuthContext.tsx`; 30s throttled route check; dedicated `/api/customer/auth/logout` on `general_api`; 429/503 ProblemDetail error pages with CORS. All 7 real Chrome acceptance checks pass. Commit: `ea7dc7b`. |
-| **P3-3** | ISS-05: Customer Registration Phone Format Normalization | **Completed & Verified** | Canonical `PhoneNormalizer` utility; compact constructor normalization in `CustomerAuthDto`; client-side helper & `AuthModal` validation UI; 11 backend normalizer tests + 5 controller tests + 5 frontend integration tests pass 100%. |
-| **P3-4** | ISS-02: Product Modal Blank Image for Data-URL Items | *Next Up* | |
-| **P3-5** | ISS-03: Tablet & Desktop Header Responsive Layout Refactor | *Pending* | |
+| **P3-3** | ISS-05: Customer Registration Phone Format Normalization | **Completed & Committed** | Canonical `PhoneNormalizer` utility; compact constructor normalization in `CustomerAuthDto`; client-side helper & `AuthModal` validation UI; 11 backend normalizer tests + 5 controller tests + 5 frontend integration tests pass 100%. Commit: `be3ea61`. |
+| **P3-4** | ISS-02: Product Modal Blank Image for Data-URL Items | **Completed & Verified** | Created `isRenderableImageSrc` validator; updated `ProductModal`, `ProductCard`, `CartDrawer` with `unoptimized` flag; protected JSON-LD against data URL bloat; real Chrome Playwright test verified `darlix` renders image at 736x1104. |
+| **P3-5** | ISS-03: Tablet & Desktop Header Responsive Layout Refactor | *Next Up* | |
 | **P3-6** | ISS-06 & ISS-07: CRM Middleware Matcher & Next.js Proxy Migration | *Pending* | |
 | **P3-7** | Live End-to-End Proof, Regression & Documentation | *Pending* | |
 
@@ -138,4 +138,43 @@ Detailed diagnostic evidence, log outputs, and root causes are documented in [`d
   - `scripts/tests/phone-normalization.test.mjs`: 5/5 tests pass (3 pure function tests + 2 live gateway integration tests against port 8000).
   - Full website test suite: 110/110 tests pass (including 19 suites).
   - `npm run check:brand`: 100% clean (strictly Ficcado double C, prefix FIC-).
+  - Commit: `be3ea61` (`P3-3: normalize customer registration phone format`).
+
+---
+
+## Phase P3-4: Product Modal Blank Image for Data-URL Items (ISS-02)
+
+- **Issue:** Catalog items whose `images` array contains base64 data URLs (e.g. `darlix`, containing two high-resolution `data:image/jpeg;base64,...` items) displayed a blank or fallback placeholder image (`/images/placeholder.webp`) when opened in `#productModal`.
+- **Root Cause Analysis:**
+  1. `ProductModal.tsx` filtered candidate images using `.filter(img => img.startsWith('/') || img.startsWith('http'))`. This check strictly stripped all `data:image/` URLs.
+  2. Because the filtered array became empty, the modal fell back to `resolvedFromSlug`, which for `darlix` has no disk assets in `/images/products/`, ultimately defaulting to `placeholder.webp`.
+  3. Swatch color keyword filtering checked `img.toLowerCase().includes(colorKeyword)`. On base64 data URLs, this caused either false substring matches or wiped out all images.
+  4. Next.js `<Image>` components attempt to pass `src` through Next's image optimization endpoint (`/_next/image?url=...`). For huge base64 data URLs (~300KB), this causes optimization failures or blank render unless `unoptimized={true}` is set.
+  5. In JSON-LD schema, mapping `data:` URLs to `${siteUrl}/data:...` produced invalid schema URLs.
+- **Implementation:**
+  - **Image Validator (`src/lib/imageSource.ts`):**
+    - Created `isRenderableImageSrc(src: unknown): src is string` supporting root-relative paths (`/`), HTTP/HTTPS URLs (`http://`, `https://`), and base64 raster data URLs (`data:image/(png|jpeg|jpg|webp|gif|avif);base64,...`).
+    - Explicitly rejects SVG data URLs (`data:image/svg+xml`) to prevent script injection.
+    - Exported `isDataUrl(src)`.
+  - **Image Helpers (`src/lib/images.ts`):**
+    - Updated `getProductMainImage` and `getProductFlatImage` to use `isRenderableImageSrc`.
+  - **Product Modal (`ProductModal.tsx`):**
+    - Candidate images now safely filter with `isRenderableImageSrc(img)`.
+    - Swatch color keyword filtering excludes data URLs (`!img.startsWith('data:')`) and safely falls back to `rawImages` if no color matches.
+    - JSON-LD filters out base64 data URLs to prevent bloated schema payloads.
+    - Main image and gallery thumbnails set `unoptimized={activeImage.startsWith('data:')}` and `unoptimized={img.startsWith('data:')}`.
+  - **Product Card & Cart Drawer (`ProductCard.tsx` & `CartDrawer.tsx`):**
+    - Added `unoptimized` flag whenever displaying data URL sources.
+- **Verification:**
+  - `scripts/tests/product-modal-image.test.mjs`: 5/5 unit tests pass (relative, http, https, base64 raster, svg rejection, invalid schemes).
+  - `scripts/tests/product-modal-image-acceptance.mjs`: Automated acceptance test in real Chrome via Playwright:
+    - Navigated to storefront homepage `http://localhost:3000`.
+    - Clicked `darlix` product card (ID 2).
+    - Verified `#productModal` opened cleanly.
+    - Asserted main image `src` starts with `data:image/jpeg;base64,...`.
+    - Asserted image rendered in browser with `naturalWidth = 736` and `naturalHeight = 1104` (naturalWidth > 0).
+    - Asserted both gallery thumbnails rendered in the thumbnail strip with base64 sources.
+  - Full website test suite: 115/115 tests pass across 28 suites.
+  - `npm run check:brand`: 100% clean (strictly Ficcado double C, prefix FIC-).
+
 

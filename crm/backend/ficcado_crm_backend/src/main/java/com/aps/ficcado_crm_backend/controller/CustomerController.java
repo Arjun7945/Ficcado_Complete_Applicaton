@@ -12,6 +12,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -56,12 +57,15 @@ public class CustomerController {
                 .orElse(ResponseEntity.noContent().build());
     }
 
-
     @PutMapping
-    @Operation(summary = "Update customer profile and addresses")
+    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN')")
+    @Operation(summary = "Update customer profile and addresses by phone")
     public ResponseEntity<CustomerResponse> update(@Valid @RequestBody CustomerUpdateRequest request,
                                                    @AuthenticationPrincipal Admin admin) {
         log.info("Updating customer profile for phone: {}", request.phone());
+        if (customerService.findByPhone(request.phone()).isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
         Customer updated = customerService.updateCustomer(
                 request.phone(),
                 request.name(),
@@ -70,5 +74,26 @@ public class CustomerController {
                 admin
         );
         return ResponseEntity.ok(CustomerMapper.toResponse(updated));
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN')")
+    @Operation(summary = "Update customer profile and addresses by ID")
+    public ResponseEntity<CustomerResponse> updateById(@PathVariable Long id,
+                                                       @Valid @RequestBody CustomerUpdateRequest request,
+                                                       @AuthenticationPrincipal Admin admin) {
+        log.info("Updating customer profile for ID: {}", id);
+        return customerService.findById(id)
+                .map(cust -> {
+                    Customer updated = customerService.updateCustomer(
+                            cust.getPhoneNumber(),
+                            request.name(),
+                            request.email(),
+                            request.addresses(),
+                            admin
+                    );
+                    return ResponseEntity.ok(CustomerMapper.toResponse(updated));
+                })
+                .orElse(ResponseEntity.notFound().build());
     }
 }

@@ -129,7 +129,16 @@ public class CustomerService {
             customer.setCustomerName(name.trim());
         }
         if (email != null) {
-            customer.setEmailId(email.trim());
+            String trimmedEmail = email.trim();
+            if (!trimmedEmail.isBlank()) {
+                customerRepository.findByEmailIdIgnoreCase(trimmedEmail).ifPresent(existing -> {
+                    if (!existing.getId().equals(customer.getId())) {
+                        throw new org.springframework.dao.DataIntegrityViolationException(
+                                "Email is already registered to another customer: " + trimmedEmail);
+                    }
+                });
+            }
+            customer.setEmailId(trimmedEmail);
         }
         if (addresses != null) {
             customer.getAddresses().clear();

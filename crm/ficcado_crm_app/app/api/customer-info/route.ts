@@ -54,9 +54,13 @@ export async function GET(request: Request) {
       headers: { cookie: cookieHeader },
     });
     const customers = (Array.isArray(rawCustomers) ? rawCustomers : []).map(formatCustomer);
-    return Response.json({ customers });
+    return Response.json(
+      { customers },
+      { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } }
+    );
   } catch (err: any) {
-    return Response.json({ error: err.message || "Couldn't load customer records." }, { status: 500 });
+    const status = typeof err.status === 'number' ? err.status : 500;
+    return Response.json({ error: err.message || "Couldn't load customer records." }, { status });
   }
 }
 
@@ -83,6 +87,10 @@ export async function PUT(request: Request) {
 
     return Response.json({ success: true, customer: formatCustomer(updated) });
   } catch (err: any) {
-    return Response.json({ error: err.message || "Couldn't update customer profile." }, { status: 500 });
+    const status = typeof err.status === 'number' ? err.status : 500;
+    return Response.json(
+      { error: err.message || "Couldn't update customer profile." },
+      { status }
+    );
   }
 }

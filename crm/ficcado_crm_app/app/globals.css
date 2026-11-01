@@ -561,15 +561,20 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* --- Modals / Detail Panels (Section 7.6) --- */
-.modal-backdrop {
+.modal-backdrop,
+.modal-overlay {
   position: fixed;
   inset: 0;
-  background-color: rgba(34,38,30,0.50);
-  z-index: 100;
+  background-color: rgba(34, 38, 30, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: var(--space-4);
   animation: fade-in 0.15s ease;
+  overflow-y: auto;
 }
 
 .modal {
@@ -581,6 +586,8 @@ h1, h2, h3, h4, h5, h6 {
   max-height: 90vh;
   overflow-y: auto;
   animation: slide-up 0.2s ease;
+  position: relative;
+  margin: auto;
 }
 
 .modal-lg {

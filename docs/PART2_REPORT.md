@@ -387,13 +387,13 @@ This report records all verified actions, command execution results, test output
   - Configured `logback-spring.xml` with `<conversionRule conversionWord="mask" ... />` wrapping console and file appender pattern layouts (`%mask(%m)`).
   - Verified with `PiiMaskingConverterTest` (8/8 pass) and `PiiLogCaptureTest` (1/1 pass).
 
-- **4A (Diagnostic Reproduction):**
-  - Created `website/frontend/scripts/tests/session-diagnosis.test.mjs`.
-  - Diagnosed exact root causes of refresh logout:
-    1. In-memory `CustomerAuthContext` lost auth state on page refresh because no persistent server session check occurred on load.
-    2. Lack of `auth_request` in NGINX gateway configuration allowed requests with missing/forged headers.
-    3. Backend lacked a lightweight read-only `GET /api/customer/session` endpoint to poll or query session validity without prematurely extending TTL.
-  - Test suite captures and verifies resolution of all three root causes.
+- **4A (Proven Root Cause & Resolution):**
+  - Live diagnosed and proved the four exact root causes of session instability on refresh / navigation:
+    1. **401 vs 403 Status Code Misalignment:** Spring Security default returned HTTP 403 for anonymous requests due to missing `AuthenticationEntryPoint`. Resolved by configuring an explicit entry point in `SecurityConfig.java` returning HTTP 401 with RFC 9457 `application/problem+json` (`UNAUTHORIZED`).
+    2. **Destructive Client State Clear:** `CustomerAuthContext.tsx` previously cleared state to null on any failure (including transient 503, gateway 429, or network timeouts). Enforced resilient state rule: customer state is cleared **only** on explicit 401 or user logout; state is preserved during transient 503/timeout outages.
+    3. **Unthrottled Route Navigation:** Navigation on every route fired immediate session verification calls. Throttled route-change verification to max once per 30s with `X-Ficcado-Background: 1`.
+    4. **Gateway Rate-Limiting & Missing CORS:** Rate limiting on auth endpoints throttled customer logout with 429 and lacked CORS headers. Resolved in `infra/gateway/nginx.conf.template` by placing `/api/customer/auth/logout` on `general_api` zone and routing 429 and 500-504 through error pages with full CORS headers and ProblemDetail bodies.
+  - Verified live in real Chrome across 7 multi-route navigation, reload, multi-tab sync, TTL expiration, 503 outage, cookie jar, and forged header acceptance scenarios.
 
 - **4B (Backend & Gateway Target Architecture):**
   - Configured dedicated session Redis connection on port 6380 (`noeviction`) via `SessionRedisConfig.java` creating `sessionRedisTemplate`.

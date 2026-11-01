@@ -60,6 +60,19 @@ public class SecurityConfig {
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
+                // Map unauthenticated requests to 401 ProblemDetail (403 reserved for authenticated but unauthorized)
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setStatus(jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED);
+                            response.setContentType("application/problem+json");
+                            response.setCharacterEncoding("UTF-8");
+                            String json = """
+                                    {"type":"urn:ficcado:unauthorized","title":"Unauthorized","status":401,"detail":"Customer session missing or expired","code":"UNAUTHORIZED","instance":"%s"}
+                                    """.formatted(request.getRequestURI()).trim();
+                            response.getWriter().write(json);
+                        })
+                )
+
                 // Route authorization
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()

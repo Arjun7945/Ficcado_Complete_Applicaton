@@ -66,8 +66,8 @@ http {
     # General API limit: 30 requests per second
     limit_req_zone $binary_remote_addr zone=general_api:10m rate=30r/s;
 
-    # Sensitive Auth limits: 5 requests per minute
-    limit_req_zone $binary_remote_addr zone=auth_limit:10m rate=5r/m;
+    # Sensitive Auth limits: 10 requests per minute with burst 10
+    limit_req_zone $binary_remote_addr zone=auth_limit:10m rate=10r/m;
 
     # OTP limits: 3 requests per minute
     limit_req_zone $binary_remote_addr zone=otp_limit:10m rate=3r/m;
@@ -339,9 +339,32 @@ http {
             proxy_set_header X-Forwarded-Proto $scheme;
         }
 
-        # ── Customer public auth routes (login, register, logout) ─────────────
+        # ── Customer Logout (Uses general_api to prevent rate-limit blocks on sign-out) ─
+        location = /api/customer/auth/logout {
+            limit_req zone=general_api burst=20 nodelay;
+
+            if ($request_method = 'OPTIONS') {
+                add_header 'Access-Control-Allow-Origin' $cors_origin always;
+                add_header 'Access-Control-Allow-Methods' 'POST, OPTIONS' always;
+                add_header 'Access-Control-Allow-Headers' 'Authorization, Content-Type, Accept, Origin, Cookie' always;
+                add_header 'Access-Control-Allow-Credentials' 'true' always;
+                add_header 'Content-Length' 0;
+                add_header 'Content-Type' 'text/plain charset=UTF-8';
+                return 204;
+            }
+
+            proxy_pass $ficcado_data_backend$request_uri;
+            proxy_http_version 1.1;
+            proxy_set_header Connection "";
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        # ── Customer public auth routes (login, register) ─────────────────────
         location /api/customer/auth/ {
-            limit_req zone=auth_limit burst=5 nodelay;
+            limit_req zone=auth_limit burst=10 nodelay;
 
             if ($request_method = 'OPTIONS') {
                 add_header 'Access-Control-Allow-Origin' $cors_origin always;
@@ -437,6 +460,26 @@ http {
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        # ── Rate-Limiting Error Page with CORS & ProblemDetail ───────────────
+        error_page 429 /429.json;
+        location = /429.json {
+            internal;
+            add_header 'Access-Control-Allow-Origin' $cors_origin always;
+            add_header 'Access-Control-Allow-Credentials' 'true' always;
+            default_type application/problem+json;
+            return 429 '{"type":"urn:ficcado:rate-limit-exceeded","title":"Too Many Requests","status":429,"detail":"Too many requests. Please slow down and try again later.","code":"RATE_LIMIT_EXCEEDED"}';
+        }
+
+        # ── Service Unavailable Error Page with CORS & ProblemDetail ──────────
+        error_page 500 502 503 504 =503 /503.json;
+        location = /503.json {
+            internal;
+            add_header 'Access-Control-Allow-Origin' $cors_origin always;
+            add_header 'Access-Control-Allow-Credentials' 'true' always;
+            default_type application/problem+json;
+            return 503 '{"type":"urn:ficcado:session-store-unavailable","title":"SESSION_STORE_UNAVAILABLE","status":503,"detail":"Session service temporarily unavailable","code":"SESSION_STORE_UNAVAILABLE"}';
         }
     }
 }

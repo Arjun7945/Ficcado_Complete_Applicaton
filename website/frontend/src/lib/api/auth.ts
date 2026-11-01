@@ -4,7 +4,7 @@
 // through the NGINX API Gateway to Ficcado-Data & Ficcado-Website-Data.
 // =============================================================================
 
-import { apiClient, ApiResponse } from './client';
+import { apiClient, ApiResponse, ApiError } from './client';
 import { API_CONFIG } from './config';
 
 export interface CustomerAddress {
@@ -133,15 +133,21 @@ export async function verifyLoginOtp(email: string, otp: string): Promise<Custom
 /**
  * Fetches the currently authenticated customer's profile using the session cookie.
  */
-export async function getCurrentCustomer(): Promise<CustomerProfile | null> {
+export async function getCurrentCustomer(headers?: Record<string, string>): Promise<CustomerProfile | null> {
   try {
     const res = await apiClient<{ success: boolean; data?: CustomerProfile }>(
       `${API_CONFIG.routes.customerAuth}/me`,
-      { timeoutMs: 3000 }
+      {
+        headers,
+        timeoutMs: 5000,
+      }
     );
     return res.data || null;
-  } catch {
-    return null;
+  } catch (err) {
+    if (err instanceof ApiError && err.statusCode === 401) {
+      return null;
+    }
+    throw err;
   }
 }
 
@@ -235,17 +241,21 @@ export interface CustomerSessionStatus {
  * Checks server-side customer session validity and remaining seconds.
  * Read-only: does NOT refresh the sliding idle window.
  */
-export async function checkCustomerSession(): Promise<CustomerSessionStatus> {
+export async function checkCustomerSession(headers?: Record<string, string>): Promise<CustomerSessionStatus> {
   try {
     return await apiClient<CustomerSessionStatus>('/api/customer/session', {
       method: 'GET',
       headers: {
         'X-Ficcado-Background': '1',
+        ...headers,
       },
-      timeoutMs: 3000,
+      timeoutMs: 5000,
     });
-  } catch {
-    return { active: false, remainingSeconds: 0 };
+  } catch (err) {
+    if (err instanceof ApiError && err.statusCode === 401) {
+      return { active: false, remainingSeconds: 0 };
+    }
+    throw err;
   }
 }
 

@@ -74,10 +74,19 @@
 - **Vulnerability:** Non-atomic check-then-act. If two orders arrive within the same millisecond, both check `existsByInvoiceNumber` simultaneously, find `false`, and attempt to insert identical invoice numbers, throwing `DataIntegrityViolationException`.
 - **Impact under 10k Users:** Spurious checkout failures and aborted orders during peak payment spikes.
 
-### 3.3 Customer Session Invalidation on Refresh (Hypothesis)
-- **Component:** `website/frontend/src/context/CustomerAuthContext.tsx` & `CustomerAuthController.java`
-- **Mechanism (Hypothesis):** Cross-port origin differences (port 3000 vs 8000), cookie header extraction during Next.js SSR hydration, and absence of a Redis session store are hypothesized to cause customer logout on navigation or page refresh.
-- **Resolution Path:** Per `Part2_Addendum.md` ADD-1 and P2-4A, the exact bug must be reproduced and proved under test before implementing the Redis sliding session solution.
+### 3.3 Customer Session Invalidation on Refresh & Navigation (Proven Root Cause)
+- **Components:** `website/frontend/src/context/CustomerAuthContext.tsx`, `website/frontend/src/lib/api/auth.ts`, `SecurityConfig.java`, and `infra/gateway/nginx.conf.template`.
+- **Mechanism (Proven Root Cause):**
+  1. **Status Code Misalignment (H1):** In `SecurityConfig.java`, unauthenticated requests without an explicit `AuthenticationEntryPoint` triggered Spring Security's default exception handling returning HTTP 403 Forbidden instead of HTTP 401 Unauthorized with RFC 9457 `application/problem+json` (`UNAUTHORIZED`).
+  2. **Destructive Client State Clear (H2):** In `CustomerAuthContext.tsx`, any non-200 or rejected request during background route-change inspection or SSR hydration cleared customer state (`setCustomer(null)`), causing transient errors (503 `SESSION_STORE_UNAVAILABLE`, network timeouts, or Gateway 429) to prematurely wipe customer state instead of gracefully preserving it.
+  3. **Unthrottled Route Navigation:** Navigation across routes triggered immediate unthrottled session checks on every pathname update, leading to request storms and race conditions during rapid client browsing.
+  4. **Gateway Rate-Limiting & Error Page Headers (ISS-04 / Rate Limiting):** The gateway brute-force `auth_limit` zone applied to `/api/customer/auth/logout`, causing logouts under burst traffic to receive HTTP 429 without CORS headers, which the browser interpreted as network failure (`ERR_FAILED`).
+- **Resolution (Implemented & Verified in Phase P3-2):**
+  - Added custom `AuthenticationEntryPoint` in `SecurityConfig.java` strictly returning HTTP 401 with RFC 9457 ProblemDetail (`urn:ficcado:unauthorized`).
+  - Updated `CustomerAuthContext.tsx` to enforce the resilient state rule: clear logged-in customer **only** on explicit 401 Unauthorized or explicit user logout; keep state and display non-blocking notification on 503 `SESSION_STORE_UNAVAILABLE`, network errors, or timeouts.
+  - Throttled background route-change verification to a maximum of once every 30 seconds with header `X-Ficcado-Background: 1`.
+  - Updated `infra/gateway/nginx.conf.template` with dedicated `/api/customer/auth/logout` on `general_api` zone (burst 20) and standardized error pages for 429 and 500-504 with full CORS headers and ProblemDetail bodies.
+  - Live verified across 7 real browser acceptance tests in Chrome through the NGINX gateway.
 
 ---
 

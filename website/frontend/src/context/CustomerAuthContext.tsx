@@ -21,6 +21,7 @@ import {
   verifyLoginOtp as apiVerifyOtp,
   logoutCustomer as apiLogout,
 } from '@/lib/api/auth';
+import { ApiError } from '@/lib/api/client';
 import { IdleTimeoutPromptModal } from '@/components/modals/IdleTimeoutPromptModal';
 
 export const IDLE_WARNING_SECONDS = 540; // 9 minutes
@@ -33,6 +34,7 @@ interface CustomerAuthContextType {
   isLoading: boolean;
   isSessionPaused: boolean;
   showIdlePrompt: boolean;
+  sessionNotice: string | null;
   loginWithPassword: (email: string, pass: string) => Promise<{ success: boolean; message?: string }>;
   loginWithOtp: (email: string, code: string) => Promise<{ success: boolean; message?: string }>;
   requestOtp: (email: string) => Promise<{ success: boolean; message: string }>;
@@ -51,12 +53,14 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSessionPaused, setIsSessionPaused] = useState(false);
   const [showIdlePrompt, setShowIdlePrompt] = useState(false);
+  const [sessionNotice, setSessionNotice] = useState<string | null>(null);
 
   const pathname = usePathname();
   const router = useRouter();
 
   const lastActivityRef = useRef<number>(0);
   const lastBroadcastRef = useRef<number>(0);
+  const lastRouteChangeCheckRef = useRef<number>(0);
   const channelRef = useRef<BroadcastChannel | null>(null);
 
   useEffect(() => {
@@ -71,18 +75,44 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Resilient profile refresh following Part 3 state rules:
+  // Clear customer state ONLY on explicit 401 (expired/invalid) or user logout.
+  // On network error, 5xx, 503 SESSION_STORE_UNAVAILABLE, or timeout: KEEP STATE and set non-blocking notice.
   const refreshProfile = useCallback(async () => {
     try {
       const sessionStatus = await checkCustomerSession();
       if (sessionStatus.active) {
-        const profile = await getCurrentCustomer();
-        setCustomer(profile);
-        lastActivityRef.current = Date.now();
+        setSessionNotice(null);
+        try {
+          const profile = await getCurrentCustomer();
+          if (profile) {
+            setCustomer(profile);
+            lastActivityRef.current = Date.now();
+          }
+        } catch (profileErr) {
+          if (profileErr instanceof ApiError && profileErr.statusCode === 401) {
+            setCustomer(null);
+            setSessionNotice(null);
+          } else if (profileErr instanceof ApiError && profileErr.statusCode === 503) {
+            setSessionNotice('Session service temporarily unavailable');
+          }
+        }
       } else {
+        // Session explicitly inactive (expired or invalid token)
         setCustomer(null);
+        setSessionNotice(null);
       }
-    } catch {
-      setCustomer(null);
+    } catch (err) {
+      if (err instanceof ApiError && err.statusCode === 401) {
+        setCustomer(null);
+        setSessionNotice(null);
+      } else if (err instanceof ApiError && err.statusCode === 503) {
+        // 503 SESSION_STORE_UNAVAILABLE: KEEP STATE, display non-blocking notice
+        setSessionNotice('Session service temporarily unavailable');
+      } else {
+        // Transient network error or timeout: KEEP STATE, display non-blocking notice
+        setSessionNotice('Connection to session service interrupted');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -95,6 +125,7 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setCustomer(null);
       setShowIdlePrompt(false);
+      setSessionNotice(null);
     }
   }, [broadcast]);
 
@@ -118,6 +149,7 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
             case 'LOGOUT':
               setCustomer(null);
               setShowIdlePrompt(false);
+              setSessionNotice(null);
               break;
             case 'LOGIN':
               refreshProfile();
@@ -142,9 +174,42 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
     }
   }, [refreshProfile]);
 
-  // Restore session on mount and on route navigation
+  // Restore session on initial mount
   useEffect(() => {
     refreshProfile();
+  }, [refreshProfile]);
+
+  // Non-destructive, throttled route-change verification (max once per 30s)
+  // Sends background header X-Ficcado-Background: 1 and never extends sliding idle window
+  useEffect(() => {
+    // Only verify if currently authenticated
+    if (!customer) return;
+
+    const now = Date.now();
+    if (now - lastRouteChangeCheckRef.current < 30_000) {
+      return; // Throttled: do not fire more than once per 30 seconds
+    }
+    lastRouteChangeCheckRef.current = now;
+
+    checkCustomerSession({ 'X-Ficcado-Background': '1' })
+      .then((status) => {
+        if (!status.active) {
+          // Explicitly expired on server
+          setCustomer(null);
+          setSessionNotice(null);
+        } else {
+          setSessionNotice(null);
+        }
+      })
+      .catch((err) => {
+        if (err instanceof ApiError && err.statusCode === 401) {
+          setCustomer(null);
+          setSessionNotice(null);
+        } else if (err instanceof ApiError && err.statusCode === 503) {
+          setSessionNotice('Session service temporarily unavailable');
+        }
+        // State rule: keep customer on network/timeout/503 errors
+      });
   }, [pathname, refreshProfile]);
 
   // Activity listeners to reset idle timer
@@ -283,6 +348,7 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         isSessionPaused,
         showIdlePrompt,
+        sessionNotice,
         loginWithPassword,
         loginWithOtp,
         requestOtp,
@@ -295,6 +361,16 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
       }}
     >
       {children}
+      {sessionNotice && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-4 right-4 z-50 flex items-center gap-2 rounded-lg bg-amber-950/90 border border-amber-600/50 px-4 py-3 text-sm text-amber-200 shadow-xl backdrop-blur-md transition-opacity"
+        >
+          <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
+          <span>{sessionNotice}</span>
+        </div>
+      )}
       <IdleTimeoutPromptModal
         isOpen={showIdlePrompt}
         onStayLoggedIn={stayLoggedIn}

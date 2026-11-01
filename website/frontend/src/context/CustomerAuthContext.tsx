@@ -61,10 +61,13 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
   const lastActivityRef = useRef<number>(0);
   const lastBroadcastRef = useRef<number>(0);
   const lastRouteChangeCheckRef = useRef<number>(0);
+  const lastTouchRef = useRef<number>(0);
   const channelRef = useRef<BroadcastChannel | null>(null);
 
   useEffect(() => {
-    lastActivityRef.current = Date.now();
+    const now = Date.now();
+    lastActivityRef.current = now;
+    lastTouchRef.current = now;
   }, []);
 
   const broadcast = useCallback((msg: Record<string, unknown>) => {
@@ -228,6 +231,22 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
         lastBroadcastRef.current = now;
         broadcast({ type: 'ACTIVITY', timestamp: now });
       }
+
+      // Keep server Redis session alive while user is actively engaging with page (throttled to once per 2 minutes)
+      if (now - lastTouchRef.current > 120_000) {
+        lastTouchRef.current = now;
+        touchCustomerSession()
+          .then((res) => {
+            if (!res.active) {
+              setCustomer(null);
+            }
+          })
+          .catch((err) => {
+            if (err instanceof ApiError && err.statusCode === 401) {
+              setCustomer(null);
+            }
+          });
+      }
     };
 
     const events = ['mousedown', 'keydown', 'scroll', 'touchstart', 'pointerdown'];
@@ -261,10 +280,12 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
 
   const stayLoggedIn = async () => {
     setShowIdlePrompt(false);
-    lastActivityRef.current = Date.now();
+    const now = Date.now();
+    lastActivityRef.current = now;
+    lastTouchRef.current = now;
     try {
       await touchCustomerSession();
-      broadcast({ type: 'TOUCH', timestamp: Date.now() });
+      broadcast({ type: 'TOUCH', timestamp: now });
     } catch {
       // Ignored
     }
@@ -282,8 +303,10 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
 
   const resumeSession = async () => {
     setIsSessionPaused(false);
-    lastActivityRef.current = Date.now();
-    broadcast({ type: 'RESUME', timestamp: Date.now() });
+    const now = Date.now();
+    lastActivityRef.current = now;
+    lastTouchRef.current = now;
+    broadcast({ type: 'RESUME', timestamp: now });
     try {
       await touchCustomerSession();
     } catch {

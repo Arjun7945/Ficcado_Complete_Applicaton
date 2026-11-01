@@ -25,6 +25,7 @@ import {
 import { useCustomerAuth } from '@/context/CustomerAuthContext';
 import { useModal } from '@/context/ModalContext';
 import { useToast } from '@/context/ToastContext';
+import { ApiError } from '@/lib/api/client';
 import { CustomerOrder, getCustomerOrders, updateCustomerProfile, addCustomerAddress, deleteCustomerAddress } from '@/lib/api/auth';
 import { normalizePhone, isValidIndianPhone } from '@/lib/phone';
 
@@ -89,6 +90,12 @@ export default function AccountPage() {
         showToast('Could not save address. Please verify your details.', 'error');
       }
     } catch (err) {
+      if (err instanceof ApiError && err.statusCode === 401) {
+        showToast('Your session has expired. Please sign in again.', 'error');
+        await refreshProfile();
+        openModal('authModal');
+        return;
+      }
       showToast((err as Error).message || 'Error saving address', 'error');
     } finally {
       setSavingAddress(false);
@@ -105,6 +112,12 @@ export default function AccountPage() {
         showToast('Could not remove address', 'error');
       }
     } catch (err) {
+      if (err instanceof ApiError && err.statusCode === 401) {
+        showToast('Your session has expired. Please sign in again.', 'error');
+        await refreshProfile();
+        openModal('authModal');
+        return;
+      }
       showToast((err as Error).message || 'Error removing address', 'error');
     }
   };
@@ -135,6 +148,12 @@ export default function AccountPage() {
         showToast('Could not update profile', 'error');
       }
     } catch (err) {
+      if (err instanceof ApiError && err.statusCode === 401) {
+        showToast('Your session has expired. Please sign in again.', 'error');
+        await refreshProfile();
+        openModal('authModal');
+        return;
+      }
       showToast((err as Error).message || 'Error updating profile', 'error');
     } finally {
       setSavingProfile(false);

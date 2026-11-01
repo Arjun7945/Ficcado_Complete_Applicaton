@@ -462,6 +462,16 @@ http {
             proxy_set_header X-Forwarded-Proto $scheme;
         }
 
+        # ── Unauthorized Error Page with CORS & ProblemDetail (for auth_request failures) ─
+        error_page 401 /401.json;
+        location = /401.json {
+            internal;
+            add_header 'Access-Control-Allow-Origin' $cors_origin always;
+            add_header 'Access-Control-Allow-Credentials' 'true' always;
+            default_type application/problem+json;
+            return 401 '{"type":"urn:ficcado:unauthorized","title":"Unauthorized","status":401,"detail":"Customer session missing or expired","code":"UNAUTHORIZED"}';
+        }
+
         # ── Rate-Limiting Error Page with CORS & ProblemDetail ───────────────
         error_page 429 /429.json;
         location = /429.json {

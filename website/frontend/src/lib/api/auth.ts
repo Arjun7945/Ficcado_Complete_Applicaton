@@ -155,15 +155,10 @@ export async function getCurrentCustomer(headers?: Record<string, string>): Prom
  * Updates customer profile details (name, phone, or adds address).
  */
 export async function updateCustomerProfile(data: { name?: string; phone?: string; address?: string }): Promise<CustomerProfile | null> {
-  try {
-    return await apiClient<CustomerProfile>(API_CONFIG.routes.customerProfile, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  } catch (err) {
-    console.error('[auth] updateCustomerProfile failed:', err);
-    throw err;
-  }
+  return apiClient<CustomerProfile>(API_CONFIG.routes.customerProfile, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
 }
 
 /**
@@ -217,7 +212,6 @@ export async function addCustomerAddress(address: string, isDefault: boolean = f
 
     return null;
   } catch (err) {
-    console.error('[auth] addCustomerAddress failed:', err);
     throw err;
   }
 }

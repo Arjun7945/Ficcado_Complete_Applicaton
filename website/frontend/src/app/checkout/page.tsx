@@ -29,6 +29,7 @@ import { useCart } from '@/context/CartContext';
 import { useToast } from '@/context/ToastContext';
 import { useCustomerAuth } from '@/context/CustomerAuthContext';
 import { useModal } from '@/context/ModalContext';
+import { ApiError } from '@/lib/api/client';
 import { getColorName } from '@/lib/colors';
 import { createPaymentOrder, verifyPayment, CreatePaymentOrderPayload } from '@/lib/api/payments';
 import {
@@ -342,6 +343,12 @@ export default function CheckoutPage() {
         showToast('Failed to save address. Please try again.', 'error');
       }
     } catch (err) {
+      if (err instanceof ApiError && err.statusCode === 401) {
+        showToast('Your session has expired. Please sign in to save your address.', 'error');
+        await refreshProfile();
+        openModal('authModal');
+        return;
+      }
       showToast((err as Error).message || 'Failed to save address', 'error');
     } finally {
       setIsSavingAddress(false);
@@ -362,6 +369,12 @@ export default function CheckoutPage() {
         showToast('Failed to delete address', 'error');
       }
     } catch (err) {
+      if (err instanceof ApiError && err.statusCode === 401) {
+        showToast('Your session has expired. Please sign in again.', 'error');
+        await refreshProfile();
+        openModal('authModal');
+        return;
+      }
       showToast((err as Error).message || 'Error removing address', 'error');
     } finally {
       setIsDeletingAddressId(null);
@@ -623,7 +636,14 @@ export default function CheckoutPage() {
       const rzp = new window.Razorpay(options);
       rzp.open();
     } catch (err) {
-      console.error('[Checkout] Razorpay error:', err);
+      if (err instanceof ApiError && err.statusCode === 401) {
+        showToast('Your session has expired. Please sign in again to place your order.', 'error');
+        await refreshProfile();
+        openModal('authModal');
+        isSubmittingRef.current = false;
+        setIsSubmitting(false);
+        return;
+      }
       showToast((err as Error).message || 'Payment failed to initialize', 'error');
       isSubmittingRef.current = false;
       setIsSubmitting(false);

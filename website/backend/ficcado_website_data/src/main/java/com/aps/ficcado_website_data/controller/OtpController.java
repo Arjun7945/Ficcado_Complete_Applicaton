@@ -8,6 +8,9 @@ import com.aps.ficcado_website_data.dto.OtpVerifyResponse;
 import com.aps.ficcado_website_data.service.OtpService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -28,8 +31,20 @@ public class OtpController {
     }
 
     @PostMapping("/verify")
-    public ResponseEntity<ApiResponse<OtpVerifyResponse>> verifyOtp(@Valid @RequestBody OtpVerifyRequest request) {
+    public ResponseEntity<ApiResponse<OtpVerifyResponse>> verifyOtp(
+            @Valid @RequestBody OtpVerifyRequest request,
+            HttpServletRequest httpRequest) {
         OtpVerifyResponse response = otpService.verifyOtp(request);
-        return ResponseEntity.ok(ApiResponse.success(response, response.getMessage()));
+        var builder = ResponseEntity.ok();
+        if (response.getCustomerToken() != null && !response.getCustomerToken().isBlank()) {
+            ResponseCookie cookie = ResponseCookie.from("ficcado_customer_session", response.getCustomerToken())
+                    .httpOnly(true)
+                    .path("/")
+                    .sameSite("Lax")
+                    .secure(httpRequest.isSecure())
+                    .build();
+            builder.header(HttpHeaders.SET_COOKIE, cookie.toString());
+        }
+        return builder.body(ApiResponse.success(response, response.getMessage()));
     }
 }

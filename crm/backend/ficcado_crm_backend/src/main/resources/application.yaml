@@ -107,7 +107,7 @@ app:
       port: ${REDIS_SESSION_PORT:6380}
       password: ${REDIS_SESSION_PASSWORD:fic_redisSession_aj}
       url: ${REDIS_SESSION_URL:}
-    idle-timeout-seconds: ${SESSION_IDLE_TIMEOUT:600}
+    idle-timeout-seconds: ${SESSION_IDLE_TIMEOUT_SECONDS:${SESSION_IDLE_TIMEOUT:3600}}
     cookie-secure: ${SESSION_COOKIE_SECURE:false}
 
   gateway:

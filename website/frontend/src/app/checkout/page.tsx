@@ -29,7 +29,7 @@ import { useCart } from '@/context/CartContext';
 import { useToast } from '@/context/ToastContext';
 import { useCustomerAuth } from '@/context/CustomerAuthContext';
 import { useModal } from '@/context/ModalContext';
-import { ApiError } from '@/lib/api/client';
+import { ApiError, isSessionExpiredError } from '@/lib/api/client';
 import { getColorName } from '@/lib/colors';
 import { createPaymentOrder, verifyPayment, CreatePaymentOrderPayload } from '@/lib/api/payments';
 import {
@@ -343,7 +343,7 @@ export default function CheckoutPage() {
         showToast('Failed to save address. Please try again.', 'error');
       }
     } catch (err) {
-      if (err instanceof ApiError && err.statusCode === 401) {
+      if (isSessionExpiredError(err)) {
         showToast('Your session has expired. Please sign in to save your address.', 'error');
         await refreshProfile();
         openModal('authModal');
@@ -636,7 +636,7 @@ export default function CheckoutPage() {
       const rzp = new window.Razorpay(options);
       rzp.open();
     } catch (err) {
-      if (err instanceof ApiError && err.statusCode === 401) {
+      if (isSessionExpiredError(err)) {
         showToast('Your session has expired. Please sign in again to place your order.', 'error');
         await refreshProfile();
         openModal('authModal');

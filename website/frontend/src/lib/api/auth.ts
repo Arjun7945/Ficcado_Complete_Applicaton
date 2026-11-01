@@ -257,6 +257,7 @@ export async function logoutCustomer(): Promise<boolean> {
 export interface CustomerSessionStatus {
   active: boolean;
   remainingSeconds: number;
+  idleTimeoutSeconds?: number;
   customerId?: number;
   paused?: boolean;
 }
@@ -284,11 +285,11 @@ export async function checkCustomerSession(headers?: Record<string, string>): Pr
 }
 
 /**
- * Touches the server-side customer session to extend the sliding idle timeout to 600 seconds.
+ * Touches the server-side customer session to extend the sliding idle timeout.
  */
-export async function touchCustomerSession(): Promise<{ active: boolean; remainingSeconds: number }> {
+export async function touchCustomerSession(): Promise<{ active: boolean; remainingSeconds: number; idleTimeoutSeconds?: number }> {
   try {
-    return await apiClient<{ active: boolean; remainingSeconds: number }>('/api/customer/session/touch', {
+    return await apiClient<{ active: boolean; remainingSeconds: number; idleTimeoutSeconds?: number }>('/api/customer/session/touch', {
       method: 'POST',
       timeoutMs: 3000,
     });

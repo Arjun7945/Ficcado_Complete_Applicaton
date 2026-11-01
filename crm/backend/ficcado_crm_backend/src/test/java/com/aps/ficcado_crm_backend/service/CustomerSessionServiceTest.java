@@ -46,11 +46,11 @@ class CustomerSessionServiceTest {
         objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
         customerSessionService = new CustomerSessionService(sessionRedisTemplate, objectMapper);
-        customerSessionService.setIdleTimeoutSeconds(600);
+        customerSessionService.setIdleTimeoutSeconds(3600);
     }
 
     @Test
-    @DisplayName("1. createSession creates 256-bit SecureRandom hex session and stores in Redis with 600s TTL")
+    @DisplayName("1. createSession creates 256-bit SecureRandom hex session and stores in Redis with 3600s TTL")
     void testCreateSession_StoresInRedisWithConfiguredTtl() {
         when(sessionRedisTemplate.opsForValue()).thenReturn(valueOperations);
         when(sessionRedisTemplate.opsForSet()).thenReturn(setOperations);
@@ -65,7 +65,7 @@ class CustomerSessionServiceTest {
         verify(valueOperations).set(
                 eq("session:cust:" + session.sessionId()),
                 anyString(),
-                eq(Duration.ofSeconds(600))
+                eq(Duration.ofSeconds(3600))
         );
         verify(setOperations).add(
                 eq("cust:sessions:101"),
@@ -74,7 +74,7 @@ class CustomerSessionServiceTest {
     }
 
     @Test
-    @DisplayName("2. validateSession with user-initiated request extends 600s sliding window atomically")
+    @DisplayName("2. validateSession with user-initiated request extends 3600s sliding window atomically")
     void testActivity_ExtendsSlidingWindow() throws Exception {
         when(sessionRedisTemplate.opsForValue()).thenReturn(valueOperations);
 
@@ -89,11 +89,11 @@ class CustomerSessionServiceTest {
         assertThat(validated).isPresent();
         assertThat(validated.get().customerId()).isEqualTo(101L);
 
-        // Verify TTL refreshed to 600s atomically
+        // Verify TTL refreshed to 3600s atomically
         verify(valueOperations).set(
                 eq("session:cust:" + sid),
                 anyString(),
-                eq(Duration.ofSeconds(600))
+                eq(Duration.ofSeconds(3600))
         );
     }
 
@@ -217,7 +217,7 @@ class CustomerSessionServiceTest {
     }
 
     @Test
-    @DisplayName("10. touchSession refreshes session and returns updated remaining seconds")
+    @DisplayName("10. touchSession refreshes session and extends sliding window to 3600s")
     void testTouchSession_RefreshesSession() throws Exception {
         when(sessionRedisTemplate.opsForValue()).thenReturn(valueOperations);
 
@@ -228,6 +228,39 @@ class CustomerSessionServiceTest {
         Optional<CustomerSession> touched = customerSessionService.touchSession(sid);
 
         assertThat(touched).isPresent();
-        verify(valueOperations).set(eq("session:cust:" + sid), anyString(), eq(Duration.ofSeconds(600)));
+        verify(valueOperations).set(eq("session:cust:" + sid), anyString(), eq(Duration.ofSeconds(3600)));
+    }
+
+    @Test
+    @DisplayName("11. Configurable idle timeout is honored dynamically")
+    void testConfigurableIdleTimeout_IsHonored() throws Exception {
+        when(sessionRedisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(sessionRedisTemplate.opsForSet()).thenReturn(setOperations);
+
+        // Dynamically change timeout to 1800s (30 minutes)
+        customerSessionService.setIdleTimeoutSeconds(1800);
+        assertThat(customerSessionService.getIdleTimeoutSeconds()).isEqualTo(1800);
+
+        CustomerSession session = customerSessionService.createSession(202L);
+        assertThat(session).isNotNull();
+
+        verify(valueOperations).set(
+                eq("session:cust:" + session.sessionId()),
+                anyString(),
+                eq(Duration.ofSeconds(1800))
+        );
+
+        // Validate also honors shortened setting
+        when(valueOperations.get("session:cust:" + session.sessionId()))
+                .thenReturn(objectMapper.writeValueAsString(session));
+
+        Optional<CustomerSession> validated = customerSessionService.validateSession(session.sessionId(), true);
+        assertThat(validated).isPresent();
+
+        verify(valueOperations, atLeastOnce()).set(
+                eq("session:cust:" + session.sessionId()),
+                anyString(),
+                eq(Duration.ofSeconds(1800))
+        );
     }
 }

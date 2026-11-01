@@ -49,7 +49,7 @@ public class InternalSessionController {
         String token = extractToken(request);
         if (token == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("valid", false, "message", "No session token provided"));
+                    .body(Map.of("valid", false, "message", "No session token provided", "code", "UNAUTHORIZED"));
         }
 
         try {
@@ -57,14 +57,14 @@ public class InternalSessionController {
             String sid = claims.get("sid", String.class);
             if (sid == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(Map.of("valid", false, "message", "Token missing session id"));
+                        .body(Map.of("valid", false, "message", "Token missing session id", "code", "UNAUTHORIZED"));
             }
 
             // Read-only session validation (do not refresh during auth subrequest)
             Optional<CustomerSession> maybeSession = customerSessionService.validateSession(sid, false);
             if (maybeSession.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(Map.of("valid", false, "message", "Session expired or not found"));
+                        .body(Map.of("valid", false, "message", "Session expired or not found", "code", "UNAUTHORIZED"));
             }
 
             CustomerSession session = maybeSession.get();
@@ -80,7 +80,7 @@ public class InternalSessionController {
         } catch (Exception e) {
             log.debug("Internal session validation failed: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("valid", false, "message", "Invalid session token"));
+                    .body(Map.of("valid", false, "message", "Invalid session token", "code", "UNAUTHORIZED"));
         }
     }
 

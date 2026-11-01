@@ -39,30 +39,47 @@ public class CustomerSessionController {
     public ResponseEntity<?> getSession(HttpServletRequest request) {
         String token = extractToken(request);
         if (token == null) {
-            return ResponseEntity.ok(Map.of("active", false, "remainingSeconds", 0L));
+            return ResponseEntity.ok(Map.of(
+                    "active", false,
+                    "remainingSeconds", 0L,
+                    "idleTimeoutSeconds", customerSessionService.getIdleTimeoutSeconds()
+            ));
         }
 
         try {
             Claims claims = customerAuthService.validateCustomerToken(token);
             String sid = claims.get("sid", String.class);
             if (sid == null) {
-                return ResponseEntity.ok(Map.of("active", false, "remainingSeconds", 0L));
+                return ResponseEntity.ok(Map.of(
+                        "active", false,
+                        "remainingSeconds", 0L,
+                        "idleTimeoutSeconds", customerSessionService.getIdleTimeoutSeconds()
+                ));
             }
 
             Optional<CustomerSession> maybeSession = customerSessionService.getSession(sid);
             if (maybeSession.isEmpty()) {
-                return ResponseEntity.ok(Map.of("active", false, "remainingSeconds", 0L));
+                return ResponseEntity.ok(Map.of(
+                        "active", false,
+                        "remainingSeconds", 0L,
+                        "idleTimeoutSeconds", customerSessionService.getIdleTimeoutSeconds()
+                ));
             }
 
             CustomerSession session = maybeSession.get();
             long remaining = customerSessionService.getRemainingSeconds(sid);
             if (remaining <= 0 && !session.isPaused()) {
-                return ResponseEntity.ok(Map.of("active", false, "remainingSeconds", 0L));
+                return ResponseEntity.ok(Map.of(
+                        "active", false,
+                        "remainingSeconds", 0L,
+                        "idleTimeoutSeconds", customerSessionService.getIdleTimeoutSeconds()
+                ));
             }
 
             return ResponseEntity.ok(Map.of(
                     "active", true,
                     "remainingSeconds", remaining,
+                    "idleTimeoutSeconds", customerSessionService.getIdleTimeoutSeconds(),
                     "customerId", session.customerId(),
                     "paused", session.isPaused()
             ));
@@ -70,17 +87,21 @@ public class CustomerSessionController {
             throw e;
         } catch (Exception e) {
             log.debug("Session check token invalid: {}", e.getMessage());
-            return ResponseEntity.ok(Map.of("active", false, "remainingSeconds", 0L));
+            return ResponseEntity.ok(Map.of(
+                    "active", false,
+                    "remainingSeconds", 0L,
+                    "idleTimeoutSeconds", customerSessionService.getIdleTimeoutSeconds()
+            ));
         }
     }
 
     @PostMapping("/touch")
-    @Operation(summary = "Touch customer session to extend sliding idle timeout to 600s")
+    @Operation(summary = "Touch customer session to extend sliding idle timeout")
     public ResponseEntity<?> touchSession(HttpServletRequest request) {
         String token = extractToken(request);
         if (token == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("active", false, "message", "No session token provided"));
+                    .body(Map.of("active", false, "message", "No session token provided", "code", "UNAUTHORIZED"));
         }
 
         try {
@@ -88,25 +109,26 @@ public class CustomerSessionController {
             String sid = claims.get("sid", String.class);
             if (sid == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(Map.of("active", false, "message", "Session token missing session id"));
+                        .body(Map.of("active", false, "message", "Session token missing session id", "code", "UNAUTHORIZED"));
             }
 
             Optional<CustomerSession> touched = customerSessionService.touchSession(sid);
             if (touched.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(Map.of("active", false, "message", "Session expired or not found"));
+                        .body(Map.of("active", false, "message", "Session expired or not found", "code", "UNAUTHORIZED"));
             }
 
             long remaining = customerSessionService.getRemainingSeconds(sid);
             return ResponseEntity.ok(Map.of(
                     "active", true,
-                    "remainingSeconds", remaining > 0 ? remaining : customerSessionService.getIdleTimeoutSeconds()
+                    "remainingSeconds", remaining > 0 ? remaining : customerSessionService.getIdleTimeoutSeconds(),
+                    "idleTimeoutSeconds", customerSessionService.getIdleTimeoutSeconds()
             ));
         } catch (com.aps.ficcado_crm_backend.exception.SessionServiceUnavailableException e) {
             throw e;
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("active", false, "message", "Invalid session token"));
+                    .body(Map.of("active", false, "message", "Invalid session token", "code", "UNAUTHORIZED"));
         }
     }
 
@@ -118,7 +140,7 @@ public class CustomerSessionController {
         String token = extractToken(request);
         if (token == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("active", false, "message", "No session token provided"));
+                    .body(Map.of("active", false, "message", "No session token provided", "code", "UNAUTHORIZED"));
         }
 
         try {
@@ -126,13 +148,13 @@ public class CustomerSessionController {
             String sid = claims.get("sid", String.class);
             if (sid == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(Map.of("active", false, "message", "Session token missing session id"));
+                        .body(Map.of("active", false, "message", "Session token missing session id", "code", "UNAUTHORIZED"));
             }
 
             Optional<CustomerSession> paused = customerSessionService.pauseSession(sid, minutes);
             if (paused.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(Map.of("active", false, "message", "Session expired or not found"));
+                        .body(Map.of("active", false, "message", "Session expired or not found", "code", "UNAUTHORIZED"));
             }
 
             return ResponseEntity.ok(Map.of(
@@ -144,7 +166,7 @@ public class CustomerSessionController {
             throw e;
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("active", false, "message", "Invalid session token"));
+                    .body(Map.of("active", false, "message", "Invalid session token", "code", "UNAUTHORIZED"));
         }
     }
 

@@ -24,8 +24,6 @@ import {
 import { ApiError } from '@/lib/api/client';
 import { IdleTimeoutPromptModal } from '@/components/modals/IdleTimeoutPromptModal';
 
-export const IDLE_WARNING_SECONDS = 540; // 9 minutes
-export const IDLE_LOGOUT_SECONDS = 600;  // 10 minutes
 export const ACTIVITY_THROTTLE_MS = 2000;
 
 interface CustomerAuthContextType {
@@ -62,6 +60,7 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
   const lastBroadcastRef = useRef<number>(0);
   const lastRouteChangeCheckRef = useRef<number>(0);
   const lastTouchRef = useRef<number>(0);
+  const idleTimeoutSecondsRef = useRef<number>(3600);
   const channelRef = useRef<BroadcastChannel | null>(null);
 
   useEffect(() => {
@@ -84,6 +83,9 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
   const refreshProfile = useCallback(async () => {
     try {
       const sessionStatus = await checkCustomerSession();
+      if (sessionStatus.idleTimeoutSeconds) {
+        idleTimeoutSecondsRef.current = sessionStatus.idleTimeoutSeconds;
+      }
       if (sessionStatus.active) {
         setSessionNotice(null);
         try {
@@ -196,6 +198,9 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
 
     checkCustomerSession({ 'X-Ficcado-Background': '1' })
       .then((status) => {
+        if (status.idleTimeoutSeconds) {
+          idleTimeoutSecondsRef.current = status.idleTimeoutSeconds;
+        }
         if (!status.active) {
           // Explicitly expired on server
           setCustomer(null);
@@ -237,6 +242,9 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
         lastTouchRef.current = now;
         touchCustomerSession()
           .then((res) => {
+            if (res.idleTimeoutSeconds) {
+              idleTimeoutSecondsRef.current = res.idleTimeoutSeconds;
+            }
             if (!res.active) {
               setCustomer(null);
             }
@@ -257,20 +265,22 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
     };
   }, [customer, isSessionPaused, showIdlePrompt, broadcast]);
 
-  // Idle timer ticker
+  // Idle timer ticker computed dynamically from server-configured timeout
   useEffect(() => {
     if (!customer || isSessionPaused) return;
 
     const interval = setInterval(() => {
       const idleSeconds = Math.floor((Date.now() - lastActivityRef.current) / 1000);
+      const timeout = idleTimeoutSecondsRef.current;
+      const warningThreshold = Math.max(timeout - 300, 60);
 
-      if (idleSeconds >= IDLE_LOGOUT_SECONDS) {
-        // 10 minutes reached: logout due to inactivity
+      if (idleSeconds >= timeout) {
+        // Full timeout reached: logout due to inactivity
         logout();
         setShowIdlePrompt(false);
         router.push('/login?message=You%20were%20logged%20out%20due%20to%20inactivity.');
-      } else if (idleSeconds >= IDLE_WARNING_SECONDS) {
-        // 9 minutes reached: show "Still there?" prompt
+      } else if (idleSeconds >= warningThreshold) {
+        // Prompt at (timeout - 300s): show "Still there?" prompt
         setShowIdlePrompt(true);
       }
     }, 1000);
@@ -284,7 +294,10 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
     lastActivityRef.current = now;
     lastTouchRef.current = now;
     try {
-      await touchCustomerSession();
+      const res = await touchCustomerSession();
+      if (res.idleTimeoutSeconds) {
+        idleTimeoutSecondsRef.current = res.idleTimeoutSeconds;
+      }
       broadcast({ type: 'TOUCH', timestamp: now });
     } catch {
       // Ignored

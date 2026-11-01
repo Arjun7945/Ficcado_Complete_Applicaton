@@ -89,6 +89,9 @@ All core services (`ficcado-postgres`, `ficcado-redis-session`, `ficcado-redis-c
   docker compose -f infra/docker-compose.yml down -v
   docker compose -f infra/docker-compose.yml --env-file infra/.env up -d
   ```
+  > [!NOTE]
+  > **Redis Session Persistence & Lifecycle:** The session Redis container (`ficcado-redis-session`) is configured with append-only persistence (`--appendonly yes --appendfsync everysec`) mounted on named volume `ficcado_redis_session_data`. Plain container restarts (`docker compose restart redis-session` or `docker compose down` followed by `up -d`) **preserve** all customer sessions. Only running `docker compose down -v` removes the named volume and clears saved customer sessions.
+
 - **Start with monitoring (Prometheus + Grafana):**
   ```powershell
   docker compose -f infra/docker-compose.yml --profile monitoring --env-file infra/.env up -d

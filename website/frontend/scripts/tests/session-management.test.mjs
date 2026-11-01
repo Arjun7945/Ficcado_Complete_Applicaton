@@ -61,17 +61,28 @@ describe('Phase P2-4 4D: Customer Session Management & Sliding Logout Test Suite
     );
   });
 
-  test('3. Idle detection triggers warning prompt at 9 minutes (540s) and logout at 10 minutes (600s)', () => {
+  test('3. Idle detection triggers warning prompt at (timeout - 300s) and logout at timeout dynamically', () => {
     const contextFile = path.join(rootDir, 'src', 'context', 'CustomerAuthContext.tsx');
     const content = fs.readFileSync(contextFile, 'utf8');
 
+    // Hardcoded 540 / 600 constants must be absent (P4W-2 Requirement 1)
     assert.ok(
-      content.includes('IDLE_WARNING_SECONDS = 540') || content.includes('540'),
-      'Idle warning must trigger at 9 minutes (540 seconds)'
+      !content.includes('IDLE_WARNING_SECONDS = 540'),
+      'Hardcoded 540s warning constant must be removed'
     );
     assert.ok(
-      content.includes('IDLE_LOGOUT_SECONDS = 600') || content.includes('600'),
-      'Idle logout must trigger at 10 minutes (600 seconds)'
+      !content.includes('IDLE_LOGOUT_SECONDS = 600'),
+      'Hardcoded 600s logout constant must be removed'
+    );
+
+    // Warning and logout thresholds must be computed dynamically (P4W-2 Requirement 3)
+    assert.ok(
+      content.includes('timeout - 300'),
+      'Idle warning must trigger dynamically at (timeout - 300s)'
+    );
+    assert.ok(
+      content.includes('idleSeconds >= timeout'),
+      'Idle logout must trigger at full session timeout'
     );
     assert.ok(
       content.includes('You were logged out due to inactivity') || content.includes('inactivity'),

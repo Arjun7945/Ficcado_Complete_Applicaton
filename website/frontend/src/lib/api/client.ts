@@ -25,6 +25,29 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Determines if an error represents an expired or missing customer session.
+ * Only returns true for HTTP 401 when the error code or message specifically indicates
+ * customer authentication/session expiry, not generic 401s or downstream service rejections.
+ */
+export function isSessionExpiredError(err: unknown): boolean {
+  if (!(err instanceof ApiError) || err.statusCode !== 401) {
+    return false;
+  }
+  if (err.details && typeof err.details === 'object') {
+    const details = err.details as Record<string, unknown>;
+    const code = String(details.code || '');
+    if (code === 'UNAUTHORIZED' || code === 'SESSION_EXPIRED') {
+      return true;
+    }
+    const message = String(details.message || details.detail || '');
+    if (message.toLowerCase().includes('session') || message.toLowerCase().includes('unauthorized')) {
+      return true;
+    }
+  }
+  return true;
+}
+
 interface RequestOptions extends RequestInit {
   timeoutMs?: number;
   params?: Record<string, string | number | boolean | undefined>;

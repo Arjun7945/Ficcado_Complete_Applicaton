@@ -51,7 +51,7 @@ export function IdleTimeoutPromptModal({
         </h3>
 
         <p className="text-sm text-[var(--text-secondary,#6b7280)] leading-relaxed mb-6">
-          You&apos;ve been inactive for a while. For your security, you will be logged out in 1 minute.
+          You&apos;ve been inactive for a while. For your security, you will be logged out in 5 minutes.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-3 w-full">

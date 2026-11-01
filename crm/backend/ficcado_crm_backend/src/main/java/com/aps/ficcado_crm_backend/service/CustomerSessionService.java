@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
  *
  * Enforces:
  * - 256-bit SecureRandom session IDs (64 hex characters).
- * - Sliding 600-second (10-minute) idle timeout refreshed atomically on user-initiated requests.
+ * - Sliding 3600-second (1-hour) idle timeout refreshed atomically on user-initiated requests.
  * - Background requests (X-Ficcado-Background: 1) do NOT refresh sliding timeout.
  * - Paused sessions during checkout/payment (up to 15 minutes) count as active.
  * - Fails closed with SessionServiceUnavailableException (HTTP 503) if Redis is down.
@@ -39,7 +39,7 @@ public class CustomerSessionService {
     private final ObjectMapper objectMapper;
     private final SecureRandom secureRandom = new SecureRandom();
 
-    @Value("${app.session.idle-timeout-seconds:600}")
+    @Value("${app.session.idle-timeout-seconds:3600}")
     private long idleTimeoutSeconds;
 
     public CustomerSessionService(

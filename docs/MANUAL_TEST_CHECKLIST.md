@@ -242,3 +242,56 @@ Before beginning manual tests, ensure the platform is running:
   - The attempt transitions to `REFUND_PENDING` (and subsequently `REFUNDED`).
   - An email notification is sent to the customer explaining that the item was out of stock and a refund has been initiated, inviting them to try again.
   - **No partial database rows or incorrect sales are written.**
+
+---
+
+## Part 4: CRM Defect Verification Runbook (Part 4)
+
+### Test 18: CRM Item Version Optimistic Locking & Sequential Edits (CRM-1)
+- **Route:** `http://localhost:3001/dashboard/items`
+- **Goal:** Verify that sequential saves of the same item by an admin succeed without false version conflicts or reload requirements, while genuine concurrent edits are detected.
+- **Steps:**
+  1. Open `http://localhost:3001/dashboard/items` in Browser A and log in as Admin (`admin@ficcado.com` / `Password123!`).
+  2. Locate an item (e.g. `CLASSIC OVERSIZED TEE` or any catalog item) and click the Edit (✏) button.
+  3. Change the item description or price (e.g. add a tag or update description) and click **Update Item Details**.
+  4. Notice the inline green confirmation badge appears: **"Item details updated successfully."** The modal remains open and the item version is updated to the committed version.
+  5. Without closing or reloading, make a second edit immediately and click **Update Item Details** again.
+  6. Verify the second update succeeds immediately with 200 OK.
+  7. Make a third sequential edit and click **Update Item Details**; verify it also succeeds without reload.
+  8. **Concurrent Edit Conflict Test:**
+     - Open the same item edit modal in Browser A and in Browser B (incognito window).
+     - In Browser A, click **Update Item Details** to bump the version.
+     - In Browser B, click **Update Item Details** with the stale version.
+     - Verify Browser B receives HTTP 409 Conflict with code `ITEM_VERSION_CONFLICT` and displays the amber banner: **"⚠️ This item was changed by another admin. Reload to see the latest version."**
+     - In Browser B, click **Reload Item**.
+     - Verify the modal fetches the latest version, re-populates the fields, clears the conflict banner, and the next save in Browser B succeeds.
+- **Expected Result:**
+  - Multiple sequential edits by the same admin without reloading succeed every single time with exactly +1 version bump.
+  - No database unique constraint violations on `item_colors` or `item_tags`.
+  - Genuine concurrent edits are properly blocked with 409 and resolved seamlessly via **Reload Item**.
+
+### Test 19: CRM Customer Centered Pop-up Modal & Directory Pagination (CRM-2)
+- **Route:** `http://localhost:3001/dashboard/customers`
+- **Goal:** Verify that clicking "View / Edit Profile" immediately opens a centered pop-up dialog in the active viewport (not rendered at the bottom of the page) and that table pagination works cleanly.
+- **Steps:**
+  1. Open `http://localhost:3001/dashboard/customers` and log in as Admin (`admin@ficcado.com` / `Password123!`).
+  2. Inspect the customer directory table:
+     - Verify table pagination controls at the bottom: **"Showing 1–10 of X customers"**, **Rows per page: [10, 20, 50]**, page number buttons, **Next ›**, **»**.
+     - Verify only 10 rows are rendered per page rather than an unbounded scrolling list.
+  3. Click **Next ›** to navigate to Page 2; verify records 11–20 appear. Click **‹ Prev** to return to Page 1.
+  4. On any customer row (e.g. Row 1), click **View / Edit Profile**.
+  5. Verify that a centered modal dialog immediately pops up in the center of the viewport with a blurred dark backdrop (`backdrop-filter: blur(4px)`).
+  6. Inspect the pop-up modal:
+     - Header displays **"Customer Profile & Order History"**, order count badge, phone number, and a close button `✕`.
+     - Profile form displays Customer Name, Email Address, and Phone Number (disabled with `Primary Key` badge).
+     - Saved Delivery Addresses editor displays existing addresses with Home/Work labels, and a **+ Add Address** button.
+     - Bottom of modal displays the customer's full **Purchase & Order History** table with invoice links, item names, amounts, and dues status.
+  7. In the Customer Name field, update the name (e.g. append ` Verified`) and click **Save Customer Changes**.
+  8. Verify an inline success message displays: **"Customer profile updated successfully."**
+  9. Click the `✕` close button or press the **Esc** key to close the modal.
+  10. Verify that the customer table row displays the updated name in real-time without requiring a full-page refresh.
+- **Expected Result:**
+  - The modal pops up directly in the center of the screen, elevated with `z-index: 1000` and dark backdrop blur.
+  - Table pagination limits rows cleanly to 10 per page with working next/prev/page buttons.
+  - Updates persist to the database and update the table in-place.
+

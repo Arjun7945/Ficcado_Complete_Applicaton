@@ -6,9 +6,21 @@
 // =============================================================================
 
 import { API_CONFIG } from '@/lib/api/config';
+import { getCustomerToken } from '@/lib/api/sessionToken';
 import type { WishlistItem, Product } from '@/types';
 
 const API_BASE_URL = API_CONFIG.gatewayUrl;
+
+function getWishlistHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {
+    'Accept': 'application/json',
+  };
+  const token = getCustomerToken();
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+}
 
 /**
  * Fetches all wishlist items for the authenticated customer.
@@ -16,9 +28,7 @@ const API_BASE_URL = API_CONFIG.gatewayUrl;
 export async function getWishlistItems(): Promise<WishlistItem[]> {
   const res = await fetch(`${API_BASE_URL}/api/wishlist`, {
     method: 'GET',
-    headers: {
-      'Accept': 'application/json',
-    },
+    headers: getWishlistHeaders(),
     credentials: 'include',
     cache: 'no-store',
   });
@@ -48,9 +58,7 @@ export async function getWishlistItems(): Promise<WishlistItem[]> {
 export async function addToWishlistApi(itemId: number): Promise<WishlistItem> {
   const res = await fetch(`${API_BASE_URL}/api/wishlist/${itemId}`, {
     method: 'PUT',
-    headers: {
-      'Accept': 'application/json',
-    },
+    headers: getWishlistHeaders(),
     credentials: 'include',
     cache: 'no-store',
   });
@@ -77,6 +85,7 @@ export async function addToWishlistApi(itemId: number): Promise<WishlistItem> {
 export async function removeFromWishlistApi(itemId: number): Promise<void> {
   const res = await fetch(`${API_BASE_URL}/api/wishlist/${itemId}`, {
     method: 'DELETE',
+    headers: getWishlistHeaders(),
     credentials: 'include',
     cache: 'no-store',
   });

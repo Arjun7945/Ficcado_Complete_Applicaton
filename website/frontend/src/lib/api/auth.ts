@@ -322,8 +322,12 @@ export async function touchCustomerSession(): Promise<{ active: boolean; remaini
       method: 'POST',
       timeoutMs: 3000,
     });
-  } catch {
-    return { active: false, remainingSeconds: 0 };
+  } catch (err) {
+    if (err instanceof ApiError && err.statusCode === 401) {
+      return { active: false, remainingSeconds: 0 };
+    }
+    // Fail open on transient network errors / timeouts to avoid unintended client auto-logout
+    return { active: true, remainingSeconds: 600 };
   }
 }
 

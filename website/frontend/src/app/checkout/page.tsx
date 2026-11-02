@@ -30,6 +30,7 @@ import { useToast } from '@/context/ToastContext';
 import { useCustomerAuth } from '@/context/CustomerAuthContext';
 import { useModal } from '@/context/ModalContext';
 import { ApiError, isSessionExpiredError } from '@/lib/api/client';
+import { getCustomerToken } from '@/lib/api/sessionToken';
 import { getColorName } from '@/lib/colors';
 import { createPaymentOrder, verifyPayment, CreatePaymentOrderPayload } from '@/lib/api/payments';
 import {
@@ -437,9 +438,15 @@ export default function CheckoutPage() {
         })),
       };
 
+      const orderHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+      const customerToken = getCustomerToken();
+      if (customerToken) {
+        orderHeaders['Authorization'] = `Bearer ${customerToken}`;
+      }
+
       const res = await fetch('/api/orders', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: orderHeaders,
         body: JSON.stringify(payload),
       });
 

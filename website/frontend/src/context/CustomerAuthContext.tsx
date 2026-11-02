@@ -2,8 +2,9 @@
 
 // =============================================================================
 // Customer Authentication & Session Lifecycle Context — CustomerAuthContext.tsx
-// Handles session restoration on load/navigation, sliding 10-minute idle timer,
-// 9-minute "Still there?" prompt, multi-tab sync, and payment pause.
+// Handles session restoration on load/navigation, synchronous cached pre-hydration,
+// sliding 10-minute idle timer, 9-minute "Still there?" prompt, multi-tab sync,
+// and payment pause.
 // =============================================================================
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef, ReactNode } from 'react';
@@ -20,7 +21,15 @@ import {
   logoutCustomer as apiLogout,
 } from '@/lib/api/auth';
 import { ApiError } from '@/lib/api/client';
-import { setCustomerToken, clearCustomerToken } from '@/lib/api/sessionToken';
+import {
+  getCustomerToken,
+  setCustomerToken,
+  getCachedCustomer,
+  setCachedCustomer,
+  clearCustomerSession,
+  clearCustomerToken,
+  CachedCustomerProfile,
+} from '@/lib/api/sessionToken';
 import { IdleTimeoutPromptModal } from '@/components/modals/IdleTimeoutPromptModal';
 
 export const ACTIVITY_THROTTLE_MS = 2000;
@@ -44,8 +53,15 @@ interface CustomerAuthContextType {
 const CustomerAuthContext = createContext<CustomerAuthContextType | undefined>(undefined);
 
 export function CustomerAuthProvider({ children }: { children: ReactNode }) {
-  const [customer, setCustomer] = useState<CustomerProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // Synchronous pre-hydration from persistent cache: eliminates unauthenticated flash on /checkout
+  const [customer, setCustomer] = useState<CustomerProfile | null>(() => {
+    const cached = getCachedCustomer();
+    return (cached as CustomerProfile) || null;
+  });
+  const [isLoading, setIsLoading] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    return !getCachedCustomer();
+  });
   const [isSessionPaused, setIsSessionPaused] = useState(false);
   const [showIdlePrompt, setShowIdlePrompt] = useState(false);
   const [sessionNotice, setSessionNotice] = useState<string | null>(null);
@@ -78,6 +94,7 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
   // Clear customer state ONLY on explicit 401 (expired/invalid) or user logout.
   // On network error, 5xx, 503 SESSION_STORE_UNAVAILABLE, or timeout: KEEP STATE and set non-blocking notice.
   const refreshProfile = useCallback(async () => {
+    const currentToken = getCustomerToken();
     try {
       const sessionStatus = await checkCustomerSession();
       if (sessionStatus.idleTimeoutSeconds) {
@@ -89,11 +106,12 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
           const profile = await getCurrentCustomer();
           if (profile) {
             setCustomer(profile);
+            setCachedCustomer(profile);
             lastActivityRef.current = Date.now();
           }
         } catch (profileErr) {
           if (profileErr instanceof ApiError && profileErr.statusCode === 401) {
-            clearCustomerToken();
+            clearCustomerSession();
             setCustomer(null);
             setSessionNotice(null);
           } else if (profileErr instanceof ApiError && profileErr.statusCode === 503) {
@@ -101,14 +119,28 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
           }
         }
       } else {
-        // Session explicitly inactive (expired or invalid token)
-        clearCustomerToken();
+        // Session explicitly inactive (expired or invalid token on server)
+        // Verify with token before purging client state
+        if (currentToken) {
+          try {
+            const profile = await getCurrentCustomer();
+            if (profile) {
+              setCustomer(profile);
+              setCachedCustomer(profile);
+              lastActivityRef.current = Date.now();
+              return;
+            }
+          } catch {
+            // Genuinely invalid or expired
+          }
+        }
+        clearCustomerSession();
         setCustomer(null);
         setSessionNotice(null);
       }
     } catch (err) {
       if (err instanceof ApiError && err.statusCode === 401) {
-        clearCustomerToken();
+        clearCustomerSession();
         setCustomer(null);
         setSessionNotice(null);
       } else if (err instanceof ApiError && err.statusCode === 503) {
@@ -128,7 +160,7 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
       await apiLogout();
       broadcast({ type: 'LOGOUT' });
     } finally {
-      clearCustomerToken();
+      clearCustomerSession();
       setCustomer(null);
       setShowIdlePrompt(false);
       setSessionNotice(null);
@@ -153,7 +185,7 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
               setShowIdlePrompt(false);
               break;
             case 'LOGOUT':
-              clearCustomerToken();
+              clearCustomerSession();
               setCustomer(null);
               setShowIdlePrompt(false);
               setSessionNotice(null);
@@ -161,6 +193,10 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
             case 'LOGIN':
               if (data.token && typeof data.token === 'string') {
                 setCustomerToken(data.token);
+              }
+              if (data.profile && typeof data.profile === 'object') {
+                setCachedCustomer(data.profile as CustomerProfile);
+                setCustomer(data.profile as CustomerProfile);
               }
               refreshProfile();
               break;
@@ -184,8 +220,44 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
     }
   }, [refreshProfile]);
 
+  // Multi-tab storage & custom session event listener
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'ficcado_customer_token' || e.key === 'ficcado_customer_profile') {
+        const cached = getCachedCustomer();
+        setCustomer((cached as CustomerProfile) || null);
+        if (!cached) {
+          setShowIdlePrompt(false);
+        }
+      }
+    };
+
+    const handleSessionEvent = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.type === 'LOGOUT') {
+        setCustomer(null);
+        setShowIdlePrompt(false);
+      } else if (detail?.type === 'PROFILE_SET' && detail.profile) {
+        setCustomer(detail.profile as CustomerProfile);
+      }
+    };
+
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('ficcado-session-change', handleSessionEvent);
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('ficcado-session-change', handleSessionEvent);
+    };
+  }, []);
+
   // Restore session on initial mount
   useEffect(() => {
+    const cached = getCachedCustomer();
+    if (cached && !customer) {
+      setCustomer(cached as CustomerProfile);
+    }
     refreshProfile();
   }, [refreshProfile]);
 
@@ -207,15 +279,34 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
           idleTimeoutSecondsRef.current = status.idleTimeoutSeconds;
         }
         if (!status.active) {
-          // Explicitly expired on server
-          setCustomer(null);
-          setSessionNotice(null);
+          // Double-check token with /me before clearing
+          if (getCustomerToken()) {
+            getCurrentCustomer()
+              .then((prof) => {
+                if (prof) {
+                  setCustomer(prof);
+                  setCachedCustomer(prof);
+                } else {
+                  clearCustomerSession();
+                  setCustomer(null);
+                  setSessionNotice(null);
+                }
+              })
+              .catch(() => {
+                // Keep state on network error
+              });
+          } else {
+            clearCustomerSession();
+            setCustomer(null);
+            setSessionNotice(null);
+          }
         } else {
           setSessionNotice(null);
         }
       })
       .catch((err) => {
         if (err instanceof ApiError && err.statusCode === 401) {
+          clearCustomerSession();
           setCustomer(null);
           setSessionNotice(null);
         } else if (err instanceof ApiError && err.statusCode === 503) {
@@ -251,11 +342,27 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
               idleTimeoutSecondsRef.current = res.idleTimeoutSeconds;
             }
             if (!res.active) {
-              setCustomer(null);
+              if (getCustomerToken()) {
+                getCurrentCustomer()
+                  .then((prof) => {
+                    if (prof) {
+                      setCustomer(prof);
+                      setCachedCustomer(prof);
+                    } else {
+                      clearCustomerSession();
+                      setCustomer(null);
+                    }
+                  })
+                  .catch(() => {});
+              } else {
+                clearCustomerSession();
+                setCustomer(null);
+              }
             }
           })
           .catch((err) => {
             if (err instanceof ApiError && err.statusCode === 401) {
+              clearCustomerSession();
               setCustomer(null);
             }
           });
@@ -339,9 +446,10 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
         if (res.token) {
           setCustomerToken(res.token);
         }
+        setCachedCustomer(res.customer);
         setCustomer(res.customer);
         lastActivityRef.current = Date.now();
-        broadcast({ type: 'LOGIN', token: res.token });
+        broadcast({ type: 'LOGIN', token: res.token, profile: res.customer });
         return { success: true };
       }
       return { success: false, message: res.message || 'Login failed' };
@@ -357,9 +465,10 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
         if (res.token) {
           setCustomerToken(res.token);
         }
+        setCachedCustomer(res.customer);
         setCustomer(res.customer);
         lastActivityRef.current = Date.now();
-        broadcast({ type: 'LOGIN', token: res.token });
+        broadcast({ type: 'LOGIN', token: res.token, profile: res.customer });
         return { success: true };
       }
       return { success: false, message: res.message || 'Registration failed' };
